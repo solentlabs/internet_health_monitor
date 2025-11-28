@@ -1,0 +1,112 @@
+# pyproject.toml
+# Configuration for ha_network_diagnostics - Home Assistant Network Diagnostics Integration
+
+[project]
+name = "ha-network-diagnostics"
+version = "0.1.0"
+description = "Network diagnostics integration for Home Assistant - gateway latency, jitter, packet loss, DNS monitoring"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = {text = "MIT"}
+authors = [
+    {name = "Ken Schulz"}
+]
+keywords = ["home-assistant", "network", "diagnostics", "monitoring", "latency"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = []  # HA provides all runtime dependencies
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.0",
+    "ruff>=0.8.0",
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.24.0",
+    "pre-commit>=3.8.0",
+]
+
+[project.urls]
+# Repository = "https://github.com/kwschulz/ha_network_diagnostics"  # Uncomment when public
+# Documentation = "https://github.com/kwschulz/ha_network_diagnostics#readme"
+
+# -------------------------------
+# Black (code formatter)
+# -------------------------------
+[tool.black]
+line-length = 120
+target-version = ['py312']
+include = '\.pyi?$'
+
+# -------------------------------
+# Ruff (linter + import sorter)
+# -------------------------------
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    "__pycache__",
+    ".venv", "venv",
+    ".git",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",  # pycodestyle + pyflakes
+    "C90",          # mccabe complexity
+    "I",            # isort
+    "UP",           # pyupgrade
+    "B",            # flake8-bugbear
+    "SIM",          # flake8-simplify
+    "TID",          # flake8-tidy-imports
+    "N",            # pep8-naming
+]
+
+ignore = [
+    "B008",   # Allow function calls in default args (common in HA)
+    "B904",   # Allow bare `raise` for re-raising
+    "SIM108", # Avoid forced ternary expressions
+    "TID252", # Allow relative imports in HA custom components
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components.ha_network_diagnostics"]
+split-on-trailing-comma = true
+force-wrap-aliases = true
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*.py" = ["B011", "S101"]
+"scripts/**/*.py" = ["T201"]
+
+# -------------------------------
+# Mypy (static type checker)
+# -------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+files = ["custom_components/ha_network_diagnostics/**/*.py"]
+
+# -------------------------------
+# Pytest (test runner)
+# -------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-v --tb=short --cov=custom_components.ha_network_diagnostics --cov-report=term-missing"
+testpaths = ["tests"]

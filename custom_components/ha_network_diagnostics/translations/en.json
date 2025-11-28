@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Network Diagnostics Setup",
+        "description": "Configure network monitoring settings",
+        "data": {
+          "enable_gateway_monitoring": "Enable gateway monitoring",
+          "enable_dns_monitoring": "Enable DNS monitoring",
+          "scan_interval": "Scan interval (seconds)",
+          "dns_server": "DNS server",
+          "ping_count": "Ping count per check"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Network Diagnostics is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Network Diagnostics Options",
+        "data": {
+          "enable_gateway_monitoring": "Enable gateway monitoring",
+          "enable_dns_monitoring": "Enable DNS monitoring",
+          "scan_interval": "Scan interval (seconds)",
+          "dns_server": "DNS server",
+          "ping_count": "Ping count per check"
+        }
+      }
+    }
+  }
+}
