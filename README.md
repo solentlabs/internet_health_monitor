@@ -1,6 +1,10 @@
 # HA Internet Health Monitor
 
-Home Assistant integration for internet health monitoring.
+[![Solent Networks Suite](https://img.shields.io/badge/Solent%20Networks-Suite-blue)](https://github.com/solentlabs)
+
+A **Solent Labs** Home Assistant integration for internet health monitoring.
+
+Part of the **Solent Networks Suite** - tools for comprehensive home network visibility.
 
 ## Features
 
@@ -77,9 +81,12 @@ make test
 make check
 ```
 
-## Related Projects
+## Solent Networks Suite
 
-- [Cable Modem Monitor](https://github.com/kwschulz/cable_modem_monitor) - Monitor your cable modem's signal quality
+This integration is part of the **Solent Networks Suite** by Solent Labs:
+
+- [Cable Modem Monitor](https://github.com/solentlabs/cable_modem_monitor) - Monitor your cable modem's signal quality
+- [Internet Health Monitor](https://github.com/solentlabs/ha-internet-health-monitor) - Track gateway latency, jitter, and DNS health
 
 ## License
 

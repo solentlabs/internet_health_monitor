@@ -9,6 +9,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = {text = "MIT"}
 authors = [
+    {name = "Solent Labs"},
     {name = "Ken Schulz"}
 ]
 keywords = ["home-assistant", "network", "diagnostics", "monitoring", "latency"]
@@ -34,8 +35,9 @@ dev = [
 ]
 
 [project.urls]
-# Repository = "https://github.com/kwschulz/ha-internet-health-monitor"  # Uncomment when public
-# Documentation = "https://github.com/kwschulz/ha-internet-health-monitor#readme"
+# Repository = "https://github.com/solentlabs/ha-internet-health-monitor"  # Uncomment when public
+# Documentation = "https://github.com/solentlabs/ha-internet-health-monitor#readme"
+# Organization = "https://github.com/solentlabs"
 
 # -------------------------------
 # Black (code formatter)
