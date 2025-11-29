@@ -1,8 +1,8 @@
-"""Constants for HA Network Diagnostics integration."""
+"""Constants for HA Internet Health Monitor integration."""
 
 from __future__ import annotations
 
-DOMAIN = "ha_network_diagnostics"
+DOMAIN = "ha_internet_health_monitor"
 VERSION = "0.1.0"
 
 # Config keys

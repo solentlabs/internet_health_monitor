@@ -1,0 +1,12 @@
+{
+  "domain": "ha_internet_health_monitor",
+  "name": "Internet Health Monitor",
+  "codeowners": ["@kwschulz"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/kwschulz/ha-internet-health-monitor",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/kwschulz/ha-internet-health-monitor/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

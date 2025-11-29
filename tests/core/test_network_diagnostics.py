@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from custom_components.ha_network_diagnostics.core.network_diagnostics import (
+from custom_components.ha_internet_health_monitor.core.network_diagnostics import (
     NetworkDiagnostics,
     NetworkDiagnosticsConfig,
     NetworkDiagnosticsResult,
@@ -23,7 +23,7 @@ class TestDetectSystemDNS:
         resolv_conf.write_text("nameserver 8.8.8.8\nnameserver 8.8.4.4\n")
 
         with patch(
-            "custom_components.ha_network_diagnostics.core.network_diagnostics.RESOLV_CONF_PATH",
+            "custom_components.ha_internet_health_monitor.core.network_diagnostics.RESOLV_CONF_PATH",
             str(resolv_conf),
         ):
             result = _detect_system_dns_sync()
@@ -32,7 +32,7 @@ class TestDetectSystemDNS:
     def test_detect_dns_no_file(self, tmp_path):
         """Test DNS detection when file doesn't exist."""
         with patch(
-            "custom_components.ha_network_diagnostics.core.network_diagnostics.RESOLV_CONF_PATH",
+            "custom_components.ha_internet_health_monitor.core.network_diagnostics.RESOLV_CONF_PATH",
             str(tmp_path / "nonexistent"),
         ):
             result = _detect_system_dns_sync()
@@ -241,7 +241,7 @@ class TestNetworkDiagnosticsAsync:
         diag = NetworkDiagnostics(dns_server="auto")
 
         with patch(
-            "custom_components.ha_network_diagnostics.core.network_diagnostics.detect_system_dns",
+            "custom_components.ha_internet_health_monitor.core.network_diagnostics.detect_system_dns",
             return_value="1.1.1.1",
         ):
             dns = await diag._resolve_dns_server()

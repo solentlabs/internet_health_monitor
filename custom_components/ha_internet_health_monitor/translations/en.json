@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Network Diagnostics Setup",
-        "description": "Configure network monitoring settings",
+        "title": "Internet Health Monitor Setup",
+        "description": "Configure internet health monitoring settings",
         "data": {
           "enable_gateway_monitoring": "Enable gateway monitoring",
           "enable_dns_monitoring": "Enable DNS monitoring",
@@ -14,13 +14,13 @@
       }
     },
     "abort": {
-      "already_configured": "Network Diagnostics is already configured"
+      "already_configured": "Internet Health Monitor is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Network Diagnostics Options",
+        "title": "Internet Health Monitor Options",
         "data": {
           "enable_gateway_monitoring": "Enable gateway monitoring",
           "enable_dns_monitoring": "Enable DNS monitoring",

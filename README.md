@@ -1,6 +1,6 @@
-# HA Network Diagnostics
+# HA Internet Health Monitor
 
-Home Assistant integration for network health monitoring.
+Home Assistant integration for internet health monitoring.
 
 ## Features
 
@@ -14,10 +14,10 @@ Home Assistant integration for network health monitoring.
 
 ### Manual Installation
 
-1. Copy `custom_components/ha_network_diagnostics` to your Home Assistant `config/custom_components/` directory
+1. Copy `custom_components/ha_internet_health_monitor` to your Home Assistant `config/custom_components/` directory
 2. Restart Home Assistant
 3. Go to Settings > Devices & Services > Add Integration
-4. Search for "Network Diagnostics"
+4. Search for "Internet Health Monitor"
 
 ### HACS (Coming Soon)
 
@@ -64,8 +64,8 @@ During setup, you can configure:
 
 ```bash
 # Clone the repository
-git clone https://github.com/kwschulz/ha_network_diagnostics.git
-cd ha_network_diagnostics
+git clone https://github.com/kwschulz/ha-internet-health-monitor.git
+cd ha_internet_health_monitor
 
 # Set up development environment
 make setup

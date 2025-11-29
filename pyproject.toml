@@ -1,10 +1,10 @@
 # pyproject.toml
-# Configuration for ha_network_diagnostics - Home Assistant Network Diagnostics Integration
+# Configuration for ha_internet_health_monitor - Home Assistant Internet Health Monitor Integration
 
 [project]
-name = "ha-network-diagnostics"
+name = "ha-internet-health-monitor"
 version = "0.1.0"
-description = "Network diagnostics integration for Home Assistant - gateway latency, jitter, packet loss, DNS monitoring"
+description = "Internet health monitoring integration for Home Assistant - gateway latency, jitter, packet loss, DNS monitoring"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = {text = "MIT"}
@@ -34,8 +34,8 @@ dev = [
 ]
 
 [project.urls]
-# Repository = "https://github.com/kwschulz/ha_network_diagnostics"  # Uncomment when public
-# Documentation = "https://github.com/kwschulz/ha_network_diagnostics#readme"
+# Repository = "https://github.com/kwschulz/ha-internet-health-monitor"  # Uncomment when public
+# Documentation = "https://github.com/kwschulz/ha-internet-health-monitor#readme"
 
 # -------------------------------
 # Black (code formatter)
@@ -80,7 +80,7 @@ ignore = [
 max-complexity = 10
 
 [tool.ruff.lint.isort]
-known-first-party = ["custom_components.ha_network_diagnostics"]
+known-first-party = ["custom_components.ha_internet_health_monitor"]
 split-on-trailing-comma = true
 force-wrap-aliases = true
 combine-as-imports = true
@@ -99,7 +99,7 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-files = ["custom_components/ha_network_diagnostics/**/*.py"]
+files = ["custom_components/ha_internet_health_monitor/**/*.py"]
 
 # -------------------------------
 # Pytest (test runner)
@@ -108,5 +108,5 @@ files = ["custom_components/ha_network_diagnostics/**/*.py"]
 minversion = "8.0"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "-v --tb=short --cov=custom_components.ha_network_diagnostics --cov-report=term-missing"
+addopts = "-v --tb=short --cov=custom_components.ha_internet_health_monitor --cov-report=term-missing"
 testpaths = ["tests"]
