@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "互联网健康监控",
+        "description": "配置网络健康监控",
+        "data": {
+          "enable_gateway_monitoring": "启用网关监控",
+          "enable_dns_monitoring": "启用 DNS 监控",
+          "scan_interval": "扫描间隔（秒）",
+          "dns_server": "DNS 服务器",
+          "ping_count": "Ping 次数"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "互联网健康监控已配置"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "互联网健康监控选项",
+        "data": {
+          "enable_gateway_monitoring": "启用网关监控",
+          "enable_dns_monitoring": "启用 DNS 监控",
+          "scan_interval": "扫描间隔（秒）",
+          "dns_server": "DNS 服务器",
+          "ping_count": "Ping 次数"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "gateway_latency": {
+        "name": "网关延迟"
+      },
+      "gateway_jitter": {
+        "name": "网关抖动"
+      },
+      "packet_loss": {
+        "name": "丢包率"
+      },
+      "isp_latency": {
+        "name": "ISP 延迟"
+      },
+      "dns_latency": {
+        "name": "DNS 延迟"
+      }
+    },
+    "binary_sensor": {
+      "gateway_reachable": {
+        "name": "网关可达"
+      },
+      "internet_reachable": {
+        "name": "互联网可达"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "刷新"
+      },
+      "reset_network_cache": {
+        "name": "重置网络缓存"
+      }
+    }
+  }
+}
