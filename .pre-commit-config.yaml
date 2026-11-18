@@ -24,9 +24,21 @@ repos:
     rev: v1.11.2
     hooks:
       - id: mypy
+        # custom_components/ has no __init__.py; without explicit bases mypy
+        # names each file twice (internet_health_monitor.* and
+        # custom_components.internet_health_monitor.*) and stops.
+        args:
+          [
+            --ignore-missing-imports,
+            --explicit-package-bases,
+            --follow-imports=silent,
+          ]
         additional_dependencies:
           - pytest-socket
-        files: \.py$
+        # HA-free core only, as CMM does: this isolated env has no
+        # homeassistant, so HA types would read as Any. The HA layer is
+        # type-checked from a venv with HA installed (make type-check).
+        files: ^custom_components/internet_health_monitor/core/.*\.py$
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -37,7 +49,8 @@ repos:
       - id: check-yaml
         exclude: ^\.github/workflows/
       - id: check-json
-        exclude: (\.vscode/.*\.json)$
+        # JSONC files (comments allowed), as in CMM.
+        exclude: (devcontainer\.json|\.vscode/.*\.json)$
       - id: check-added-large-files
         args: ["--maxkb=500"]
       - id: check-merge-conflict

@@ -1,8 +1,8 @@
 # pyproject.toml
-# Configuration for ha_internet_health_monitor - Home Assistant Internet Health Monitor Integration
+# Configuration for internet_health_monitor - Home Assistant Internet Health Monitor Integration
 
 [project]
-name = "ha-internet-health-monitor"
+name = "internet-health-monitor"
 version = "0.1.0"
 description = "Internet health monitoring integration for Home Assistant - gateway latency, jitter, packet loss, DNS monitoring"
 readme = "README.md"
@@ -82,7 +82,7 @@ ignore = [
 max-complexity = 10
 
 [tool.ruff.lint.isort]
-known-first-party = ["custom_components.ha_internet_health_monitor"]
+known-first-party = ["custom_components.internet_health_monitor"]
 split-on-trailing-comma = true
 force-wrap-aliases = true
 combine-as-imports = true
@@ -101,7 +101,7 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-files = ["custom_components/ha_internet_health_monitor/**/*.py"]
+files = ["custom_components/internet_health_monitor/**/*.py"]
 
 # -------------------------------
 # Pytest (test runner)
@@ -110,5 +110,5 @@ files = ["custom_components/ha_internet_health_monitor/**/*.py"]
 minversion = "8.0"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "-v --tb=short --cov=custom_components.ha_internet_health_monitor --cov-report=term-missing"
+addopts = "-v --tb=short --cov=custom_components.internet_health_monitor --cov-report=term-missing"
 testpaths = ["tests"]

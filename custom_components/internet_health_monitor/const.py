@@ -1,9 +1,11 @@
-"""Constants for HA Internet Health Monitor integration."""
+"""Constants for Internet Health Monitor integration."""
 
 from __future__ import annotations
 
-DOMAIN = "ha_internet_health_monitor"
-VERSION = "0.1.0"
+DOMAIN = "internet_health_monitor"
+NAME = "Internet Health Monitor"
+MANUFACTURER = "Solent Labs"
+VERSION = "0.3.0"
 
 # Config keys
 CONF_ENABLE_GATEWAY_MONITORING = "enable_gateway_monitoring"

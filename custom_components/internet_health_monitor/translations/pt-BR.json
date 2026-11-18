@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Internet Health Monitor",
+        "description": "Configurar monitoramento de saúde da rede",
+        "data": {
+          "enable_gateway_monitoring": "Ativar monitoramento do gateway",
+          "enable_dns_monitoring": "Ativar monitoramento de DNS",
+          "scan_interval": "Intervalo de varredura (segundos)",
+          "dns_server": "Servidor DNS",
+          "ping_count": "Quantidade de pings"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Internet Health Monitor já está configurado"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do Internet Health Monitor",
+        "data": {
+          "enable_gateway_monitoring": "Ativar monitoramento do gateway",
+          "enable_dns_monitoring": "Ativar monitoramento de DNS",
+          "scan_interval": "Intervalo de varredura (segundos)",
+          "dns_server": "Servidor DNS",
+          "ping_count": "Quantidade de pings"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "gateway_latency": {
+        "name": "Latência do Gateway"
+      },
+      "gateway_jitter": {
+        "name": "Jitter do Gateway"
+      },
+      "packet_loss": {
+        "name": "Perda de Pacotes"
+      },
+      "isp_latency": {
+        "name": "Latência do ISP"
+      },
+      "dns_latency": {
+        "name": "Latência DNS"
+      }
+    },
+    "binary_sensor": {
+      "gateway_reachable": {
+        "name": "Gateway Acessível"
+      },
+      "internet_reachable": {
+        "name": "Internet Acessível"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Atualizar"
+      },
+      "reset_network_cache": {
+        "name": "Redefinir Cache de Rede"
+      }
+    }
+  }
+}

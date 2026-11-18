@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Internet Health Monitor",
+        "description": "Configurer la surveillance de la santé du réseau",
+        "data": {
+          "enable_gateway_monitoring": "Activer la surveillance de la passerelle",
+          "enable_dns_monitoring": "Activer la surveillance DNS",
+          "scan_interval": "Intervalle d'analyse (secondes)",
+          "dns_server": "Serveur DNS",
+          "ping_count": "Nombre de pings"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Internet Health Monitor est déjà configuré"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options Internet Health Monitor",
+        "data": {
+          "enable_gateway_monitoring": "Activer la surveillance de la passerelle",
+          "enable_dns_monitoring": "Activer la surveillance DNS",
+          "scan_interval": "Intervalle d'analyse (secondes)",
+          "dns_server": "Serveur DNS",
+          "ping_count": "Nombre de pings"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "gateway_latency": {
+        "name": "Latence Passerelle"
+      },
+      "gateway_jitter": {
+        "name": "Gigue Passerelle"
+      },
+      "packet_loss": {
+        "name": "Perte de Paquets"
+      },
+      "isp_latency": {
+        "name": "Latence FAI"
+      },
+      "dns_latency": {
+        "name": "Latence DNS"
+      }
+    },
+    "binary_sensor": {
+      "gateway_reachable": {
+        "name": "Passerelle Accessible"
+      },
+      "internet_reachable": {
+        "name": "Internet Accessible"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Actualiser"
+      },
+      "reset_network_cache": {
+        "name": "Réinitialiser le Cache Réseau"
+      }
+    }
+  }
+}

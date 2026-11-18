@@ -1,0 +1,17 @@
+Welcome to Internet Health Monitor!
+
+Choose your development environment:
+
+Option 1: Local Python (Fastest)
+  → Ctrl+Shift+P → Tasks → 'Setup Local Python Environment'
+  → Or run: ./scripts/setup.sh
+  • Takes ~2 minutes
+  • Fastest test execution
+
+Option 2: Dev Container (Zero Setup)
+  → Ctrl+Shift+P → 'Dev Containers: Reopen in Container'
+  • Takes ~5 minutes first time
+  • All dependencies pre-installed
+  • Guaranteed consistency
+
+See docs/GETTING_STARTED.md for detailed comparison

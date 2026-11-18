@@ -1,0 +1,412 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Welcome",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "if [ -f .venv/bin/activate ]; then cat scripts/dev/next_steps.txt; else cat scripts/dev/welcome_message.txt; fi"
+      ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "if (Test-Path .venv\\Scripts\\activate) { Get-Content scripts\\dev\\next_steps.txt } else { Get-Content scripts\\dev\\welcome_message.txt }"
+        ]
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": false
+      },
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "Setup Local Python Environment",
+      "type": "shell",
+      "command": "./scripts/setup.sh",
+      "windows": {
+        "command": ".\\scripts\\setup.ps1",
+        "options": {
+          "shell": {
+            "executable": "powershell.exe"
+          }
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "problemMatcher": [],
+      "detail": "Create .venv and install all dependencies"
+    },
+    {
+      "label": "Run All Tests",
+      "type": "shell",
+      "command": "pytest",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Quick Tests",
+      "type": "shell",
+      "command": "pytest -x --tb=short",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Stop on first failure with short traceback"
+    },
+    {
+      "label": "Run Tests with Coverage",
+      "type": "shell",
+      "command": "pytest --cov=custom_components --cov-report=term-missing --cov-report=html",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run tests with coverage report (HTML in htmlcov/)"
+    },
+    {
+      "label": "Run Single Test File",
+      "type": "shell",
+      "command": "pytest",
+      "args": [
+        "${file}",
+        "-v"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run tests in the currently open file"
+    },
+    {
+      "label": "Lint Code",
+      "type": "shell",
+      "command": "ruff check .",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint and Fix",
+      "type": "shell",
+      "command": "ruff check . --fix",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run linter with auto-fix"
+    },
+    {
+      "label": "Format Code",
+      "type": "shell",
+      "command": "black .",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Check Format",
+      "type": "shell",
+      "command": "black --check .",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Check formatting without making changes"
+    },
+    {
+      "label": "Validate (Pre-commit)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/dev/validate.py"
+      ],
+      "windows": {
+        "command": "python",
+        "args": [
+          "scripts\\dev\\validate.py"
+        ]
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run all validation checks (lint + format)"
+    },
+    {
+      "label": "🐳 Check Docker Status",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/scripts/dev/check-docker.py",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "problemMatcher": [],
+      "detail": "Verify Docker is installed and running before executing Docker commands"
+    },
+    {
+      "label": "🚀 HA: Start",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/scripts/dev/ha-sync-run.py",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Start HA with info logging (restart if already running)"
+    },
+    {
+      "label": "🚀 HA: Start (Debug)",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/scripts/dev/ha-sync-run.py --debug",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Start HA with debug logging for all integration namespaces"
+    },
+    {
+      "label": "⏹️ HA: Stop",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.test.yml down && echo '✅ Home Assistant stopped'",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📋 HA: View Logs",
+      "type": "shell",
+      "command": "docker logs -f ha-internet-health-test",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "🗑️ HA: Clean All Data (Reset)",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.test.yml down -v && docker run --rm -v \"$(pwd)/test-ha-config:/data\" alpine rm -rf /data/* /data/.[!.]* 2>/dev/null; echo '✅ All Home Assistant data cleaned'",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔎 HA: Check Integration Status",
+      "type": "shell",
+      "command": "docker exec ha-internet-health-test bash -c 'echo \"=== Integration Files ===\"; ls -la /config/custom_components/internet_health_monitor/ 2>&1 | head -10; echo \"\"; echo \"=== Recent Integration Logs ===\"; grep -i internet_health_monitor /config/home-assistant.log 2>&1 | tail -10 || echo \"No logs found (HA may not have started yet)\"'",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": [],
+      "detail": "Check if the integration is loaded and view any errors"
+    },
+    {
+      "label": "🛠️ HA: Fix Port Conflicts",
+      "type": "shell",
+      "command": "bash scripts/dev/ha-cleanup.sh",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": [],
+      "detail": "Stop any processes using port 8123 and clean up containers"
+    },
+    {
+      "label": "🩺 HA: Diagnose Port 8123",
+      "type": "shell",
+      "command": "echo '=== Checking what is using port 8123 ===' && echo '' && echo 'Method 1: lsof' && sudo lsof -i :8123 2>/dev/null || echo 'No results from lsof' && echo '' && echo 'Method 2: netstat' && sudo netstat -tulpn 2>/dev/null | grep 8123 || echo 'No results from netstat' && echo '' && echo 'Method 3: ss' && sudo ss -tulpn 2>/dev/null | grep 8123 || echo 'No results from ss' && echo '' && echo '=== Docker containers ===' && docker ps -a && echo '' && echo '=== Docker networks ===' && docker network ls",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": [],
+      "detail": "Show detailed info about what's using port 8123"
+    },
+    {
+      "label": "Docker: Build Image",
+      "type": "shell",
+      "command": "docker build -t internet-health-monitor .",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Build Docker image for the component"
+    },
+    {
+      "label": "Docker: Run Tests in Container",
+      "type": "shell",
+      "command": "docker run --rm -v ${workspaceFolder}:/app -w /app python:3.12-slim bash -c 'pip install -q -r requirements-dev.txt && pytest'",
+      "dependsOn": [
+        "🐳 Check Docker Status"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run tests in a fresh Docker container"
+    },
+    {
+      "label": "Install Pre-commit Hooks",
+      "type": "shell",
+      "command": "pre-commit install",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Install git pre-commit hooks"
+    },
+    {
+      "label": "Run Pre-commit on All Files",
+      "type": "shell",
+      "command": "pre-commit run --all-files",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run all pre-commit hooks on entire codebase"
+    },
+    {
+      "label": "Type Check (mypy)",
+      "type": "shell",
+      "command": "mypy custom_components/internet_health_monitor --ignore-missing-imports",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run static type checking"
+    },
+    {
+      "label": "Full CI Check",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "echo '=== Lint ===' && ruff check . && echo '=== Format ===' && black --check . && echo '=== Type Check ===' && mypy custom_components/internet_health_monitor --ignore-missing-imports && echo '=== Tests ===' && pytest && echo '=== All checks passed!'"
+      ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "Write-Host '=== Lint ===' -ForegroundColor Cyan; ruff check .; if ($LASTEXITCODE -ne 0) { exit 1 }; Write-Host '=== Format ===' -ForegroundColor Cyan; black --check .; if ($LASTEXITCODE -ne 0) { exit 1 }; Write-Host '=== Type Check ===' -ForegroundColor Cyan; mypy custom_components/internet_health_monitor --ignore-missing-imports; if ($LASTEXITCODE -ne 0) { exit 1 }; Write-Host '=== Tests ===' -ForegroundColor Cyan; pytest; if ($LASTEXITCODE -ne 0) { exit 1 }; Write-Host '=== All checks passed!' -ForegroundColor Green"
+        ]
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "detail": "Run full CI pipeline locally (lint, format, type check, tests)"
+    }
+  ]
+}

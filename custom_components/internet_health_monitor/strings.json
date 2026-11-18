@@ -1,0 +1,103 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Internet Health Monitor",
+        "description": "Configure network health monitoring",
+        "data": {
+          "enable_gateway_monitoring": "Enable gateway monitoring",
+          "enable_multi_hop": "Enable multi-hop latency",
+          "max_hops": "Maximum hops to trace",
+          "enable_dns_monitoring": "Enable DNS monitoring",
+          "scan_interval": "Scan interval (seconds)",
+          "dns_server": "DNS server",
+          "ping_count": "Ping count"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Internet Health Monitor is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Internet Health Monitor Options",
+        "data": {
+          "enable_gateway_monitoring": "Enable gateway monitoring",
+          "enable_multi_hop": "Enable multi-hop latency",
+          "max_hops": "Maximum hops to trace",
+          "enable_dns_monitoring": "Enable DNS monitoring",
+          "scan_interval": "Scan interval (seconds)",
+          "dns_server": "DNS server",
+          "ping_count": "Ping count"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "gateway_latency": {
+        "name": "Gateway Latency"
+      },
+      "gateway_jitter": {
+        "name": "Gateway Jitter"
+      },
+      "packet_loss": {
+        "name": "Packet Loss"
+      },
+      "isp_latency": {
+        "name": "ISP Latency"
+      },
+      "dns_latency": {
+        "name": "DNS Latency"
+      },
+      "hop_1_latency": {
+        "name": "Hop 1 Latency"
+      },
+      "hop_2_latency": {
+        "name": "Hop 2 Latency"
+      },
+      "hop_3_latency": {
+        "name": "Hop 3 Latency"
+      },
+      "hop_4_latency": {
+        "name": "Hop 4 Latency"
+      },
+      "hop_5_latency": {
+        "name": "Hop 5 Latency"
+      },
+      "hop_6_latency": {
+        "name": "Hop 6 Latency"
+      },
+      "hop_7_latency": {
+        "name": "Hop 7 Latency"
+      },
+      "hop_8_latency": {
+        "name": "Hop 8 Latency"
+      },
+      "hop_9_latency": {
+        "name": "Hop 9 Latency"
+      },
+      "hop_10_latency": {
+        "name": "Hop 10 Latency"
+      }
+    },
+    "binary_sensor": {
+      "gateway_reachable": {
+        "name": "Gateway Reachable"
+      },
+      "internet_reachable": {
+        "name": "Internet Reachable"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      },
+      "reset_network_cache": {
+        "name": "Reset Network Cache"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Internet Health Monitor: sonar ping. Green home node, three arcs for
+       the three hops IHM measures, fading with distance. Transparent and
+       trimmed per the HA brands guidelines; off-white arcs for dark mode (dark_icon.png). -->
+  <g transform="translate(128 128) scale(1.4) translate(-141.75 -126.25)">
+    <g fill="none" stroke="#f3f5f7" stroke-width="15" stroke-linecap="round">
+      <path d="M128 196 A56 56 0 0 0 72 140"/>
+      <path d="M176 196 A104 104 0 0 0 72 92" opacity="0.7"/>
+      <path d="M224 196 A152 152 0 0 0 72 44" opacity="0.4"/>
+    </g>
+    <circle cx="72" cy="196" r="20" fill="#27ae60"/>
+  </g>
+</svg>

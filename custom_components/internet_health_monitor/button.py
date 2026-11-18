@@ -1,4 +1,4 @@
-"""Button platform for HA Network Diagnostics."""
+"""Button platform for Internet Health Monitor."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .const import DOMAIN
+from .const import DOMAIN, MANUFACTURER, NAME
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,17 +24,20 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Network Diagnostics buttons."""
+    """Set up Internet Health Monitor buttons."""
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    async_add_entities([
-        RefreshDiagnosticsButton(coordinator, entry),
-        ResetCacheButton(coordinator, entry),
-    ])
+    async_add_entities(
+        [
+            RefreshDiagnosticsButton(coordinator, entry),
+            RefreshNetworkInfoButton(coordinator, entry),
+            ResetCacheButton(coordinator, entry),
+        ]
+    )
 
 
-class NetworkDiagnosticsButtonBase(CoordinatorEntity, ButtonEntity):
-    """Base class for network diagnostics buttons."""
+class InternetHealthButtonBase(CoordinatorEntity, ButtonEntity):
+    """Base class for Internet Health Monitor buttons."""
 
     _attr_has_entity_name = True
 
@@ -56,13 +59,13 @@ class NetworkDiagnosticsButtonBase(CoordinatorEntity, ButtonEntity):
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "Network Diagnostics",
-            "manufacturer": "HA Network Diagnostics",
-            "model": "Network Monitor",
+            "name": NAME,
+            "manufacturer": MANUFACTURER,
+            "model": NAME,
         }
 
 
-class RefreshDiagnosticsButton(NetworkDiagnosticsButtonBase):
+class RefreshDiagnosticsButton(InternetHealthButtonBase):
     """Button to trigger immediate network diagnostics refresh."""
 
     def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
@@ -81,8 +84,31 @@ class RefreshDiagnosticsButton(NetworkDiagnosticsButtonBase):
         await self.coordinator.async_request_refresh()
 
 
-class ResetCacheButton(NetworkDiagnosticsButtonBase):
-    """Button to reset cached gateway/ISP hop detection."""
+class RefreshNetworkInfoButton(InternetHealthButtonBase):
+    """Button to refresh network metadata (reverse DNS, geo, etc.)."""
+
+    def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the refresh network info button."""
+        super().__init__(
+            coordinator,
+            entry,
+            "refresh_network_info",
+            "Refresh Network Info",
+            "mdi:earth-arrow-right",
+        )
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    async def async_press(self) -> None:
+        """Handle button press - refresh metadata (reverse DNS, geolocation, etc.)."""
+        _LOGGER.info("Refreshing network metadata (reverse DNS, geolocation, MAC vendor)")
+        diagnostics = self.hass.data[DOMAIN][self._entry.entry_id]["diagnostics"]
+        # Reset only metadata, keep hop detection intact
+        diagnostics.reset_metadata()
+        await self.coordinator.async_request_refresh()
+
+
+class ResetCacheButton(InternetHealthButtonBase):
+    """Button to reset all cached network detection (gateway, hops, metadata)."""
 
     def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialize the reset button."""
@@ -96,8 +122,8 @@ class ResetCacheButton(NetworkDiagnosticsButtonBase):
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     async def async_press(self) -> None:
-        """Handle button press - reset cached network info."""
-        _LOGGER.debug("Resetting network diagnostics cache")
+        """Handle button press - reset all cached network info."""
+        _LOGGER.info("Resetting all network diagnostics cache (gateway, hops, metadata)")
         diagnostics = self.hass.data[DOMAIN][self._entry.entry_id]["diagnostics"]
         diagnostics.reset_all()
         await self.coordinator.async_request_refresh()

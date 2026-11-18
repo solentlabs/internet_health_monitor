@@ -1,0 +1,21 @@
+services:
+  homeassistant-test:
+    container_name: ha-internet-health-test
+    image: ghcr.io/home-assistant/home-assistant:stable
+    ports:
+      - "8123:8123" # Home Assistant web interface
+    volumes:
+      # Mount a temporary config directory
+      # Use HOST_WORKSPACE_FOLDER (set by dev container) or fall back to PWD (local dev)
+      - ${HOST_WORKSPACE_FOLDER:-${PWD}}/test-ha-config:/config
+      # Mount the integration directly into custom_components
+      - ${HOST_WORKSPACE_FOLDER:-${PWD}}/custom_components/internet_health_monitor:/config/custom_components/internet_health_monitor
+      # Mount the entire project for development and testing
+      - ${HOST_WORKSPACE_FOLDER:-${PWD}}:/workspace:cached
+      # Mount Docker socket for Docker-from-Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=America/New_York
+    restart: unless-stopped
+    privileged: true
+    working_dir: /workspace

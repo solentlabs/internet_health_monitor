@@ -1,0 +1,4 @@
+# Project-specific ignores (global patterns in ~/Projects/.claudeignore)
+
+# Test HA instance
+test-ha-config/

@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Internet Health Monitor",
+        "description": "Netzwerk-Gesundheitsüberwachung konfigurieren",
+        "data": {
+          "enable_gateway_monitoring": "Gateway-Überwachung aktivieren",
+          "enable_dns_monitoring": "DNS-Überwachung aktivieren",
+          "scan_interval": "Abfrageintervall (Sekunden)",
+          "dns_server": "DNS-Server",
+          "ping_count": "Anzahl der Pings"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Internet Health Monitor ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Internet Health Monitor Optionen",
+        "data": {
+          "enable_gateway_monitoring": "Gateway-Überwachung aktivieren",
+          "enable_dns_monitoring": "DNS-Überwachung aktivieren",
+          "scan_interval": "Abfrageintervall (Sekunden)",
+          "dns_server": "DNS-Server",
+          "ping_count": "Anzahl der Pings"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "gateway_latency": {
+        "name": "Gateway-Latenz"
+      },
+      "gateway_jitter": {
+        "name": "Gateway-Jitter"
+      },
+      "packet_loss": {
+        "name": "Paketverlust"
+      },
+      "isp_latency": {
+        "name": "ISP-Latenz"
+      },
+      "dns_latency": {
+        "name": "DNS-Latenz"
+      }
+    },
+    "binary_sensor": {
+      "gateway_reachable": {
+        "name": "Gateway erreichbar"
+      },
+      "internet_reachable": {
+        "name": "Internet erreichbar"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Aktualisieren"
+      },
+      "reset_network_cache": {
+        "name": "Netzwerk-Cache zurücksetzen"
+      }
+    }
+  }
+}

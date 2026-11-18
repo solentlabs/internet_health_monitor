@@ -32,7 +32,7 @@ setup:
 
 # Run full test suite with coverage
 test:
-	@.venv/bin/pytest --cov=custom_components.ha_network_diagnostics --cov-report=term-missing
+	@.venv/bin/pytest --cov=custom_components/internet_health_monitor --cov-report=term-missing
 
 # Quick test (no coverage)
 test-quick:
@@ -58,7 +58,7 @@ lint-fix:
 # Type checking
 type-check:
 	@echo "Running mypy type checker..."
-	@.venv/bin/mypy .
+	@.venv/bin/mypy --explicit-package-bases custom_components/internet_health_monitor
 
 # Format code
 format:

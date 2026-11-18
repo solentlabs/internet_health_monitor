@@ -1,0 +1,102 @@
+{
+  // ========================================
+  // 🐳 DEV CONTAINER MODE ACTIVE
+  // ========================================
+  // You're using the VSCode Dev Container (Docker-based)
+  // - Isolated environment, matches CI exactly
+  // - Zero local setup needed
+  // - Slightly slower than native
+  //
+  // Want Local mode instead?
+  // 1. F1 → "Dev Containers: Reopen Folder Locally"
+  // 2. Run: ./scripts/setup.sh
+  //
+  // See docs/GETTING_STARTED.md for comparison
+  // ========================================
+
+  "name": "Internet Health Monitor Development",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/internet_health_monitor,type=bind",
+  "workspaceFolder": "/workspaces/internet_health_monitor",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "charliermarsh.ruff",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python3.12",
+
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": false,
+        "python.linting.lintOnSave": true,
+
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.black-formatter",
+
+        "[python]": {
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          },
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestArgs": [
+          "tests",
+          "-v",
+          "--tb=short"
+        ],
+        "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+        "black-formatter.interpreter": ["/usr/local/bin/python3.12"],
+        "black-formatter.path": ["black"],
+
+        "task.allowAutomaticTasks": "on"
+      }
+    }
+  },
+
+  "forwardPorts": [8123],
+  "portsAttributes": {
+    "8123": {
+      "label": "Home Assistant",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": false
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  },
+
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+
+  "remoteEnv": {
+    "HOST_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+    "DOCKER_API_VERSION": "1.41"
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+
+  "remoteUser": "root"
+}
