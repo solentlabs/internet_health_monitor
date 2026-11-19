@@ -194,7 +194,7 @@ RFC 5737 (https://www.rfc-editor.org/rfc/rfc5737): 192.0.2.0/24,
 198.51.100.0/24 and 203.0.113.0/24 are reserved for documentation [V].
 RFC 2606 (https://www.rfc-editor.org/rfc/rfc2606): `example.com`,
 `example.net` and `example.org` are reserved for examples [V]. Used for
-test fixtures (ADR-006).
+test fixtures (`CLAUDE.md § Code`).
 
 ## Open Verification Items
 

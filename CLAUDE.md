@@ -73,6 +73,10 @@ Hard constraints. When in doubt, the principle wins over convenience.
   `@pytest.mark.parametrize`.
 - **No real network in tests.** Ping, traceroute, DNS and speed test
   backends are mocked or served in-process.
+- **No PII in test data.** Use private ranges, well-known public
+  resolvers, documentation ranges and example hostnames such as
+  `example.com` (`docs/REFERENCES.md § R12`). Scrub pasted logs before
+  they become fixtures.
 - **No blocking I/O in the event loop.**
 - **Type hints required**; mypy and pyright clean. `Literal` over `str`
   enums.
