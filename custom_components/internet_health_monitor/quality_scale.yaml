@@ -9,23 +9,23 @@ rules:
     status: exempt
     comment: The integration registers no actions of its own.
   appropriate-polling:
-    status: todo
-    comment: Default 60 s (const.py DEFAULT_SCAN_INTERVAL), but the interval is a config-flow and options field (CONF_SCAN_INTERVAL in config_flow.py); the rule says it is not a config-flow field.
+    status: done
+    comment: Fixed 60 s (coordinator.py SCAN_INTERVAL), not a form field; README.md Polling shows the automation for another interval.
   brands:
     status: done
     comment: brand/icon.png, icon.svg, logo.png and dark variants in the integration directory.
   common-modules:
-    status: todo
-    comment: No entity.py. InternetHealthSensor, HopSensorBase (sensor.py), InternetHealthBinarySensor (binary_sensor.py) and InternetHealthButtonBase (button.py) each build the same device info; coordinator is a plain DataUpdateCoordinator built in __init__.py.
+    status: done
+    comment: entity.py InternetHealthEntity holds unique id and device; coordinator.py holds InternetHealthCoordinator and the typed entry.
   config-flow:
-    status: todo
-    comment: data_description covers only hop_ownership; fields use bare bool/int/vol.In, no selectors (config_flow.py).
+    status: done
+    comment: "config_flow.py: selectors for every field, data_description for every field in strings.json and all translations; one build_schema for setup and options."
   config-flow-test-coverage:
-    status: todo
-    comment: config_flow.py at 100% lines, but tests patch out async_set_unique_id and _abort_if_unique_id_configured, so the entry's unique_id and the already_configured abort are never asserted (tests/components/test_config_flow.py).
+    status: done
+    comment: "config_flow.py 100%; tests/components/test_config_flow.py runs the flows through HA's flow manager: created entry's unique_id, already_configured abort, options save, defaults, ping range."
   dependency-transparency:
     status: todo
-    comment: Core is MIT but not on PyPI; no publish workflow (.github/workflows/release.yml only makes a GitHub release, from a stale custom_components/ha_network_diagnostics path).
+    comment: "Core is MIT with .github/workflows/publish.yml (trusted publishing, version check against manifest.json), but not yet on PyPI: first publish is ROADMAP Path to Release stage 3."
   docs-actions:
     status: exempt
     comment: The integration adds no actions of its own.
@@ -39,8 +39,8 @@ rules:
     status: done
     comment: README.md Manual Installation; prerequisites in Requirements (Linux host, traceroute).
   docs-removal-instructions:
-    status: todo
-    comment: README.md has no removal section.
+    status: done
+    comment: README.md Installation > Removal.
   docs-triggers:
     status: exempt
     comment: The integration provides no triggers.
@@ -54,22 +54,22 @@ rules:
     status: done
     comment: _attr_has_entity_name = True on every entity class (sensor.py, binary_sensor.py, button.py).
   runtime-data:
-    status: todo
-    comment: Coordinator, NetworkDiagnostics and flags stored in hass.data[DOMAIN][entry_id] (__init__.py); no entry.runtime_data, no typed config entry.
+    status: done
+    comment: entry.runtime_data is InternetHealthRuntimeData; typed InternetHealthConfigEntry (coordinator.py).
   test-before-configure:
     status: exempt
     comment: Runtime-discovery exception; the user enters no connection details, gateway, hops and system DNS are detected at runtime (core NetworkDiagnostics.run_diagnostics).
   test-before-setup:
-    status: todo
-    comment: async_config_entry_first_refresh never fails in practice; core turns missing ping/traceroute/ip into empty results (platforms/linux.py), and UnsupportedPlatformError from NetworkDiagnostics() escapes uncaught instead of ConfigEntryError (__init__.py).
+    status: done
+    comment: "__init__.py: unsupported OS or missing ip/ping raise ConfigEntryError (translated); first refresh failure raises ConfigEntryNotReady via async_config_entry_first_refresh (tests/components/test_init.py)."
   unique-config-entry:
     status: done
     comment: async_set_unique_id(DOMAIN) and _abort_if_unique_id_configured in ConfigFlow.async_step_user (config_flow.py).
 
   # Silver
   action-exceptions:
-    status: todo
-    comment: Button presses never raise; RefreshDiagnosticsButton and ResetCacheButton call coordinator.async_request_refresh, which swallows a failed refresh (button.py).
+    status: done
+    comment: Buttons raise HomeAssistantError (translation refresh_failed) when the poll they trigger fails (button.py _PollButton._poll).
   config-entry-unloading:
     status: done
     comment: async_unload_entry unloads platforms and pops hass.data; update listener uses entry.async_on_unload (__init__.py).
@@ -80,8 +80,8 @@ rules:
     status: done
     comment: README.md Configuration covers every setup field with default and meaning.
   entity-unavailable:
-    status: todo
-    comment: A missing or failing ping binary returns (False, None) (core platforms/linux.py LinuxPlatform.ping), so Gateway Reachable reports off and hop sensors stay available instead of going unavailable.
+    status: done
+    comment: A failed poll makes every entity unavailable (CoordinatorEntity); missing ping/ip stops setup instead of reporting off (tests/components/test_binary_sensor.py).
   integration-owner:
     status: done
     comment: manifest.json codeowners.
@@ -89,19 +89,19 @@ rules:
     status: done
     comment: async_update_data raises UpdateFailed; DataUpdateCoordinator logs the first failure and the recovery once (__init__.py).
   parallel-updates:
-    status: todo
-    comment: No PARALLEL_UPDATES in sensor.py, binary_sensor.py or button.py.
+    status: done
+    comment: PARALLEL_UPDATES = 0 in sensor.py and binary_sensor.py (coordinator-driven), 1 in button.py.
   reauthentication-flow:
     status: exempt
     comment: The integration needs no authentication.
   test-coverage:
-    status: todo
-    comment: Integration total above 95%, but the rule is above 95% per module; __init__.py is 90% (UpdateFailed path, lines 86-89 uncovered).
+    status: done
+    comment: Every integration module at 100% (make test); gates in Makefile and CI.
 
   # Gold
   devices:
-    status: todo
-    comment: One device per entry with name, manufacturer and model (model repeats NAME); no sw_version or entry_type=DeviceEntryType.SERVICE for a monitoring service (sensor.py, binary_sensor.py, button.py).
+    status: done
+    comment: "One service device per entry: name, manufacturer, sw_version, entry_type SERVICE (entity.py)."
   diagnostics:
     status: done
     comment: diagnostics.py returns options, coordinator state, hop and DNS data; no credentials exist; hop IPs and hostnames are ISP routers, not redacted; 100% covered.
@@ -113,22 +113,22 @@ rules:
     comment: Nothing to discover (see discovery).
   docs-data-update:
     status: done
-    comment: README.md Configuration states the 60 s default poll; Hop Ownership states ASN lookup runs once when hops are detected.
+    comment: "README.md Polling: 60 s, and how to change it."
   docs-examples:
-    status: todo
-    comment: docs/dashboard-examples.md Automation Examples use entity ids IHM does not create (sensor.internet_health_monitor_packet_loss, _gateway_latency, _hop_2_latency); README.md does not link it.
+    status: done
+    comment: README.md Dashboard Examples and docs/dashboard-examples.md; tests/components/test_docs.py fails if they name an entity id IHM does not create.
   docs-known-limitations:
-    status: todo
-    comment: No limitations section; only scattered notes (README.md Requirements, Hop Ownership table).
+    status: done
+    comment: "README.md Known Limitations: three hops, own path only, Docker Desktop, silent routers, jitter history, fixed polling, hop ownership limits."
   docs-supported-devices:
     status: exempt
     comment: Does not integrate physical devices.
   docs-supported-functions:
-    status: todo
-    comment: README.md Sensors lists Gateway Latency, Gateway Jitter and Packet Loss sensors that sensor.py does not create, omits per-hop jitter and packet loss, and names the Refresh button wrongly.
+    status: done
+    comment: README.md Entities lists every sensor, binary sensor, button and attribute.
   docs-troubleshooting:
-    status: todo
-    comment: README.md Troubleshooting exists, but "Gateway not detected" tells users to configure a gateway IP, which no setting allows.
+    status: done
+    comment: "README.md Troubleshooting: missing tools, unknown hops (traceroute, Docker Desktop, silent routers), gateway not detected."
   docs-use-cases:
     status: done
     comment: README.md Features and What Makes This Different; docs/USE_CASES.md.
@@ -137,28 +137,28 @@ rules:
     comment: One static device per config entry, tied to the entry's lifecycle.
   entity-category:
     status: done
-    comment: Refresh Diagnostics is CONFIG, Reset Network Cache is DIAGNOSTIC (button.py); sensors and binary sensors are primary.
+    comment: Both buttons are DIAGNOSTIC (button.py); sensors and binary sensors are primary.
   entity-device-class:
     status: done
     comment: Latency and jitter DURATION (sensor.py), reachability CONNECTIVITY (binary_sensor.py); packet loss % has no fitting class.
   entity-disabled-by-default:
-    status: todo
-    comment: No entity is disabled by default; Reset Network Cache, a troubleshooting button, is a rarely used candidate.
+    status: done
+    comment: Reset network cache is disabled by default (button.py RESET_CACHE).
   entity-translations:
-    status: todo
-    comment: Hop sensors and buttons set _attr_name, which overrides translation_key; strings.json lacks hop_N_jitter/packet_loss keys and buttons have no translation_key. DNS and binary sensors translate.
+    status: done
+    comment: Every entity has a translation_key and no hard-coded name; names in strings.json and all six translations.
   exception-translations:
-    status: todo
-    comment: No exceptions block in strings.json; UpdateFailed carries a hardcoded English message (__init__.py async_update_data).
+    status: done
+    comment: update_failed, refresh_failed, unsupported_platform and missing_tools in strings.json exceptions and all translations.
   icon-translations:
-    status: todo
-    comment: Icons set in code (icon= on descriptions, _attr_icon in sensor.py, button.py); no icons.json.
+    status: done
+    comment: icons.json for every entity, with off-state icons for the binary sensors; no icons in code.
   reconfiguration-flow:
-    status: todo
-    comment: No async_step_reconfigure; every setup field is editable in OptionsFlowHandler (config_flow.py).
+    status: done
+    comment: "config_flow.py async_step_reconfigure: same build_schema, saves options and reloads via async_update_reload_and_abort (tests/components/test_config_flow.py)."
   repair-issues:
-    status: todo
-    comment: No repair issues; a missing ping or traceroute binary (user-fixable per README.md Troubleshooting) shows only as unknown sensors and a debug log.
+    status: done
+    comment: "Missing traceroute raises the traceroute_missing issue (translated, learn-more link) and clears it once installed or the entry is removed (__init__.py; tests/components/test_init.py). Missing ip/ping stop setup with ConfigEntryError instead."
   stale-devices:
     status: exempt
     comment: One static device per config entry, tied to the entry's lifecycle.

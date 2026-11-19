@@ -93,6 +93,14 @@ class WindowsPlatform:
                 _LOGGER.debug("Hop %d timed out (status %d)", ttl, status)
         return hops
 
+    def missing_tools(self) -> list[str]:
+        """Nothing to install: the IP Helper API ships with Windows."""
+        return []
+
+    def missing_optional_tools(self) -> list[str]:
+        """Nothing optional either: tracing uses the IP Helper API."""
+        return []
+
     async def host_environment(self) -> HostEnvironment:
         """Not detected on Windows: every field reports unknown."""
         return HostEnvironment()

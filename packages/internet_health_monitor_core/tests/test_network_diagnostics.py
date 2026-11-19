@@ -477,6 +477,14 @@ class FakePlatform:
         """Return a fixed environment."""
         return HostEnvironment(connection_type="ethernet", interface_name="eth0")
 
+    def missing_tools(self) -> list[str]:
+        """Nothing missing."""
+        return []
+
+    def missing_optional_tools(self) -> list[str]:
+        """Nothing missing."""
+        return []
+
 
 # Scripted platform -> what one poll reports
 # fmt: off
@@ -615,3 +623,13 @@ async def test_owner_lookup_error_leaves_hop_unowned() -> None:
     with patch("solentlabs.internet_health_monitor_core.network_diagnostics.lookup_owner", side_effect=OSError("down")):
         result = await diag.run_diagnostics()
     assert all(h.asn is None for h in result.hops)
+
+
+async def test_detection_state_reports_cache() -> None:
+    """detection_state shows what a poll detected, for the diagnostics download."""
+    diag = _diag()
+    await diag.run_diagnostics()
+    state = diag.detection_state()
+    assert state["platform"] == "fake"
+    assert state["hop_detection_failed"] is False
+    assert state["gateway_latency_history_size"] == 1

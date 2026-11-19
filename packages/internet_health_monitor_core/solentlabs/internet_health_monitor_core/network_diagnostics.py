@@ -276,6 +276,11 @@ class NetworkDiagnostics:
         # Trace target - resolved lazily based on DNS server
         self._trace_target: str | None = None
 
+    @property
+    def platform(self) -> Platform:
+        """The OS probes in use."""
+        return self._platform
+
     async def _resolve_dns_server(self) -> str:
         """Resolve the DNS server to use.
 
@@ -651,6 +656,17 @@ class NetworkDiagnostics:
         """
         self._hop_ips = {}
         self._hop_detection_failed = False
+
+    def detection_state(self) -> dict[str, Any]:
+        """What has been detected and cached, for troubleshooting output."""
+        return {
+            "platform": self._platform.name,
+            "gateway_detection_failed": self._gateway_detection_failed,
+            "hop_detection_failed": self._hop_detection_failed,
+            "hostnames_collected": self._hostnames_collected,
+            "trace_target": self._trace_target,
+            "gateway_latency_history_size": len(self._gateway_latency_history),
+        }
 
     def reset_hostnames(self) -> None:
         """Clear cached hop hostnames, owners and host environment so all are re-detected."""

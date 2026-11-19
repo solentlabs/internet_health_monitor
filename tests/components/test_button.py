@@ -1,195 +1,65 @@
-"""Tests for Internet Health Monitor button platform."""
+"""Tests for the Refresh and Reset network cache buttons."""
 
 from __future__ import annotations
 
-from datetime import timedelta
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-from custom_components.internet_health_monitor.button import (
-    RefreshDiagnosticsButton,
-    ResetCacheButton,
-    async_setup_entry,
+from homeassistant.components.button import (
+    DOMAIN as BUTTON_DOMAIN,
+    SERVICE_PRESS,
 )
-from custom_components.internet_health_monitor.const import DOMAIN, MANUFACTURER, NAME
+from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
+
+from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics
+
+from .conftest import SetupEntry, entity_id
 
 
-@pytest.fixture
-def mock_config_entry():
-    """Create a mock config entry."""
-    entry = Mock()
-    entry.entry_id = "test_entry_id"
-    return entry
+async def _press(hass: HomeAssistant, button: str) -> None:
+    """Press a button through HA's service, as the UI does."""
+    await hass.services.async_call(BUTTON_DOMAIN, SERVICE_PRESS, {ATTR_ENTITY_ID: button}, blocking=True)
 
 
-@pytest.fixture
-def mock_coordinator():
-    """Create a mock coordinator."""
-    coordinator = Mock(spec=DataUpdateCoordinator)
-    coordinator.data = Mock()
-    coordinator.last_update_success = True
-    coordinator.update_interval = timedelta(seconds=60)
-    coordinator.async_request_refresh = AsyncMock()
-    return coordinator
+async def test_refresh_polls_now(hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock) -> None:
+    """Refresh runs a poll immediately."""
+    entry = await setup_entry()
+    before = poll.await_count
+    await _press(hass, entity_id(hass, "button", entry, "refresh_diagnostics") or "")
+    assert poll.await_count == before + 1
 
 
-class TestAsyncSetupEntry:
-    """Test async_setup_entry function."""
-
-    @pytest.mark.asyncio
-    async def test_setup_creates_buttons(self, mock_coordinator, mock_config_entry):
-        """Test button platform setup creates expected buttons."""
-        hass = Mock(spec=HomeAssistant)
-        hass.data = {DOMAIN: {mock_config_entry.entry_id: {"coordinator": mock_coordinator}}}
-
-        async_add_entities = Mock()
-
-        await async_setup_entry(hass, mock_config_entry, async_add_entities)
-
-        assert async_add_entities.call_count == 1
-        added_entities = async_add_entities.call_args[0][0]
-        assert len(added_entities) == 2
-        assert isinstance(added_entities[0], RefreshDiagnosticsButton)
-        assert isinstance(added_entities[1], ResetCacheButton)
+async def test_failed_refresh_raises(hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock) -> None:
+    """A press whose poll fails tells the user instead of silently doing nothing."""
+    entry = await setup_entry()
+    poll.side_effect = OSError("boom")
+    with pytest.raises(HomeAssistantError):
+        await _press(hass, entity_id(hass, "button", entry, "refresh_diagnostics") or "")
 
 
-class TestInternetHealthButtonBase:
-    """Test the base button class."""
-
-    def test_base_class_attributes(self, mock_coordinator, mock_config_entry):
-        """Test base class sets correct attributes."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-
-        assert button._attr_has_entity_name is True
-        assert button._attr_entity_category == EntityCategory.CONFIG
-
-    def test_device_info(self, mock_coordinator, mock_config_entry):
-        """Test device info is set correctly."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-
-        assert button._attr_device_info["identifiers"] == {(DOMAIN, "test_entry_id")}
-        assert button._attr_device_info["name"] == NAME
-        assert button._attr_device_info["manufacturer"] == MANUFACTURER
-        assert button._attr_device_info["model"] == NAME
+async def test_reset_cache_is_disabled_by_default(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Reset network cache is a troubleshooting tool, hidden until enabled."""
+    entry = await setup_entry()
+    button = entity_id(hass, "button", entry, "reset_cache")
+    assert button is not None
+    registry_entry = er.async_get(hass).async_get(button)
+    assert registry_entry is not None
+    assert registry_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
 
 
-class TestRefreshDiagnosticsButton:
-    """Test the refresh diagnostics button."""
+async def test_reset_cache_redetects(hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock) -> None:
+    """Once enabled, Reset network cache clears detection and polls."""
+    entry = await setup_entry()
+    button = entity_id(hass, "button", entry, "reset_cache") or ""
+    er.async_get(hass).async_update_entity(button, disabled_by=None)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
 
-    def test_initialization(self, mock_coordinator, mock_config_entry):
-        """Test button initialization."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-
-        assert button._attr_name == "Refresh Diagnostics"
-        assert button._attr_unique_id == "test_entry_id_refresh_diagnostics"
-        assert button._attr_icon == "mdi:refresh"
-        assert button._attr_entity_category == EntityCategory.CONFIG
-
-    @pytest.mark.asyncio
-    async def test_press_triggers_refresh(self, mock_coordinator, mock_config_entry):
-        """Test button press triggers coordinator refresh."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-
-        await button.async_press()
-
-        # Verify coordinator refresh was called
-        mock_coordinator.async_request_refresh.assert_called_once()
-
-
-class TestResetCacheButton:
-    """Test the reset cache button."""
-
-    def test_initialization(self, mock_coordinator, mock_config_entry):
-        """Test button initialization."""
-        button = ResetCacheButton(mock_coordinator, mock_config_entry)
-
-        assert button._attr_name == "Reset Network Cache"
-        assert button._attr_unique_id == "test_entry_id_reset_cache"
-        assert button._attr_icon == "mdi:cached"
-        assert button._attr_entity_category == EntityCategory.DIAGNOSTIC
-
-    @pytest.mark.asyncio
-    async def test_press_resets_cache_and_refreshes(self, mock_coordinator, mock_config_entry):
-        """Test button press resets cache and triggers refresh."""
-        # Setup mock diagnostics instance
-        mock_diagnostics = Mock()
-        mock_diagnostics.reset_all = Mock()
-
-        hass = Mock(spec=HomeAssistant)
-        hass.data = {
-            DOMAIN: {
-                mock_config_entry.entry_id: {
-                    "coordinator": mock_coordinator,
-                    "diagnostics": mock_diagnostics,
-                }
-            }
-        }
-
-        button = ResetCacheButton(mock_coordinator, mock_config_entry)
-        button.hass = hass
-        button._entry = mock_config_entry
-
-        await button.async_press()
-
-        # Verify diagnostics reset was called
-        mock_diagnostics.reset_all.assert_called_once()
-
-        # Verify coordinator refresh was called
-        mock_coordinator.async_request_refresh.assert_called_once()
-
-
-class TestButtonUniqueIds:
-    """Test that buttons have correct unique IDs."""
-
-    def test_refresh_button_unique_id(self, mock_coordinator, mock_config_entry):
-        """Test refresh button has correct unique ID."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-        assert button._attr_unique_id == "test_entry_id_refresh_diagnostics"
-
-    def test_reset_button_unique_id(self, mock_coordinator, mock_config_entry):
-        """Test reset button has correct unique ID."""
-        button = ResetCacheButton(mock_coordinator, mock_config_entry)
-        assert button._attr_unique_id == "test_entry_id_reset_cache"
-
-    def test_unique_ids_are_unique(self, mock_coordinator, mock_config_entry):
-        """Test all button unique IDs are different."""
-        refresh_button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-        reset_button = ResetCacheButton(mock_coordinator, mock_config_entry)
-
-        unique_ids = {
-            refresh_button._attr_unique_id,
-            reset_button._attr_unique_id,
-        }
-        assert len(unique_ids) == 2
-
-
-class TestButtonIcons:
-    """Test button icons."""
-
-    def test_refresh_button_icon(self, mock_coordinator, mock_config_entry):
-        """Test refresh button icon."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-        assert button._attr_icon == "mdi:refresh"
-
-    def test_reset_button_icon(self, mock_coordinator, mock_config_entry):
-        """Test reset button icon."""
-        button = ResetCacheButton(mock_coordinator, mock_config_entry)
-        assert button._attr_icon == "mdi:cached"
-
-
-class TestButtonEntityCategories:
-    """Test button entity categories."""
-
-    def test_refresh_button_category(self, mock_coordinator, mock_config_entry):
-        """Test refresh button entity category."""
-        button = RefreshDiagnosticsButton(mock_coordinator, mock_config_entry)
-        assert button._attr_entity_category == EntityCategory.CONFIG
-
-    def test_reset_button_category(self, mock_coordinator, mock_config_entry):
-        """Test reset button entity category."""
-        button = ResetCacheButton(mock_coordinator, mock_config_entry)
-        assert button._attr_entity_category == EntityCategory.DIAGNOSTIC
+    with patch.object(NetworkDiagnostics, "reset_all") as reset:
+        before = poll.await_count
+        await _press(hass, button)
+    reset.assert_called_once()
+    assert poll.await_count == before + 1

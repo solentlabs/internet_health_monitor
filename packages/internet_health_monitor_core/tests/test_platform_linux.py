@@ -248,3 +248,24 @@ async def test_run_kills_on_timeout() -> None:
 def test_read_text_missing(tmp_path) -> None:
     """An unreadable file gives None."""
     assert linux._read_text(str(tmp_path / "missing")) is None
+
+
+# commands on PATH -> missing required tools
+# fmt: off
+MISSING_TOOL_CASES = [
+    ("all present",    {"ip", "ping", "traceroute"}, []),
+    ("no traceroute",  {"ip", "ping"},               []),
+    ("no ping",        {"ip"},                       ["ping"]),
+    ("nothing",        set(),                        ["ip", "ping"]),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    ("description", "present", "expected"), MISSING_TOOL_CASES, ids=[c[0] for c in MISSING_TOOL_CASES]
+)
+def test_missing_tools(description: str, present: set[str], expected: list[str]) -> None:
+    """ip and ping are required; traceroute is optional."""
+    with patch.object(linux.shutil, "which", side_effect=lambda tool: f"/bin/{tool}" if tool in present else None):
+        assert LinuxPlatform().missing_tools() == expected
+        assert LinuxPlatform().missing_optional_tools() == ([] if "traceroute" in present else ["traceroute"])

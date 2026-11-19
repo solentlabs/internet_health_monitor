@@ -5,20 +5,41 @@
         "title": "Internet Health Monitor",
         "description": "Configurer la surveillance de la santé du réseau",
         "data": {
-          "enable_gateway_monitoring": "Activer la surveillance de la passerelle",
-          "enable_dns_monitoring": "Activer la surveillance DNS",
-          "scan_interval": "Intervalle d'analyse (secondes)",
+          "enable_gateway_monitoring": "Surveiller la passerelle et les sauts",
+          "enable_dns_monitoring": "Surveiller le DNS",
           "dns_server": "Serveur DNS",
-          "ping_count": "Nombre de pings",
+          "ping_count": "Pings par cible",
           "hop_ownership": "Identifier l'opérateur de chaque saut"
         },
         "data_description": {
+          "enable_gateway_monitoring": "À chaque relevé, pinguer la passerelle et les deux sauts suivants vers internet : latence, gigue et perte de paquets.",
+          "enable_dns_monitoring": "À chaque relevé, mesurer une résolution non mise en cache auprès du serveur DNS ci-dessous.",
+          "dns_server": "Serveur dont le temps de réponse est mesuré. Détection automatique utilise celui configuré sur cet hôte.",
+          "ping_count": "Pings envoyés à chaque cible à chaque relevé (1 à 10). Plus de pings donnent des valeurs plus stables et une perte de paquets plus fine.",
+          "hop_ownership": "Désactivé par défaut. Affiche l'opérateur réseau (ASN) de chaque saut public. Envoie ces adresses de saut (les routeurs de votre fournisseur, pas votre propre adresse) au service gratuit IP-vers-ASN de Team Cymru, via votre serveur DNS. Les adresses privées et partagées du fournisseur n'ont pas de propriétaire et ne sont jamais envoyées."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer Internet Health Monitor",
+        "data": {
+          "enable_gateway_monitoring": "Surveiller la passerelle et les sauts",
+          "enable_dns_monitoring": "Surveiller le DNS",
+          "dns_server": "Serveur DNS",
+          "ping_count": "Pings par cible",
+          "hop_ownership": "Identifier l'opérateur de chaque saut"
+        },
+        "data_description": {
+          "enable_gateway_monitoring": "À chaque relevé, pinguer la passerelle et les deux sauts suivants vers internet : latence, gigue et perte de paquets.",
+          "enable_dns_monitoring": "À chaque relevé, mesurer une résolution non mise en cache auprès du serveur DNS ci-dessous.",
+          "dns_server": "Serveur dont le temps de réponse est mesuré. Détection automatique utilise celui configuré sur cet hôte.",
+          "ping_count": "Pings envoyés à chaque cible à chaque relevé (1 à 10). Plus de pings donnent des valeurs plus stables et une perte de paquets plus fine.",
           "hop_ownership": "Désactivé par défaut. Affiche l'opérateur réseau (ASN) de chaque saut public. Envoie ces adresses de saut (les routeurs de votre fournisseur, pas votre propre adresse) au service gratuit IP-vers-ASN de Team Cymru, via votre serveur DNS. Les adresses privées et partagées du fournisseur n'ont pas de propriétaire et ne sont jamais envoyées."
         }
       }
     },
     "abort": {
-      "already_configured": "Internet Health Monitor est déjà configuré"
+      "already_configured": "Internet Health Monitor est déjà configuré",
+      "reconfigure_successful": "Les paramètres ont été mis à jour."
     }
   },
   "options": {
@@ -26,32 +47,61 @@
       "init": {
         "title": "Options Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Activer la surveillance de la passerelle",
-          "enable_dns_monitoring": "Activer la surveillance DNS",
-          "scan_interval": "Intervalle d'analyse (secondes)",
+          "enable_gateway_monitoring": "Surveiller la passerelle et les sauts",
+          "enable_dns_monitoring": "Surveiller le DNS",
           "dns_server": "Serveur DNS",
-          "ping_count": "Nombre de pings",
+          "ping_count": "Pings par cible",
           "hop_ownership": "Identifier l'opérateur de chaque saut"
         },
         "data_description": {
+          "enable_gateway_monitoring": "À chaque relevé, pinguer la passerelle et les deux sauts suivants vers internet : latence, gigue et perte de paquets.",
+          "enable_dns_monitoring": "À chaque relevé, mesurer une résolution non mise en cache auprès du serveur DNS ci-dessous.",
+          "dns_server": "Serveur dont le temps de réponse est mesuré. Détection automatique utilise celui configuré sur cet hôte.",
+          "ping_count": "Pings envoyés à chaque cible à chaque relevé (1 à 10). Plus de pings donnent des valeurs plus stables et une perte de paquets plus fine.",
           "hop_ownership": "Désactivé par défaut. Affiche l'opérateur réseau (ASN) de chaque saut public. Envoie ces adresses de saut (les routeurs de votre fournisseur, pas votre propre adresse) au service gratuit IP-vers-ASN de Team Cymru, via votre serveur DNS. Les adresses privées et partagées du fournisseur n'ont pas de propriétaire et ne sont jamais envoyées."
         }
       }
     }
   },
+  "selector": {
+    "dns_server": {
+      "options": {
+        "auto": "Détection automatique",
+        "1.1.1.1": "Cloudflare (1.1.1.1)",
+        "8.8.8.8": "Google (8.8.8.8)",
+        "9.9.9.9": "Quad9 (9.9.9.9)",
+        "208.67.222.222": "OpenDNS (208.67.222.222)"
+      }
+    }
+  },
   "entity": {
     "sensor": {
-      "gateway_latency": {
-        "name": "Latence Passerelle"
+      "hop_1_latency": {
+        "name": "Latence du saut 1 (passerelle)"
       },
-      "gateway_jitter": {
-        "name": "Gigue Passerelle"
+      "hop_1_jitter": {
+        "name": "Gigue du saut 1 (passerelle)"
       },
-      "packet_loss": {
-        "name": "Perte de Paquets"
+      "hop_1_packet_loss": {
+        "name": "Perte de paquets du saut 1 (passerelle)"
       },
-      "isp_latency": {
-        "name": "Latence FAI"
+      "hop_2_latency": {
+        "name": "Latence du saut 2 (fournisseur)"
+      },
+      "hop_2_jitter": {
+        "name": "Gigue du saut 2 (fournisseur)"
+      },
+      "hop_2_packet_loss": {
+        "name": "Perte de paquets du saut 2 (fournisseur)"
+      },
+      "hop_3_latency": {
+        "name": "Latence du saut 3 (dorsale)"
+      },
+      "hop_3_jitter": {
+        "name": "Gigue du saut 3 (dorsale)"
+      },
+      "hop_3_packet_loss": {
+        "name": "Perte de paquets du saut 3 (dorsale)"
       },
       "dns_latency": {
         "name": "Latence DNS"
@@ -59,19 +109,39 @@
     },
     "binary_sensor": {
       "gateway_reachable": {
-        "name": "Passerelle Accessible"
+        "name": "Passerelle joignable"
       },
       "internet_reachable": {
-        "name": "Internet Accessible"
+        "name": "Internet joignable"
       }
     },
     "button": {
-      "refresh": {
-        "name": "Actualiser"
+      "refresh_diagnostics": {
+        "name": "Actualiser le diagnostic"
       },
-      "reset_network_cache": {
-        "name": "Réinitialiser le Cache Réseau"
+      "reset_cache": {
+        "name": "Réinitialiser le cache réseau"
       }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "Le diagnostic réseau a échoué : {error}"
+    },
+    "refresh_failed": {
+      "message": "Le relevé a échoué ; voir le journal pour les détails."
+    },
+    "unsupported_platform": {
+      "message": "Internet Health Monitor fonctionne uniquement sur les hôtes Linux et Windows."
+    },
+    "missing_tools": {
+      "message": "Des outils système requis manquent sur cet hôte : {tools}. Installez-les, puis rechargez l'intégration."
+    }
+  },
+  "issues": {
+    "traceroute_missing": {
+      "title": "traceroute n'est pas installé",
+      "description": "Internet Health Monitor a besoin de `traceroute` pour trouver les sauts 2 et 3 ; ces capteurs restent donc inconnus. Installez-le sur l'hôte Home Assistant (`apt install traceroute` ou `apk add traceroute`), puis rechargez l'intégration. La surveillance de la passerelle et du DNS continue de fonctionner."
     }
   }
 }

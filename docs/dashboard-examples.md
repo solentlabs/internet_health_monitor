@@ -10,13 +10,13 @@ A glance card showing all network metrics at once:
 type: glance
 title: Network Health
 entities:
-  - entity: sensor.internet_health_monitor_gateway_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Gateway
-  - entity: sensor.internet_health_monitor_hop_1_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Hop 1
-  - entity: sensor.internet_health_monitor_hop_2_latency
+  - entity: sensor.internet_health_monitor_hop_2_latency_isp
     name: Hop 2
-  - entity: sensor.internet_health_monitor_hop_3_latency
+  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
     name: Hop 3
   - entity: sensor.internet_health_monitor_dns_latency
     name: DNS
@@ -31,11 +31,11 @@ type: history-graph
 title: Network Path Latency (24h)
 hours_to_show: 24
 entities:
-  - entity: sensor.internet_health_monitor_hop_1_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Hop 1 (Gateway)
-  - entity: sensor.internet_health_monitor_hop_2_latency
+  - entity: sensor.internet_health_monitor_hop_2_latency_isp
     name: Hop 2 (ISP)
-  - entity: sensor.internet_health_monitor_hop_3_latency
+  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
     name: Hop 3 (Backbone)
   - entity: sensor.internet_health_monitor_dns_latency
     name: DNS
@@ -49,7 +49,7 @@ Visual gauges for key metrics:
 type: vertical-stack
 cards:
   - type: gauge
-    entity: sensor.internet_health_monitor_gateway_latency
+    entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Gateway Latency
     min: 0
     max: 100
@@ -58,7 +58,7 @@ cards:
       yellow: 20
       red: 50
   - type: gauge
-    entity: sensor.internet_health_monitor_hop_2_latency
+    entity: sensor.internet_health_monitor_hop_2_latency_isp
     name: ISP Latency
     min: 0
     max: 100
@@ -67,7 +67,7 @@ cards:
       yellow: 30
       red: 75
   - type: gauge
-    entity: sensor.internet_health_monitor_packet_loss
+    entity: sensor.internet_health_monitor_hop_1_packet_loss_gateway
     name: Packet Loss
     min: 0
     max: 10
@@ -85,13 +85,13 @@ If you have the mini-graph-card installed via HACS:
 type: custom:mini-graph-card
 name: Network Path Latency
 entities:
-  - entity: sensor.internet_health_monitor_hop_1_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Hop 1
     color: "#4CAF50"
-  - entity: sensor.internet_health_monitor_hop_2_latency
+  - entity: sensor.internet_health_monitor_hop_2_latency_isp
     name: Hop 2
     color: "#2196F3"
-  - entity: sensor.internet_health_monitor_hop_3_latency
+  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
     name: Hop 3
     color: "#FF9800"
   - entity: sensor.internet_health_monitor_dns_latency
@@ -118,21 +118,21 @@ entities:
   - entity: binary_sensor.internet_health_monitor_internet_reachable
     name: Internet Status
   - type: divider
-  - entity: sensor.internet_health_monitor_gateway_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     secondary_info: last-updated
-  - entity: sensor.internet_health_monitor_gateway_jitter
-  - entity: sensor.internet_health_monitor_packet_loss
+  - entity: sensor.internet_health_monitor_hop_1_jitter_gateway
+  - entity: sensor.internet_health_monitor_hop_1_packet_loss_gateway
   - type: divider
-  - entity: sensor.internet_health_monitor_hop_1_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Hop 1 (Gateway)
-  - entity: sensor.internet_health_monitor_hop_2_latency
+  - entity: sensor.internet_health_monitor_hop_2_latency_isp
     name: Hop 2 (ISP)
-  - entity: sensor.internet_health_monitor_hop_3_latency
+  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
     name: Hop 3 (Backbone)
   - type: divider
   - entity: sensor.internet_health_monitor_dns_latency
   - type: divider
-  - entity: button.internet_health_monitor_refresh
+  - entity: button.internet_health_monitor_refresh_diagnostics
     name: Refresh Now
   - entity: button.internet_health_monitor_reset_network_cache
     name: Reset Cache
@@ -145,16 +145,16 @@ Show a card only when there are issues:
 ```yaml
 type: conditional
 conditions:
-  - entity: sensor.internet_health_monitor_packet_loss
+  - entity: sensor.internet_health_monitor_hop_1_packet_loss_gateway
     state_not: "0.0"
 card:
   type: markdown
   content: >
     ## Network Issues Detected
 
-    Packet loss: {{ states('sensor.internet_health_monitor_packet_loss') }}%
+    Packet loss: {{ states('sensor.internet_health_monitor_hop_1_packet_loss_gateway') }}%
 
-    Gateway latency: {{ states('sensor.internet_health_monitor_gateway_latency') }}ms
+    Gateway latency: {{ states('sensor.internet_health_monitor_hop_1_latency_gateway') }}ms
 ```
 
 ## Network Path Visualization
@@ -169,20 +169,20 @@ content: >
 
   | Hop | Target | Latency |
   |-----|--------|---------|
-  | 1 | Gateway | {{ states('sensor.internet_health_monitor_hop_1_latency') }} ms |
-  | 2 | ISP | {{ states('sensor.internet_health_monitor_hop_2_latency') }} ms |
-  | 3 | Backbone | {{ states('sensor.internet_health_monitor_hop_3_latency') }} ms |
+  | 1 | Gateway | {{ states('sensor.internet_health_monitor_hop_1_latency_gateway') }} ms |
+  | 2 | ISP | {{ states('sensor.internet_health_monitor_hop_2_latency_isp') }} ms |
+  | 3 | Backbone | {{ states('sensor.internet_health_monitor_hop_3_latency_backbone') }} ms |
   | - | DNS | {{ states('sensor.internet_health_monitor_dns_latency') }} ms |
 
   ---
 
-  **Packet Loss:** {{ states('sensor.internet_health_monitor_packet_loss') }}%
+  **Packet Loss:** {{ states('sensor.internet_health_monitor_hop_1_packet_loss_gateway') }}%
 
-  **Jitter:** {{ states('sensor.internet_health_monitor_gateway_jitter') }} ms
+  **Jitter:** {{ states('sensor.internet_health_monitor_hop_1_jitter_gateway') }} ms
 
-  **Gateway IP:** {{ state_attr('sensor.internet_health_monitor_gateway_latency', 'gateway_ip') }}
+  **Gateway IP:** {{ state_attr('sensor.internet_health_monitor_hop_1_latency_gateway', 'hop_ip') }}
 
-  **Hop 2 IP:** {{ state_attr('sensor.internet_health_monitor_hop_2_latency', 'hop_ip') }}
+  **Hop 2 IP:** {{ state_attr('sensor.internet_health_monitor_hop_2_latency_isp', 'hop_ip') }}
 ```
 
 ## Complete Dashboard Example
@@ -206,11 +206,11 @@ cards:
   - type: glance
     title: Network Latency
     entities:
-      - entity: sensor.internet_health_monitor_hop_1_latency
+      - entity: sensor.internet_health_monitor_hop_1_latency_gateway
         name: Hop 1
-      - entity: sensor.internet_health_monitor_hop_2_latency
+      - entity: sensor.internet_health_monitor_hop_2_latency_isp
         name: Hop 2
-      - entity: sensor.internet_health_monitor_hop_3_latency
+      - entity: sensor.internet_health_monitor_hop_3_latency_backbone
         name: Hop 3
       - entity: sensor.internet_health_monitor_dns_latency
         name: DNS
@@ -219,7 +219,7 @@ cards:
   - type: horizontal-stack
     cards:
       - type: gauge
-        entity: sensor.internet_health_monitor_packet_loss
+        entity: sensor.internet_health_monitor_hop_1_packet_loss_gateway
         name: Loss %
         min: 0
         max: 5
@@ -228,7 +228,7 @@ cards:
           yellow: 1
           red: 2
       - type: gauge
-        entity: sensor.internet_health_monitor_gateway_jitter
+        entity: sensor.internet_health_monitor_hop_1_jitter_gateway
         name: Jitter
         min: 0
         max: 20
@@ -242,21 +242,21 @@ cards:
     title: Latency History (6h)
     hours_to_show: 6
     entities:
-      - entity: sensor.internet_health_monitor_hop_1_latency
-      - entity: sensor.internet_health_monitor_hop_2_latency
-      - entity: sensor.internet_health_monitor_hop_3_latency
+      - entity: sensor.internet_health_monitor_hop_1_latency_gateway
+      - entity: sensor.internet_health_monitor_hop_2_latency_isp
+      - entity: sensor.internet_health_monitor_hop_3_latency_backbone
 
   # Controls
   - type: horizontal-stack
     cards:
       - type: button
-        entity: button.internet_health_monitor_refresh
+        entity: button.internet_health_monitor_refresh_diagnostics
         name: Refresh
         tap_action:
           action: call-service
           service: button.press
           target:
-            entity_id: button.internet_health_monitor_refresh
+            entity_id: button.internet_health_monitor_refresh_diagnostics
       - type: button
         entity: button.internet_health_monitor_reset_network_cache
         name: Reset Cache
@@ -285,8 +285,8 @@ template:
         state: >
           {{ is_state('binary_sensor.internet_health_monitor_gateway_reachable', 'on')
              and is_state('binary_sensor.internet_health_monitor_internet_reachable', 'on')
-             and states('sensor.internet_health_monitor_hop_2_latency') | float(9999) < 50
-             and states('sensor.internet_health_monitor_hop_1_packet_loss') | float(100) < 1 }}
+             and states('sensor.internet_health_monitor_hop_2_latency_isp') | float(9999) < 50
+             and states('sensor.internet_health_monitor_hop_1_packet_loss_gateway') | float(100) < 1 }}
 ```
 
 Because each input stays its own entity, a history graph still shows
@@ -302,14 +302,14 @@ which one went wrong.
 alias: "Network: High Latency Alert"
 trigger:
   - platform: numeric_state
-    entity_id: sensor.internet_health_monitor_hop_2_latency
+    entity_id: sensor.internet_health_monitor_hop_2_latency_isp
     above: 100
     for:
       minutes: 5
 action:
   - service: notify.mobile_app
     data:
-      message: "ISP latency is high: {{ states('sensor.internet_health_monitor_hop_2_latency') }}ms"
+      message: "ISP latency is high: {{ states('sensor.internet_health_monitor_hop_2_latency_isp') }}ms"
       title: "Network Alert"
 ```
 
@@ -319,14 +319,14 @@ action:
 alias: "Network: Packet Loss Alert"
 trigger:
   - platform: numeric_state
-    entity_id: sensor.internet_health_monitor_packet_loss
+    entity_id: sensor.internet_health_monitor_hop_1_packet_loss_gateway
     above: 1
     for:
       minutes: 2
 action:
   - service: notify.mobile_app
     data:
-      message: "Packet loss detected: {{ states('sensor.internet_health_monitor_packet_loss') }}%"
+      message: "Packet loss detected: {{ states('sensor.internet_health_monitor_hop_1_packet_loss_gateway') }}%"
       title: "Network Issue"
 ```
 
@@ -342,8 +342,8 @@ action:
     data:
       title: "Daily Network Report"
       message: >
-        Gateway: {{ states('sensor.internet_health_monitor_gateway_latency') }}ms
-        ISP: {{ states('sensor.internet_health_monitor_hop_2_latency') }}ms
+        Gateway: {{ states('sensor.internet_health_monitor_hop_1_latency_gateway') }}ms
+        ISP: {{ states('sensor.internet_health_monitor_hop_2_latency_isp') }}ms
         DNS: {{ states('sensor.internet_health_monitor_dns_latency') }}ms
-        Loss: {{ states('sensor.internet_health_monitor_packet_loss') }}%
+        Loss: {{ states('sensor.internet_health_monitor_hop_1_packet_loss_gateway') }}%
 ```

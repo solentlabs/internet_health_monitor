@@ -1,407 +1,114 @@
-"""Tests for Internet Health Monitor integration setup."""
+"""Tests for setup, setup checks, option wiring, reload and unload."""
 
 from __future__ import annotations
 
-from datetime import timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 
-from custom_components.internet_health_monitor import (
-    PLATFORMS,
-    async_setup_entry,
-    async_unload_entry,
-    async_update_options,
-)
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
-    CONF_ENABLE_DNS_MONITORING,
-    CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
-    CONF_SCAN_INTERVAL,
-    DEFAULT_DNS_SERVER,
-    DEFAULT_PING_COUNT,
-    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    NAME,
-    VERSION,
 )
-
-
-class TestPlatforms:
-    """Test platform definitions."""
-
-    def test_platforms_defined(self):
-        """Test that platforms list is defined."""
-        assert PLATFORMS is not None
-        assert isinstance(PLATFORMS, list)
-
-    def test_platforms_contains_expected(self):
-        """Test that all expected platforms are defined."""
-        assert Platform.BINARY_SENSOR in PLATFORMS
-        assert Platform.BUTTON in PLATFORMS
-        assert Platform.SENSOR in PLATFORMS
-
-    def test_platforms_count(self):
-        """Test expected number of platforms."""
-        assert len(PLATFORMS) == 3
-
-
-class TestConstants:
-    """Test integration constants."""
-
-    def test_domain(self):
-        """Test DOMAIN constant."""
-        assert DOMAIN == "internet_health_monitor"
-
-    def test_name(self):
-        """Test NAME constant."""
-        assert NAME == "Internet Health Monitor"
-
-    def test_version(self):
-        """Test VERSION constant."""
-        assert VERSION is not None
-        # Version should be semver format
-        parts = VERSION.split(".")
-        assert len(parts) >= 2
-
-    def test_default_values(self):
-        """Test default configuration values."""
-        assert DEFAULT_SCAN_INTERVAL == 60
-        assert DEFAULT_DNS_SERVER == "auto"
-        assert DEFAULT_PING_COUNT == 3
-
-
-class TestAsyncSetupEntry:
-    """Test async_setup_entry function."""
-
-    @pytest.fixture
-    def mock_hass(self):
-        """Create mock Home Assistant instance."""
-        hass = Mock(spec=HomeAssistant)
-        hass.data = {}
-        hass.config_entries = Mock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock()
-        return hass
-
-    @pytest.fixture
-    def mock_entry(self):
-        """Create mock config entry."""
-        entry = Mock(spec=ConfigEntry)
-        entry.entry_id = "test_entry_id"
-        entry.options = {
-            CONF_SCAN_INTERVAL: 60,
-            CONF_DNS_SERVER: "auto",
-            CONF_PING_COUNT: 3,
-            CONF_ENABLE_GATEWAY_MONITORING: True,
-            CONF_ENABLE_DNS_MONITORING: True,
-        }
-        entry.add_update_listener = Mock(return_value=Mock())
-        entry.async_on_unload = Mock()
-        return entry
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_success(self, mock_hass, mock_entry):
-        """Test successful setup entry."""
-        mock_result = Mock()
-        mock_result.gateway_ip = "192.168.1.1"
-        mock_result.gateway_reachable = True
-        mock_result.gateway_latency_ms = 5.0
-        mock_result.gateway_jitter_ms = 1.0
-        mock_result.packet_loss_percent = 0.0
-        mock_result.packets_sent = 3
-        mock_result.packets_received = 3
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                result = await async_setup_entry(mock_hass, mock_entry)
-
-        assert result is True
-        assert DOMAIN in mock_hass.data
-        assert mock_entry.entry_id in mock_hass.data[DOMAIN]
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_creates_coordinator(self, mock_hass, mock_entry):
-        """Test that setup creates coordinator."""
-        mock_result = Mock()
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                await async_setup_entry(mock_hass, mock_entry)
-
-                # Verify coordinator was created
-                mock_coordinator_class.assert_called_once()
-                call_kwargs = mock_coordinator_class.call_args[1]
-                assert call_kwargs["name"] == DOMAIN
-                assert call_kwargs["update_interval"] == timedelta(seconds=60)
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_stores_data(self, mock_hass, mock_entry):
-        """Test that setup stores data correctly."""
-        mock_result = Mock()
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                await async_setup_entry(mock_hass, mock_entry)
-
-        stored_data = mock_hass.data[DOMAIN][mock_entry.entry_id]
-        assert "coordinator" in stored_data
-        assert "diagnostics" in stored_data
-        assert "config" in stored_data
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_config_with_defaults(self, mock_hass):
-        """Test setup with default configuration."""
-        entry = Mock(spec=ConfigEntry)
-        entry.entry_id = "test_entry"
-        entry.options = {}  # No options set
-        entry.add_update_listener = Mock(return_value=Mock())
-        entry.async_on_unload = Mock()
-
-        mock_result = Mock()
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                result = await async_setup_entry(mock_hass, entry)
-
-        assert result is True
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_forwards_platforms(self, mock_hass, mock_entry):
-        """Test that setup forwards platform setup."""
-        mock_result = Mock()
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                await async_setup_entry(mock_hass, mock_entry)
-
-        mock_hass.config_entries.async_forward_entry_setups.assert_called_once_with(mock_entry, PLATFORMS)
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_registers_update_listener(self, mock_hass, mock_entry):
-        """Test that setup registers options update listener."""
-        mock_result = Mock()
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                await async_setup_entry(mock_hass, mock_entry)
-
-        mock_entry.async_on_unload.assert_called_once()
-
-
-class TestAsyncUnloadEntry:
-    """Test async_unload_entry function."""
-
-    @pytest.fixture
-    def mock_hass(self):
-        """Create mock Home Assistant instance."""
-        hass = Mock(spec=HomeAssistant)
-        hass.config_entries = Mock()
-        hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
-        return hass
-
-    @pytest.fixture
-    def mock_entry(self):
-        """Create mock config entry."""
-        entry = Mock(spec=ConfigEntry)
-        entry.entry_id = "test_entry_id"
-        return entry
-
-    @pytest.mark.asyncio
-    async def test_unload_entry_success(self, mock_hass, mock_entry):
-        """Test successful unload entry."""
-        mock_hass.data = {
-            DOMAIN: {
-                mock_entry.entry_id: {
-                    "coordinator": Mock(),
-                    "diagnostics": Mock(),
-                    "config": {},
-                }
-            }
-        }
-
-        result = await async_unload_entry(mock_hass, mock_entry)
-
-        assert result is True
-        assert mock_entry.entry_id not in mock_hass.data[DOMAIN]
-
-    @pytest.mark.asyncio
-    async def test_unload_entry_removes_data(self, mock_hass, mock_entry):
-        """Test that unload removes entry data."""
-        mock_hass.data = {
-            DOMAIN: {
-                mock_entry.entry_id: {"coordinator": Mock()},
-                "other_entry": {"coordinator": Mock()},
-            }
-        }
-
-        await async_unload_entry(mock_hass, mock_entry)
-
-        assert mock_entry.entry_id not in mock_hass.data[DOMAIN]
-        assert "other_entry" in mock_hass.data[DOMAIN]
-
-    @pytest.mark.asyncio
-    async def test_unload_entry_unloads_platforms(self, mock_hass, mock_entry):
-        """Test that unload unloads platforms."""
-        mock_hass.data = {DOMAIN: {mock_entry.entry_id: {"coordinator": Mock()}}}
-
-        await async_unload_entry(mock_hass, mock_entry)
-
-        mock_hass.config_entries.async_unload_platforms.assert_called_once_with(mock_entry, PLATFORMS)
-
-    @pytest.mark.asyncio
-    async def test_unload_entry_failure(self, mock_hass, mock_entry):
-        """Test unload entry when platform unload fails."""
-        mock_hass.config_entries.async_unload_platforms = AsyncMock(return_value=False)
-        mock_hass.data = {DOMAIN: {mock_entry.entry_id: {"coordinator": Mock()}}}
-
-        result = await async_unload_entry(mock_hass, mock_entry)
-
-        assert result is False
-        # Data should still be present since unload failed
-        assert mock_entry.entry_id in mock_hass.data[DOMAIN]
-
-
-class TestAsyncUpdateOptions:
-    """Test async_update_options function."""
-
-    @pytest.fixture
-    def mock_hass(self):
-        """Create mock Home Assistant instance."""
-        hass = Mock(spec=HomeAssistant)
-        hass.config_entries = Mock()
-        hass.config_entries.async_reload = AsyncMock()
-        return hass
-
-    @pytest.fixture
-    def mock_entry(self):
-        """Create mock config entry."""
-        entry = Mock(spec=ConfigEntry)
-        entry.entry_id = "test_entry_id"
-        return entry
-
-    @pytest.mark.asyncio
-    async def test_update_options_reloads_entry(self, mock_hass, mock_entry):
-        """Test that options update triggers reload."""
-        await async_update_options(mock_hass, mock_entry)
-
-        mock_hass.config_entries.async_reload.assert_called_once_with(mock_entry.entry_id)
-
-
-class TestMonitoringConfig:
-    """Test monitoring configuration handling."""
-
-    @pytest.fixture
-    def mock_hass(self):
-        """Create mock Home Assistant instance."""
-        hass = Mock(spec=HomeAssistant)
-        hass.data = {}
-        hass.config_entries = Mock()
-        hass.config_entries.async_forward_entry_setups = AsyncMock()
-        return hass
-
-    @pytest.mark.asyncio
-    async def test_config_stores_monitoring_flags(self, mock_hass):
-        """Test that monitoring flags are stored in config."""
-        entry = Mock(spec=ConfigEntry)
-        entry.entry_id = "test_entry"
-        entry.options = {
-            CONF_ENABLE_GATEWAY_MONITORING: False,
-            CONF_ENABLE_DNS_MONITORING: True,
-        }
-        entry.add_update_listener = Mock(return_value=Mock())
-        entry.async_on_unload = Mock()
-
-        mock_result = Mock()
-
-        with patch("custom_components.internet_health_monitor.NetworkDiagnostics") as mock_diag_class:
-            mock_diag = Mock()
-            mock_diag.run_diagnostics = AsyncMock(return_value=mock_result)
-            mock_diag_class.return_value = mock_diag
-
-            with patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as mock_coordinator_class:
-                mock_coordinator = AsyncMock()
-                mock_coordinator.async_config_entry_first_refresh = AsyncMock()
-                mock_coordinator_class.return_value = mock_coordinator
-
-                await async_setup_entry(mock_hass, entry)
-
-        stored_config = mock_hass.data[DOMAIN][entry.entry_id]["config"]
-        assert stored_config["enable_gateway"] is False
-        assert stored_config["enable_dns"] is True
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(("options", "expected"), [({}, False), ({CONF_HOP_OWNERSHIP: True}, True)])
-async def test_setup_passes_hop_ownership(options: dict, expected: bool) -> None:
-    """The stored choice reaches the core config; off when never set."""
-    hass = Mock()
-    hass.data = {}
-    hass.config_entries = Mock()
-    hass.config_entries.async_forward_entry_setups = AsyncMock()
-    entry = Mock(spec=ConfigEntry)
-    entry.entry_id = "test_entry_id"
-    entry.options = options
-    entry.add_update_listener = Mock(return_value=Mock())
-    entry.async_on_unload = Mock()
-
-    with (
-        patch("custom_components.internet_health_monitor.NetworkDiagnostics") as diag_class,
-        patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as coordinator_class,
+from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
+from solentlabs.internet_health_monitor_core.platforms.linux import LinuxPlatform
+
+from .conftest import SetupEntry
+
+# options -> what reaches the core's config
+# fmt: off
+OPTION_CASES = [
+    ("defaults",   {},                                                       ("auto", 3, False)),
+    ("all set",    {CONF_DNS_SERVER: "9.9.9.9", CONF_PING_COUNT: 5, CONF_HOP_OWNERSHIP: True},
+                                                                             ("9.9.9.9", 5, True)),
+]
+# fmt: on
+
+
+async def test_setup_and_unload(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """A working host loads; unloading releases the entry."""
+    entry = await setup_entry()
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.coordinator.data.gateway_reachable is True
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    assert entry.state is ConfigEntryState.NOT_LOADED
+
+
+@pytest.mark.parametrize(("description", "options", "expected"), OPTION_CASES, ids=[c[0] for c in OPTION_CASES])
+async def test_options_reach_core(
+    setup_entry: SetupEntry, description: str, options: dict[str, Any], expected: tuple[str, int, bool]
+) -> None:
+    """Each option is passed to the core's config."""
+    entry = await setup_entry(**options)
+    config = entry.runtime_data.diagnostics.config
+    assert (config.dns_server, config.ping_count, config.hop_ownership) == expected
+
+
+async def test_missing_tools_is_a_setup_error(setup_entry: SetupEntry) -> None:
+    """Without ping or ip nothing can be measured: a permanent, explained error."""
+    with patch.object(LinuxPlatform, "missing_tools", return_value=["ping"]):
+        entry = await setup_entry()
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    assert entry.reason is not None and "ping" in entry.reason
+
+
+async def test_unsupported_platform_is_a_setup_error(setup_entry: SetupEntry) -> None:
+    """An OS without probes fails setup instead of reporting nothing."""
+    with patch(
+        "custom_components.internet_health_monitor.NetworkDiagnostics",
+        side_effect=UnsupportedPlatformError("darwin"),
     ):
-        coordinator_class.return_value = AsyncMock()
-        await async_setup_entry(hass, entry)
+        entry = await setup_entry()
+    assert entry.state is ConfigEntryState.SETUP_ERROR
 
-    assert diag_class.call_args.kwargs["config"].hop_ownership is expected
+
+async def test_failed_first_poll_retries(setup_entry: SetupEntry, poll: AsyncMock) -> None:
+    """A first poll that raises is temporary: HA retries setup."""
+    poll.side_effect = OSError("boom")
+    entry = await setup_entry()
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_options_change_reloads(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Saving options rebuilds the core with the new settings."""
+    entry = await setup_entry()
+    hass.config_entries.async_update_entry(entry, options={CONF_PING_COUNT: 7})
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.diagnostics.config.ping_count == 7
+
+
+async def test_missing_traceroute_raises_repair_issue(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Without traceroute IHM still runs, and a repair issue tells the user how to fix it."""
+    with patch.object(LinuxPlatform, "missing_optional_tools", return_value=["traceroute"]):
+        entry = await setup_entry()
+    assert entry.state is ConfigEntryState.LOADED
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, "traceroute_missing")
+    assert issue is not None
+    assert issue.translation_key == "traceroute_missing"
+
+
+async def test_repair_issue_clears_when_installed(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Once traceroute is installed, the next setup removes the issue."""
+    with patch.object(LinuxPlatform, "missing_optional_tools", return_value=["traceroute"]):
+        entry = await setup_entry()
+    with patch.object(LinuxPlatform, "missing_optional_tools", return_value=[]):
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, "traceroute_missing") is None
+
+
+async def test_removing_entry_clears_repair_issue(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Deleting the integration leaves no issue behind."""
+    with patch.object(LinuxPlatform, "missing_optional_tools", return_value=["traceroute"]):
+        entry = await setup_entry()
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, "traceroute_missing") is None

@@ -27,11 +27,16 @@ jobs:
       - name: Run tests
         run: pytest
 
+      - name: Zip the integration
+        # One zip of the integration folder, the shape HACS zip releases install.
+        run: |
+          cd custom_components/internet_health_monitor
+          zip -r "$GITHUB_WORKSPACE/internet_health_monitor.zip" . -x "__pycache__/*"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: |
-            custom_components/ha_network_diagnostics/*.py
+          files: internet_health_monitor.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

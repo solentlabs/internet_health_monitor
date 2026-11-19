@@ -1,26 +1,17 @@
-"""Internet Health Monitor - Home Assistant Integration.
-
-A Solent Labs integration for network health monitoring including:
-- Gateway latency and reachability
-- 3-hop network path monitoring (gateway, ISP, backbone)
-- Per-hop jitter (latency variance)
-- Packet loss percentage
-- DNS resolution timing
-- Reverse DNS names for detected hops
-"""
+"""Internet Health Monitor: gateway, hop and DNS health for Home Assistant."""
 
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
-from typing import TYPE_CHECKING
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.exceptions import ConfigEntryError
+from homeassistant.helpers import issue_registry as ir
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsConfig
+from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
+from solentlabs.internet_health_monitor_core.platforms.linux import OPTIONAL_TOOLS
 
 from .const import (
     CONF_DNS_SERVER,
@@ -28,101 +19,89 @@ from .const import (
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
-    CONF_SCAN_INTERVAL,
     DEFAULT_DNS_SERVER,
     DEFAULT_PING_COUNT,
-    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     NAME,
+    TROUBLESHOOTING_URL,
     VERSION,
 )
-
-if TYPE_CHECKING:
-    from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnosticsResult
+from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator, InternetHealthRuntimeData
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Internet Health Monitor from a config entry."""
+async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
+    """Set up from a config entry; fail clearly if this host cannot measure anything."""
     _LOGGER.info("%s version %s is starting", NAME, VERSION)
-
-    # Get configuration options
     options = entry.options
-    scan_interval = options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-    dns_server = options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER)
-    ping_count = options.get(CONF_PING_COUNT, DEFAULT_PING_COUNT)
-    enable_gateway = options.get(CONF_ENABLE_GATEWAY_MONITORING, True)
-    enable_dns = options.get(CONF_ENABLE_DNS_MONITORING, True)
-
-    _LOGGER.debug(
-        "Configuration: gateway=%s, dns=%s, interval=%s, ping_count=%s",
-        enable_gateway,
-        enable_dns,
-        scan_interval,
-        ping_count,
-    )
-
-    # Create diagnostics config with options
     config = NetworkDiagnosticsConfig(
-        ping_count=ping_count,
-        dns_server=dns_server,
+        ping_count=options.get(CONF_PING_COUNT, DEFAULT_PING_COUNT),
+        dns_server=options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER),
         hop_ownership=options.get(CONF_HOP_OWNERSHIP, False),
     )
 
-    # Create diagnostics instance
-    diagnostics = NetworkDiagnostics(config=config)
+    try:
+        diagnostics = NetworkDiagnostics(config=config)
+    except UnsupportedPlatformError as err:
+        raise ConfigEntryError(translation_domain=DOMAIN, translation_key="unsupported_platform") from err
 
-    # Store monitoring flags for sensors to use
-    monitoring_config = {
-        "enable_gateway": enable_gateway,
-        "enable_dns": enable_dns,
-    }
+    missing = await hass.async_add_executor_job(diagnostics.platform.missing_tools)
+    if missing:
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key="missing_tools",
+            translation_placeholders={"tools": ", ".join(missing)},
+        )
 
-    async def async_update_data() -> NetworkDiagnosticsResult:
-        """Fetch data from network diagnostics."""
-        try:
-            return await diagnostics.run_diagnostics()
-        except Exception as err:
-            raise UpdateFailed(f"Error running diagnostics: {err}") from err
+    optional_missing = await hass.async_add_executor_job(diagnostics.platform.missing_optional_tools)
+    _sync_missing_tool_issues(hass, optional_missing)
 
-    coordinator: DataUpdateCoordinator[NetworkDiagnosticsResult] = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name=DOMAIN,
-        update_method=async_update_data,
-        update_interval=timedelta(seconds=scan_interval),
-    )
-
-    # Fetch initial data
+    coordinator = InternetHealthCoordinator(hass, entry, diagnostics)
     await coordinator.async_config_entry_first_refresh()
 
-    # Store coordinator and config
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        "coordinator": coordinator,
-        "diagnostics": diagnostics,
-        "config": monitoring_config,
-    }
-
+    entry.runtime_data = InternetHealthRuntimeData(
+        coordinator=coordinator,
+        diagnostics=diagnostics,
+        enable_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
+        enable_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
+    )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-    # Register options update listener
-    entry.async_on_unload(entry.add_update_listener(async_update_options))
-
+    entry.async_on_unload(entry.add_update_listener(_async_reload_on_options_change))
     return True
 
 
-async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Handle options update."""
+def _sync_missing_tool_issues(hass: HomeAssistant, missing: list[str]) -> None:
+    """Raise a repair issue for each missing optional tool; clear it once installed."""
+    for tool in OPTIONAL_TOOLS:
+        issue_id = f"{tool}_missing"
+        if tool in missing:
+            ir.async_create_issue(
+                hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key=issue_id,
+                learn_more_url=TROUBLESHOOTING_URL,
+            )
+        else:
+            ir.async_delete_issue(hass, DOMAIN, issue_id)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:
+    """Clear this integration's repair issues when it is removed."""
+    for tool in OPTIONAL_TOOLS:
+        ir.async_delete_issue(hass, DOMAIN, f"{tool}_missing")
+
+
+async def _async_reload_on_options_change(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:
+    """Apply changed options by reloading the entry."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
-
-    return unload_ok
+async def async_unload_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
+    """Unload a config entry; runtime_data is released by HA."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

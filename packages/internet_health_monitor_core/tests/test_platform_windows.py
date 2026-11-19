@@ -111,3 +111,9 @@ async def test_host_environment_unknown() -> None:
     env = await WindowsPlatform(FakeIpHelper()).host_environment()
     assert env.connection_type == "unknown"
     assert env.container_type is None
+
+
+def test_missing_tools_none() -> None:
+    """Windows needs no extra tools."""
+    assert WindowsPlatform(FakeIpHelper()).missing_tools() == []
+    assert WindowsPlatform(FakeIpHelper()).missing_optional_tools() == []

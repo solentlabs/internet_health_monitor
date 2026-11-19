@@ -5,20 +5,41 @@
         "title": "Internet Health Monitor",
         "description": "Netzwerk-Gesundheitsüberwachung konfigurieren",
         "data": {
-          "enable_gateway_monitoring": "Gateway-Überwachung aktivieren",
-          "enable_dns_monitoring": "DNS-Überwachung aktivieren",
-          "scan_interval": "Abfrageintervall (Sekunden)",
+          "enable_gateway_monitoring": "Gateway und Hops überwachen",
+          "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
-          "ping_count": "Anzahl der Pings",
+          "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln"
         },
         "data_description": {
+          "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
+          "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
+          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
+          "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
+          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
+        }
+      },
+      "reconfigure": {
+        "title": "Internet Health Monitor neu konfigurieren",
+        "data": {
+          "enable_gateway_monitoring": "Gateway und Hops überwachen",
+          "enable_dns_monitoring": "DNS überwachen",
+          "dns_server": "DNS-Server",
+          "ping_count": "Pings pro Ziel",
+          "hop_ownership": "Betreiber jedes Hops ermitteln"
+        },
+        "data_description": {
+          "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
+          "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
+          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
+          "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
         }
       }
     },
     "abort": {
-      "already_configured": "Internet Health Monitor ist bereits konfiguriert"
+      "already_configured": "Internet Health Monitor ist bereits konfiguriert",
+      "reconfigure_successful": "Die Einstellungen wurden aktualisiert."
     }
   },
   "options": {
@@ -26,32 +47,61 @@
       "init": {
         "title": "Internet Health Monitor Optionen",
         "data": {
-          "enable_gateway_monitoring": "Gateway-Überwachung aktivieren",
-          "enable_dns_monitoring": "DNS-Überwachung aktivieren",
-          "scan_interval": "Abfrageintervall (Sekunden)",
+          "enable_gateway_monitoring": "Gateway und Hops überwachen",
+          "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
-          "ping_count": "Anzahl der Pings",
+          "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln"
         },
         "data_description": {
+          "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
+          "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
+          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
+          "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
         }
       }
     }
   },
+  "selector": {
+    "dns_server": {
+      "options": {
+        "auto": "Automatisch erkennen",
+        "1.1.1.1": "Cloudflare (1.1.1.1)",
+        "8.8.8.8": "Google (8.8.8.8)",
+        "9.9.9.9": "Quad9 (9.9.9.9)",
+        "208.67.222.222": "OpenDNS (208.67.222.222)"
+      }
+    }
+  },
   "entity": {
     "sensor": {
-      "gateway_latency": {
-        "name": "Gateway-Latenz"
+      "hop_1_latency": {
+        "name": "Hop 1 Latenz (Gateway)"
       },
-      "gateway_jitter": {
-        "name": "Gateway-Jitter"
+      "hop_1_jitter": {
+        "name": "Hop 1 Jitter (Gateway)"
       },
-      "packet_loss": {
-        "name": "Paketverlust"
+      "hop_1_packet_loss": {
+        "name": "Hop 1 Paketverlust (Gateway)"
       },
-      "isp_latency": {
-        "name": "ISP-Latenz"
+      "hop_2_latency": {
+        "name": "Hop 2 Latenz (Anbieter)"
+      },
+      "hop_2_jitter": {
+        "name": "Hop 2 Jitter (Anbieter)"
+      },
+      "hop_2_packet_loss": {
+        "name": "Hop 2 Paketverlust (Anbieter)"
+      },
+      "hop_3_latency": {
+        "name": "Hop 3 Latenz (Backbone)"
+      },
+      "hop_3_jitter": {
+        "name": "Hop 3 Jitter (Backbone)"
+      },
+      "hop_3_packet_loss": {
+        "name": "Hop 3 Paketverlust (Backbone)"
       },
       "dns_latency": {
         "name": "DNS-Latenz"
@@ -66,12 +116,32 @@
       }
     },
     "button": {
-      "refresh": {
-        "name": "Aktualisieren"
+      "refresh_diagnostics": {
+        "name": "Diagnose aktualisieren"
       },
-      "reset_network_cache": {
+      "reset_cache": {
         "name": "Netzwerk-Cache zurücksetzen"
       }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "Netzwerkdiagnose fehlgeschlagen: {error}"
+    },
+    "refresh_failed": {
+      "message": "Die Abfrage ist fehlgeschlagen; Details stehen im Protokoll."
+    },
+    "unsupported_platform": {
+      "message": "Internet Health Monitor läuft nur auf Linux- und Windows-Hosts."
+    },
+    "missing_tools": {
+      "message": "Auf diesem Host fehlen benötigte Systemprogramme: {tools}. Installieren Sie sie und laden Sie die Integration neu."
+    }
+  },
+  "issues": {
+    "traceroute_missing": {
+      "title": "traceroute ist nicht installiert",
+      "description": "Internet Health Monitor benötigt `traceroute`, um Hop 2 und 3 zu finden; diese Sensoren bleiben daher unbekannt. Installieren Sie es auf dem Home-Assistant-Host (`apt install traceroute` oder `apk add traceroute`) und laden Sie die Integration neu. Gateway- und DNS-Überwachung funktionieren weiter."
     }
   }
 }

@@ -1,105 +1,68 @@
-"""Button platform for Internet Health Monitor."""
+"""Button platform: refresh now, and reset detected network details."""
 
 from __future__ import annotations
 
-import logging
-
-from homeassistant.components.button import ButtonEntity
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
+
+from .const import DOMAIN
+from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator
+from .entity import InternetHealthEntity
+
+# Presses run one poll at a time.
+PARALLEL_UPDATES = 1
+
+REFRESH = ButtonEntityDescription(
+    key="refresh_diagnostics", translation_key="refresh_diagnostics", entity_category=EntityCategory.DIAGNOSTIC
 )
-
-from .const import DOMAIN, MANUFACTURER, NAME
-
-_LOGGER = logging.getLogger(__name__)
+RESET_CACHE = ButtonEntityDescription(
+    key="reset_cache",
+    translation_key="reset_cache",
+    entity_category=EntityCategory.DIAGNOSTIC,
+    entity_registry_enabled_default=False,
+)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: InternetHealthConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Internet Health Monitor buttons."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-
-    async_add_entities(
-        [
-            RefreshDiagnosticsButton(coordinator, entry),
-            ResetCacheButton(coordinator, entry),
-        ]
-    )
+    """Add the buttons."""
+    coordinator = entry.runtime_data.coordinator
+    async_add_entities([RefreshButton(coordinator, REFRESH), ResetCacheButton(coordinator, RESET_CACHE)])
 
 
-class InternetHealthButtonBase(CoordinatorEntity, ButtonEntity):
-    """Base class for Internet Health Monitor buttons."""
+class _PollButton(InternetHealthEntity, ButtonEntity):
+    """A button whose press ends in a poll that must succeed."""
 
-    _attr_has_entity_name = True
+    def __init__(self, coordinator: InternetHealthCoordinator, description: ButtonEntityDescription) -> None:
+        """Attach the description."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
 
-    def __init__(
-        self,
-        coordinator: DataUpdateCoordinator,
-        entry: ConfigEntry,
-        key: str,
-        name: str,
-        icon: str,
-    ) -> None:
-        """Initialize the button."""
-        super().__init__(coordinator)
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_{key}"
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_entity_category = EntityCategory.CONFIG
-
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": NAME,
-            "manufacturer": MANUFACTURER,
-            "model": NAME,
-        }
+    async def _poll(self) -> None:
+        """Poll now; raise a translated error if the poll fails."""
+        await self.coordinator.async_refresh()
+        if not self.coordinator.last_update_success:
+            raise HomeAssistantError(translation_domain=DOMAIN, translation_key="refresh_failed")
 
 
-class RefreshDiagnosticsButton(InternetHealthButtonBase):
-    """Button to trigger immediate network diagnostics refresh."""
-
-    def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
-        """Initialize the refresh button."""
-        super().__init__(
-            coordinator,
-            entry,
-            "refresh_diagnostics",
-            "Refresh Diagnostics",
-            "mdi:refresh",
-        )
+class RefreshButton(_PollButton):
+    """Run a poll now instead of waiting for the next one."""
 
     async def async_press(self) -> None:
-        """Handle button press - trigger immediate refresh."""
-        _LOGGER.debug("Manual network diagnostics refresh triggered")
-        await self.coordinator.async_request_refresh()
+        """Poll now."""
+        await self._poll()
 
 
-class ResetCacheButton(InternetHealthButtonBase):
-    """Button to reset all cached network detection (gateway, hops, hostnames)."""
-
-    def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
-        """Initialize the reset button."""
-        super().__init__(
-            coordinator,
-            entry,
-            "reset_cache",
-            "Reset Network Cache",
-            "mdi:cached",
-        )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+class ResetCacheButton(_PollButton):
+    """Forget the detected gateway, hops and hostnames, then detect them again."""
 
     async def async_press(self) -> None:
-        """Handle button press - reset all cached network info."""
-        _LOGGER.info("Resetting all network diagnostics cache (gateway, hops, hostnames)")
-        diagnostics = self.hass.data[DOMAIN][self._entry.entry_id]["diagnostics"]
-        diagnostics.reset_all()
-        await self.coordinator.async_request_refresh()
+        """Reset detection and poll."""
+        self.coordinator.diagnostics.reset_all()
+        await self._poll()

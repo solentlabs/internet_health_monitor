@@ -36,5 +36,13 @@ def test_unsupported_platform(system: str) -> None:
 def test_platforms_satisfy_interface() -> None:
     """Both modules expose every interface method."""
     for cls in (LinuxPlatform, WindowsPlatform):
-        for method in ("default_gateway", "system_dns", "ping", "trace", "host_environment"):
+        for method in (
+            "default_gateway",
+            "system_dns",
+            "ping",
+            "trace",
+            "host_environment",
+            "missing_tools",
+            "missing_optional_tools",
+        ):
             assert callable(getattr(cls, method))

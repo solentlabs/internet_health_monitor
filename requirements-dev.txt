@@ -15,6 +15,9 @@ pytest>=8.0
 pytest-cov>=5.0
 pytest-asyncio>=0.24.0
 pytest-mock>=3.15.0
+# HA test harness: real in-memory HA, blocks network sockets. It pins its own
+# HA version, so .venv-current runs the newest HA it supports.
+pytest-homeassistant-custom-component>=0.13.0,<1.0
 
 # Code quality
 black>=24.0

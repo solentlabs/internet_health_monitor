@@ -5,20 +5,41 @@
         "title": "Internet Health Monitor",
         "description": "Configurar monitoramento de saúde da rede",
         "data": {
-          "enable_gateway_monitoring": "Ativar monitoramento do gateway",
-          "enable_dns_monitoring": "Ativar monitoramento de DNS",
-          "scan_interval": "Intervalo de varredura (segundos)",
+          "enable_gateway_monitoring": "Monitorar gateway e saltos",
+          "enable_dns_monitoring": "Monitorar DNS",
           "dns_server": "Servidor DNS",
-          "ping_count": "Quantidade de pings",
+          "ping_count": "Pings por destino",
           "hop_ownership": "Identificar quem opera cada salto"
         },
         "data_description": {
+          "enable_gateway_monitoring": "A cada consulta, pingar o gateway e os dois saltos seguintes rumo à internet: latência, jitter e perda de pacotes.",
+          "enable_dns_monitoring": "A cada consulta, medir uma resolução sem cache no servidor DNS abaixo.",
+          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host.",
+          "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
+          "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurar o Internet Health Monitor",
+        "data": {
+          "enable_gateway_monitoring": "Monitorar gateway e saltos",
+          "enable_dns_monitoring": "Monitorar DNS",
+          "dns_server": "Servidor DNS",
+          "ping_count": "Pings por destino",
+          "hop_ownership": "Identificar quem opera cada salto"
+        },
+        "data_description": {
+          "enable_gateway_monitoring": "A cada consulta, pingar o gateway e os dois saltos seguintes rumo à internet: latência, jitter e perda de pacotes.",
+          "enable_dns_monitoring": "A cada consulta, medir uma resolução sem cache no servidor DNS abaixo.",
+          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host.",
+          "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados."
         }
       }
     },
     "abort": {
-      "already_configured": "Internet Health Monitor já está configurado"
+      "already_configured": "Internet Health Monitor já está configurado",
+      "reconfigure_successful": "As configurações foram atualizadas."
     }
   },
   "options": {
@@ -26,52 +47,101 @@
       "init": {
         "title": "Opções do Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Ativar monitoramento do gateway",
-          "enable_dns_monitoring": "Ativar monitoramento de DNS",
-          "scan_interval": "Intervalo de varredura (segundos)",
+          "enable_gateway_monitoring": "Monitorar gateway e saltos",
+          "enable_dns_monitoring": "Monitorar DNS",
           "dns_server": "Servidor DNS",
-          "ping_count": "Quantidade de pings",
+          "ping_count": "Pings por destino",
           "hop_ownership": "Identificar quem opera cada salto"
         },
         "data_description": {
+          "enable_gateway_monitoring": "A cada consulta, pingar o gateway e os dois saltos seguintes rumo à internet: latência, jitter e perda de pacotes.",
+          "enable_dns_monitoring": "A cada consulta, medir uma resolução sem cache no servidor DNS abaixo.",
+          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host.",
+          "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados."
         }
       }
     }
   },
+  "selector": {
+    "dns_server": {
+      "options": {
+        "auto": "Detecção automática",
+        "1.1.1.1": "Cloudflare (1.1.1.1)",
+        "8.8.8.8": "Google (8.8.8.8)",
+        "9.9.9.9": "Quad9 (9.9.9.9)",
+        "208.67.222.222": "OpenDNS (208.67.222.222)"
+      }
+    }
+  },
   "entity": {
     "sensor": {
-      "gateway_latency": {
-        "name": "Latência do Gateway"
+      "hop_1_latency": {
+        "name": "Latência do salto 1 (gateway)"
       },
-      "gateway_jitter": {
-        "name": "Jitter do Gateway"
+      "hop_1_jitter": {
+        "name": "Jitter do salto 1 (gateway)"
       },
-      "packet_loss": {
-        "name": "Perda de Pacotes"
+      "hop_1_packet_loss": {
+        "name": "Perda de pacotes do salto 1 (gateway)"
       },
-      "isp_latency": {
-        "name": "Latência do ISP"
+      "hop_2_latency": {
+        "name": "Latência do salto 2 (provedor)"
+      },
+      "hop_2_jitter": {
+        "name": "Jitter do salto 2 (provedor)"
+      },
+      "hop_2_packet_loss": {
+        "name": "Perda de pacotes do salto 2 (provedor)"
+      },
+      "hop_3_latency": {
+        "name": "Latência do salto 3 (backbone)"
+      },
+      "hop_3_jitter": {
+        "name": "Jitter do salto 3 (backbone)"
+      },
+      "hop_3_packet_loss": {
+        "name": "Perda de pacotes do salto 3 (backbone)"
       },
       "dns_latency": {
-        "name": "Latência DNS"
+        "name": "Latência de DNS"
       }
     },
     "binary_sensor": {
       "gateway_reachable": {
-        "name": "Gateway Acessível"
+        "name": "Gateway acessível"
       },
       "internet_reachable": {
-        "name": "Internet Acessível"
+        "name": "Internet acessível"
       }
     },
     "button": {
-      "refresh": {
-        "name": "Atualizar"
+      "refresh_diagnostics": {
+        "name": "Atualizar diagnóstico"
       },
-      "reset_network_cache": {
-        "name": "Redefinir Cache de Rede"
+      "reset_cache": {
+        "name": "Redefinir cache de rede"
       }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "O diagnóstico de rede falhou: {error}"
+    },
+    "refresh_failed": {
+      "message": "A consulta falhou; veja o log para detalhes."
+    },
+    "unsupported_platform": {
+      "message": "O Internet Health Monitor só funciona em hosts Linux e Windows."
+    },
+    "missing_tools": {
+      "message": "Faltam ferramentas de sistema necessárias neste host: {tools}. Instale-as e recarregue a integração."
+    }
+  },
+  "issues": {
+    "traceroute_missing": {
+      "title": "traceroute não está instalado",
+      "description": "O Internet Health Monitor precisa do `traceroute` para encontrar os saltos 2 e 3, então esses sensores ficam desconhecidos. Instale-o no host do Home Assistant (`apt install traceroute` ou `apk add traceroute`) e recarregue a integração. O monitoramento do gateway e do DNS continua funcionando."
     }
   }
 }

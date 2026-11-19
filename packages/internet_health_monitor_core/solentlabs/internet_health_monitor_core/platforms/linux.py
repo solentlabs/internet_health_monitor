@@ -6,12 +6,17 @@ import asyncio
 import logging
 import os
 import re
+import shutil
 
 from .base import HostEnvironment
 
 _LOGGER = logging.getLogger(__name__)
 
 RESOLV_CONF_PATH = "/etc/resolv.conf"
+# Without these, IHM finds no gateway and measures nothing. traceroute is
+# optional: without it only hops go missing.
+REQUIRED_TOOLS = ("ip", "ping")
+OPTIONAL_TOOLS = ("traceroute",)
 
 # ping's summary line: iputils "rtt min/avg/max/mdev = a/b/c/d ms",
 # BusyBox "round-trip min/avg/max = a/b/c ms". Same shapes as HA core's
@@ -139,6 +144,14 @@ class LinuxPlatform:
     """Probes for Linux, including HA OS and containers (iputils or BusyBox)."""
 
     name = "linux"
+
+    def missing_tools(self) -> list[str]:
+        """Return the required commands not found on PATH."""
+        return [tool for tool in REQUIRED_TOOLS if shutil.which(tool) is None]
+
+    def missing_optional_tools(self) -> list[str]:
+        """Return the optional commands not found on PATH (traceroute: hops 2 and 3)."""
+        return [tool for tool in OPTIONAL_TOOLS if shutil.which(tool) is None]
 
     async def default_gateway(self) -> str | None:
         """Return the gateway from `ip route show default`."""

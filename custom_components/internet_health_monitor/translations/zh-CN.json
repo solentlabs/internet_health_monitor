@@ -5,20 +5,41 @@
         "title": "互联网健康监控",
         "description": "配置网络健康监控",
         "data": {
-          "enable_gateway_monitoring": "启用网关监控",
-          "enable_dns_monitoring": "启用 DNS 监控",
-          "scan_interval": "扫描间隔（秒）",
+          "enable_gateway_monitoring": "监控网关和跳点",
+          "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
-          "ping_count": "Ping 次数",
+          "ping_count": "每个目标的 ping 次数",
           "hop_ownership": "查询每一跳的运营方"
         },
         "data_description": {
+          "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
+          "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
+          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
+          "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
+          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
+        }
+      },
+      "reconfigure": {
+        "title": "重新配置互联网健康监控",
+        "data": {
+          "enable_gateway_monitoring": "监控网关和跳点",
+          "enable_dns_monitoring": "监控 DNS",
+          "dns_server": "DNS 服务器",
+          "ping_count": "每个目标的 ping 次数",
+          "hop_ownership": "查询每一跳的运营方"
+        },
+        "data_description": {
+          "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
+          "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
+          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
+          "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
         }
       }
     },
     "abort": {
-      "already_configured": "互联网健康监控已配置"
+      "already_configured": "互联网健康监控已配置",
+      "reconfigure_successful": "设置已更新。"
     }
   },
   "options": {
@@ -26,32 +47,61 @@
       "init": {
         "title": "互联网健康监控选项",
         "data": {
-          "enable_gateway_monitoring": "启用网关监控",
-          "enable_dns_monitoring": "启用 DNS 监控",
-          "scan_interval": "扫描间隔（秒）",
+          "enable_gateway_monitoring": "监控网关和跳点",
+          "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
-          "ping_count": "Ping 次数",
+          "ping_count": "每个目标的 ping 次数",
           "hop_ownership": "查询每一跳的运营方"
         },
         "data_description": {
+          "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
+          "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
+          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
+          "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
         }
       }
     }
   },
+  "selector": {
+    "dns_server": {
+      "options": {
+        "auto": "自动检测",
+        "1.1.1.1": "Cloudflare (1.1.1.1)",
+        "8.8.8.8": "Google (8.8.8.8)",
+        "9.9.9.9": "Quad9 (9.9.9.9)",
+        "208.67.222.222": "OpenDNS (208.67.222.222)"
+      }
+    }
+  },
   "entity": {
     "sensor": {
-      "gateway_latency": {
-        "name": "网关延迟"
+      "hop_1_latency": {
+        "name": "第 1 跳延迟（网关）"
       },
-      "gateway_jitter": {
-        "name": "网关抖动"
+      "hop_1_jitter": {
+        "name": "第 1 跳抖动（网关）"
       },
-      "packet_loss": {
-        "name": "丢包率"
+      "hop_1_packet_loss": {
+        "name": "第 1 跳丢包率（网关）"
       },
-      "isp_latency": {
-        "name": "ISP 延迟"
+      "hop_2_latency": {
+        "name": "第 2 跳延迟（运营商）"
+      },
+      "hop_2_jitter": {
+        "name": "第 2 跳抖动（运营商）"
+      },
+      "hop_2_packet_loss": {
+        "name": "第 2 跳丢包率（运营商）"
+      },
+      "hop_3_latency": {
+        "name": "第 3 跳延迟（骨干网）"
+      },
+      "hop_3_jitter": {
+        "name": "第 3 跳抖动（骨干网）"
+      },
+      "hop_3_packet_loss": {
+        "name": "第 3 跳丢包率（骨干网）"
       },
       "dns_latency": {
         "name": "DNS 延迟"
@@ -66,12 +116,32 @@
       }
     },
     "button": {
-      "refresh": {
-        "name": "刷新"
+      "refresh_diagnostics": {
+        "name": "刷新诊断"
       },
-      "reset_network_cache": {
+      "reset_cache": {
         "name": "重置网络缓存"
       }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "网络诊断失败：{error}"
+    },
+    "refresh_failed": {
+      "message": "轮询失败；详情请查看日志。"
+    },
+    "unsupported_platform": {
+      "message": "互联网健康监控仅支持 Linux 和 Windows 主机。"
+    },
+    "missing_tools": {
+      "message": "本机缺少必需的系统工具：{tools}。请安装后重新加载集成。"
+    }
+  },
+  "issues": {
+    "traceroute_missing": {
+      "title": "未安装 traceroute",
+      "description": "互联网健康监控需要 `traceroute` 来发现第 2 和第 3 跳，因此这些传感器会保持未知。请在 Home Assistant 主机上安装（`apt install traceroute` 或 `apk add traceroute`），然后重新加载集成。网关和 DNS 监控不受影响。"
     }
   }
 }

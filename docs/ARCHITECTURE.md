@@ -59,12 +59,16 @@ scheduling. It contains no measurement logic.
 
 | File | Role |
 |------|------|
-| `__init__.py` | Builds `NetworkDiagnostics` from the entry's options and a `DataUpdateCoordinator` that calls it every scan interval. Reloads the entry when options change. |
-| `config_flow.py` | Setup and options: scan interval (10 to 3600 s), DNS server, ping count (1 to 10), gateway and DNS monitoring toggles. |
+| `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`; reloads when options change. |
+| `coordinator.py` | `InternetHealthCoordinator` polls every 60 s (fixed; HA quality scale `appropriate-polling`), and the typed config entry and runtime data. |
+| `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
+| `config_flow.py` | Setup and options from one `build_schema`: gateway and DNS monitoring, DNS server, pings per target (1 to 10), hop ownership. One entry per HA. |
 | `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency. All `state_class: measurement`. |
 | `binary_sensor.py` | `gateway_reachable` (gateway ping answered), `internet_reachable` (DNS query succeeded). |
-| `button.py` | Refresh diagnostics, reset cache. |
-| `diagnostics.py` | HA diagnostics download. |
+| `button.py` | Refresh diagnostics; Reset network cache (disabled by default). A press whose poll fails raises a translated error. |
+| `diagnostics.py` | HA diagnostics download: options, poll state, the core's result and detection state. |
+| `strings.json`, `translations/`, `icons.json` | Every form label, entity name, error message and icon; no names or icons in code. |
+| `quality_scale.yaml` | Self-assessment against HA's quality scale; README.md § Quality Scale renders it. |
 
 ## One Poll
 

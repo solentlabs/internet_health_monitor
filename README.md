@@ -9,20 +9,19 @@ Part of the **Solent Networks Suite** - tools for comprehensive home network vis
 
 ## Features
 
-- **Multi-Hop Latency** - Trace latency through your entire network path (gateway, ISP, backbone)
-- **Gateway Monitoring** - Ping your router/modem to measure local network latency and jitter
-- **Packet Loss Tracking** - Monitor dropped packets on your local network
-- **DNS Latency** - Monitor DNS resolution times with accurate RTT measurement
-- **Binary Sensors** - Gateway reachable and internet reachable status
+- **Network path, hop by hop** - Latency, jitter and packet loss for hop 1 (your gateway), hop 2 (usually your ISP's first router) and hop 3, so you can see where a problem starts
+- **DNS latency** - One uncached lookup per poll at the DNS server you choose
+- **Reachability** - Gateway reachable and internet reachable binary sensors
+- **Zero configuration** - Gateway, hops and DNS server are detected automatically
 
 ### What Makes This Different
 
 | Feature | Other Solutions | Internet Health Monitor |
 |---------|-----------------|------------------------|
-| Gateway Detection | Manual config | Auto-detected via `ip route` |
-| Multi-hop Visibility | Single target only | Trace hops 1-10 (unique in HA) |
-| DNS Latency | Cache-affected | Uncached query to your chosen DNS server |
-| Configuration | YAML editing | Zero-config UI setup |
+| Gateway detection | Manual config | Auto-detected |
+| Path visibility | Single target only | Hops 1 to 3, each with its own sensors |
+| DNS latency | Cache-affected | Uncached query to your chosen DNS server |
+| Configuration | YAML editing | UI setup |
 
 ## Installation
 
@@ -37,18 +36,43 @@ Part of the **Solent Networks Suite** - tools for comprehensive home network vis
 
 This integration will be available through HACS once publicly released.
 
+### Removal
+
+1. Go to Settings > Devices & Services > Internet Health Monitor
+2. Open the menu (three dots) and select Delete
+3. For a manual install, delete `config/custom_components/internet_health_monitor` and restart Home Assistant
+
 ## Configuration
 
-During setup, you can configure:
+During setup, and later under Configure, you can set:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Enable Gateway Monitoring | true | Monitor latency, jitter, and packet loss for the gateway and hops 1 to 3 |
-| Enable DNS Monitoring | true | Monitor DNS resolution latency |
-| Scan Interval | 60s | How often to run diagnostics |
-| DNS Server | Auto | DNS server to test (auto-detects from system) |
-| Ping Count | 3 | Number of pings per check |
-| Look up who runs each hop | false | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
+| Monitor gateway and hops | on | Latency, jitter and packet loss for the gateway and hops 1 to 3 |
+| Monitor DNS | on | Time one uncached lookup per poll |
+| DNS server | Auto-detect | Server to time; auto-detect uses the one this host is configured with |
+| Pings per target | 3 | Pings sent to each target per poll (1 to 10) |
+| Look up who runs each hop | off | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
+
+### Polling
+
+IHM polls every 60 seconds. For a different interval, open the integration's
+System options, turn off "Enable polling for changes", and call
+`homeassistant.update_entity` from an automation:
+
+```yaml
+automation:
+  - alias: Poll Internet Health Monitor every 5 minutes
+    triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+    actions:
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.internet_health_monitor_dns_latency
+```
+
+Updating any one IHM entity runs a full poll for all of them.
 
 ### Hop Ownership
 
@@ -64,33 +88,36 @@ attributes naming the network that runs that hop, for example
 | **Accuracy** | A router where two networks meet may carry the other network's address, so it can be labelled with the neighbouring operator. |
 | **Not included** | Location. IP location data is unreliable for routers, and Team Cymru asks that the service not be used for it. Router hostnames often name the city anyway. |
 
-## Sensors
+## Entities
 
-### Latency Sensors
+### Sensors
+
+Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS:
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
-| Gateway Latency | ms | Round-trip time to your gateway |
-| Gateway Jitter | ms | Standard deviation of recent latency measurements |
-| Hop 1 Latency | ms | First network hop (usually your gateway) |
-| Hop 2 Latency | ms | Second hop (usually ISP first router) |
-| Hop 3 Latency | ms | Third hop (ISP backbone) |
-| DNS Latency | ms | Time to resolve a DNS query |
-| Packet Loss | % | Percentage of dropped packets |
+| Hop N latency | ms | Average round-trip time ping reported for this hop |
+| Hop N jitter | ms | Standard deviation of this hop's latency over the last 30 polls |
+| Hop N packet loss | % | Share of this poll's pings to the hop with no reply |
+| DNS latency | ms | Time for one uncached lookup at the DNS server |
+
+Hop sensors carry attributes: `hop_ip`, `reachable`, `packets_sent`,
+`packets_received`, `hostname` (when the hop has one) and, with hop
+ownership on, `asn` and `as_name`. All sensors keep long-term statistics.
 
 ### Binary Sensors
 
-| Sensor | Description |
-|--------|-------------|
-| Gateway Reachable | Whether the gateway is responding to pings |
-| Internet Reachable | Whether DNS resolution is successful |
+| Sensor | On when |
+|--------|---------|
+| Gateway reachable | The gateway answered a ping in the latest poll |
+| Internet reachable | The DNS lookup succeeded in the latest poll |
 
 ### Buttons
 
 | Button | Description |
 |--------|-------------|
-| Refresh | Force immediate diagnostic check |
-| Reset Network Cache | Clear cached IPs and re-detect |
+| Refresh diagnostics | Poll now instead of waiting for the next poll |
+| Reset network cache | Forget the detected gateway, hops and hostnames and detect them again. Disabled by default; enable it when troubleshooting |
 
 ## Speed Testing (Planned)
 
@@ -119,152 +146,104 @@ IHM is not affiliated with any of these providers. Full comparison:
 
 ## Dashboard Examples
 
-### Network Health Overview
+Entity ids below are the ones a new install creates. More examples:
+[docs/dashboard-examples.md](docs/dashboard-examples.md).
 
-A glance card showing all network metrics at once:
+### Network Path at a Glance
 
 ```yaml
 type: glance
-title: Network Health
+title: Network Path
 entities:
-  - entity: sensor.internet_health_monitor_gateway_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Gateway
-  - entity: sensor.internet_health_monitor_hop_1_latency
-    name: Hop 1
-  - entity: sensor.internet_health_monitor_hop_2_latency
-    name: Hop 2
-  - entity: sensor.internet_health_monitor_hop_3_latency
-    name: Hop 3
+  - entity: sensor.internet_health_monitor_hop_2_latency_isp
+    name: ISP
+  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
+    name: Backbone
   - entity: sensor.internet_health_monitor_dns_latency
     name: DNS
 ```
 
-### Multi-Hop Latency Graph
-
-Track latency through your entire network path:
+### Latency History
 
 ```yaml
 type: history-graph
 title: Network Path Latency (24h)
 hours_to_show: 24
 entities:
-  - entity: sensor.internet_health_monitor_gateway_latency
+  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
     name: Gateway
-  - entity: sensor.internet_health_monitor_hop_1_latency
-    name: Hop 1
-  - entity: sensor.internet_health_monitor_hop_2_latency
-    name: Hop 2 (ISP)
-  - entity: sensor.internet_health_monitor_hop_3_latency
-    name: Hop 3
+  - entity: sensor.internet_health_monitor_hop_2_latency_isp
+    name: ISP
+  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
+    name: Backbone
   - entity: sensor.internet_health_monitor_dns_latency
     name: DNS
 ```
 
-### Network Status Entities Card
+### Status Card
 
 ```yaml
 type: entities
 title: Internet Health Monitor
 entities:
   - entity: binary_sensor.internet_health_monitor_gateway_reachable
-    name: Gateway Status
   - entity: binary_sensor.internet_health_monitor_internet_reachable
-    name: Internet Status
   - type: divider
-  - entity: sensor.internet_health_monitor_gateway_latency
-    secondary_info: last-updated
-  - entity: sensor.internet_health_monitor_gateway_jitter
-  - entity: sensor.internet_health_monitor_packet_loss
+  - entity: sensor.internet_health_monitor_hop_1_packet_loss_gateway
+  - entity: sensor.internet_health_monitor_hop_2_packet_loss_isp
+  - entity: sensor.internet_health_monitor_hop_2_jitter_isp
   - type: divider
-  - entity: sensor.internet_health_monitor_hop_1_latency
-    name: Hop 1 (Gateway)
-  - entity: sensor.internet_health_monitor_hop_2_latency
-    name: Hop 2 (ISP)
-  - entity: sensor.internet_health_monitor_hop_3_latency
-    name: Hop 3 (Backbone)
-  - type: divider
-  - entity: sensor.internet_health_monitor_dns_latency
-  - type: divider
-  - entity: button.internet_health_monitor_refresh
-    name: Refresh Now
-  - entity: button.internet_health_monitor_reset_network_cache
-    name: Reset Cache
-```
-
-### Network Path Markdown Card
-
-```yaml
-type: markdown
-title: Network Path
-content: >
-  ## Current Latency
-
-  | Hop | Latency |
-  |-----|---------|
-  | Gateway | {{ states('sensor.internet_health_monitor_gateway_latency') }} ms |
-  | Hop 1 | {{ states('sensor.internet_health_monitor_hop_1_latency') }} ms |
-  | Hop 2 (ISP) | {{ states('sensor.internet_health_monitor_hop_2_latency') }} ms |
-  | Hop 3 | {{ states('sensor.internet_health_monitor_hop_3_latency') }} ms |
-  | DNS | {{ states('sensor.internet_health_monitor_dns_latency') }} ms |
-
-  **Packet Loss:** {{ states('sensor.internet_health_monitor_packet_loss') }}%
-  **Jitter:** {{ states('sensor.internet_health_monitor_gateway_jitter') }} ms
-```
-
-### Mini Graph Card (HACS)
-
-If you have the mini-graph-card installed via HACS:
-
-```yaml
-type: custom:mini-graph-card
-name: Network Path Latency
-entities:
-  - entity: sensor.internet_health_monitor_hop_1_latency
-    name: Hop 1
-    color: "#4CAF50"
-  - entity: sensor.internet_health_monitor_hop_2_latency
-    name: Hop 2
-    color: "#2196F3"
-  - entity: sensor.internet_health_monitor_hop_3_latency
-    name: Hop 3
-    color: "#FF9800"
-  - entity: sensor.internet_health_monitor_dns_latency
-    name: DNS
-    color: "#9C27B0"
-hours_to_show: 6
-points_per_hour: 12
-line_width: 2
-show:
-  labels: true
-  points: false
+  - entity: button.internet_health_monitor_refresh_diagnostics
 ```
 
 ## Requirements
 
-- Home Assistant 2025.1.0 or newer
-- Python 3.12+
-- Linux host (for gateway detection via `ip route`)
-- `traceroute` command (for multi-hop latency)
+- Home Assistant 2025.1.0 or newer, on a Linux host (HA OS, Container, Supervised or Core)
+- `ip` and `ping` on the host (setup stops with an error naming any that are missing)
+- `traceroute` for hops 2 and 3 (without it, those sensors stay unknown)
 
-## Troubleshooting
+## Known Limitations
 
-### Hop sensors show "Unknown"
+- **Three hops.** IHM watches hops 1 to 3: your gateway and the first routers
+  past it. Problems further along the path show only in DNS latency.
+- **It measures this host's own path.** One entry per Home Assistant; it
+  cannot monitor another device's connection.
+- **Containers on Docker Desktop see one hop.** Docker Desktop (Windows or
+  macOS, including WSL2) hides the routers past its own bridge, so hops 2
+  and 3 stay unknown. HA OS, a bridged VM, or Docker with host networking on
+  Linux see the real path.
+- **Some routers never answer.** A router that ignores traceroute or ping
+  leaves its hop unknown or shows 100% loss, even when traffic passes through
+  it normally.
+- **Jitter needs history.** It is the spread of a hop's latency across polls,
+  so it is unknown until the second poll and steadies over the first 30.
+- **Fixed 60-second polling** (see [Polling](#polling)).
+- **Hop ownership** finds no owner for private or shared ISP addresses
+  (`10.x`, `100.64.x`), which many ISPs use on their first routers, and looks
+  up IPv4 hops only.
 
-Make sure `traceroute` is installed on your Home Assistant host:
 
-```bash
-# Debian/Ubuntu
-sudo apt install traceroute
+### Setup fails: "Required system tools are missing"
 
-# Alpine (HA OS container)
-apk add traceroute
-```
+The error names the missing tools. Install them on the Home Assistant host,
+then reload the integration. HA OS and the official container include them.
 
-### Gateway not detected
+### Hop 2 and 3 sensors show "Unknown"
 
-The integration uses `ip route show default` to detect your gateway. If this fails:
-1. Check that your HA host has a default route
-2. Manually configure your gateway IP in Home Assistant
+- `traceroute` is not installed: `sudo apt install traceroute` (Debian/Ubuntu)
+  or `apk add traceroute` (Alpine).
+- Home Assistant runs in Docker Desktop (Windows or macOS): it hides the
+  hops past its own bridge. Run HA on the real network (HA OS, a bridged VM,
+  or Docker with host networking on Linux).
+- Some routers do not answer traceroute. Press Reset network cache (enable it
+  first) to detect the hops again.
+
+### Gateway reachable is off, or no gateway is detected
+
+IHM uses the host's default route. Check that the host has one
+(`ip route show default`), then press Reset network cache.
 
 ## Quality Scale
 
@@ -273,9 +252,9 @@ Home Assistant grades only its built-in integrations against its [Integration Qu
 <!-- BEGIN GENERATED: quality-scale (from custom_components/internet_health_monitor/quality_scale.yaml; run scripts/generate_quality_scale_table.py) -->
 | Tier | Rules met | Open rules |
 | ---- | --------- | ---------- |
-| 🥉 Bronze | 12 / 20 | [`appropriate-polling`](https://contributors.home-assistant.io/core/quality-scale/appropriate-polling/), [`common-modules`](https://contributors.home-assistant.io/core/quality-scale/common-modules/), [`config-flow`](https://contributors.home-assistant.io/core/quality-scale/config-flow/), [`config-flow-test-coverage`](https://contributors.home-assistant.io/core/quality-scale/config-flow-test-coverage/), [`dependency-transparency`](https://contributors.home-assistant.io/core/quality-scale/dependency-transparency/), [`docs-removal-instructions`](https://contributors.home-assistant.io/core/quality-scale/docs-removal-instructions/), [`runtime-data`](https://contributors.home-assistant.io/core/quality-scale/runtime-data/), [`test-before-setup`](https://contributors.home-assistant.io/core/quality-scale/test-before-setup/) |
-| 🥈 Silver | 6 / 10 | [`action-exceptions`](https://contributors.home-assistant.io/core/quality-scale/action-exceptions/), [`entity-unavailable`](https://contributors.home-assistant.io/core/quality-scale/entity-unavailable/), [`parallel-updates`](https://contributors.home-assistant.io/core/quality-scale/parallel-updates/), [`test-coverage`](https://contributors.home-assistant.io/core/quality-scale/test-coverage/) |
-| 🥇 Gold | 10 / 21 | [`devices`](https://contributors.home-assistant.io/core/quality-scale/devices/), [`docs-examples`](https://contributors.home-assistant.io/core/quality-scale/docs-examples/), [`docs-known-limitations`](https://contributors.home-assistant.io/core/quality-scale/docs-known-limitations/), [`docs-supported-functions`](https://contributors.home-assistant.io/core/quality-scale/docs-supported-functions/), [`docs-troubleshooting`](https://contributors.home-assistant.io/core/quality-scale/docs-troubleshooting/), [`entity-disabled-by-default`](https://contributors.home-assistant.io/core/quality-scale/entity-disabled-by-default/), [`entity-translations`](https://contributors.home-assistant.io/core/quality-scale/entity-translations/), [`exception-translations`](https://contributors.home-assistant.io/core/quality-scale/exception-translations/), [`icon-translations`](https://contributors.home-assistant.io/core/quality-scale/icon-translations/), [`reconfiguration-flow`](https://contributors.home-assistant.io/core/quality-scale/reconfiguration-flow/), [`repair-issues`](https://contributors.home-assistant.io/core/quality-scale/repair-issues/) |
+| 🥉 Bronze | 19 / 20 | [`dependency-transparency`](https://contributors.home-assistant.io/core/quality-scale/dependency-transparency/) |
+| 🥈 Silver | 10 / 10 | None |
+| 🥇 Gold | 21 / 21 | None |
 | 🏆 Platinum | 2 / 3 | [`strict-typing`](https://contributors.home-assistant.io/core/quality-scale/strict-typing/) |
 <!-- END GENERATED: quality-scale -->
 

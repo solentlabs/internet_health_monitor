@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Reconfigure** in the integration's menu, alongside Configure.
+- **Repair issue when `traceroute` is missing**, saying how to install it;
+  it clears itself once installed.
+- **Known limitations** section in the README.
+
 - **Hop ownership (optional, off by default).** Hop sensors can show the
   network operator (`asn`, `as_name`) of each public hop, looked up from
   Team Cymru over DNS. The option says what is sent before you turn it on;
@@ -27,6 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Built to Home Assistant's quality scale**: Silver and Gold rules met,
+  Bronze except publishing Core to PyPI (README.md § Quality Scale). Setup now
+  stops with a clear error when the host cannot measure (unsupported OS,
+  missing `ip` or `ping`) and retries when the first poll fails. The forms
+  use proper controls with a help line on every field. Entity names, errors
+  and icons are translated. The device shows IHM's version.
+- **The scan interval setting is gone.** IHM polls every 60 seconds, as Home
+  Assistant asks of integrations; README.md § Polling shows how to poll at
+  another interval with an automation.
+- **Reset network cache is disabled by default**, and both buttons are now
+  diagnostic entities. A press whose poll fails now reports an error.
+- **Docs use real entity ids.** The README and dashboard examples named
+  sensors IHM never created; a test now checks every id they use.
+
 - **Core is its own package**, `solentlabs-internet-health-monitor-core`
   (module `solentlabs.internet_health_monitor_core`), so it can run outside
   Home Assistant. The integration requires it; HA installs it from PyPI.
@@ -44,6 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rely on HA providing `config_entry`.
 
 ### Fixed
+
+- **The device showed version 0.3.0**; it now matches the manifest (0.1.0),
+  and a test keeps them equal.
 
 - **DNS latency is accurate everywhere.** Core sends its own uncached query
   to the chosen DNS server instead of running `dig`. Without `dig` (all of

@@ -77,6 +77,7 @@ EXCHANGE_CASES = [
 # fmt: on
 
 
+@pytest.mark.enable_socket  # loopback only: an in-process server on 127.0.0.1
 @pytest.mark.parametrize(("description", "rcode", "measured"), EXCHANGE_CASES, ids=[c[0] for c in EXCHANGE_CASES])
 async def test_query_time_ms(description: str, rcode: int | None, measured: bool) -> None:
     """A finished resolution gives a time; failure or silence gives None."""
@@ -152,6 +153,7 @@ QUERY_TXT_CASES = [
 # fmt: on
 
 
+@pytest.mark.enable_socket  # loopback only: an in-process server on 127.0.0.1
 @pytest.mark.parametrize(
     ("description", "rcode", "texts", "expected"), QUERY_TXT_CASES, ids=[c[0] for c in QUERY_TXT_CASES]
 )

@@ -1,394 +1,121 @@
-"""Tests for Internet Health Monitor config flow."""
+"""Tests for the setup and options forms, run through HA's flow manager."""
 
 from __future__ import annotations
 
-from unittest.mock import Mock, PropertyMock, patch
+from typing import Any
 
 import pytest
-from homeassistant import config_entries
+from homeassistant.config_entries import SOURCE_USER
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.internet_health_monitor.config_flow import (
-    ConfigFlow,
-    OptionsFlowHandler,
-)
+from custom_components.internet_health_monitor.config_flow import DEFAULTS, build_schema
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
-    CONF_SCAN_INTERVAL,
-    DEFAULT_DNS_SERVER,
-    DEFAULT_PING_COUNT,
-    DEFAULT_SCAN_INTERVAL,
-    DNS_SERVERS,
     DOMAIN,
     NAME,
 )
 
-
-def _options_flow(entry: Mock) -> OptionsFlowHandler:
-    """Build the options flow as HA does, with HA supplying config_entry."""
-    flow = ConfigFlow.async_get_options_flow(entry)
-    flow.hass = Mock()
-    return flow
-
-
-@pytest.fixture
-def read_only_config_entry():
-    """Make OptionsFlow.config_entry read-only, as in current HA (no setter)."""
-    with patch.object(config_entries.OptionsFlow, "config_entry", new_callable=PropertyMock) as prop:
-        yield prop
-
-
-class TestConfigConstants:
-    """Test configuration constants are properly defined."""
-
-    def test_domain_is_correct(self):
-        """Test that DOMAIN is correctly defined."""
-        assert DOMAIN == "internet_health_monitor"
-
-    def test_name_is_correct(self):
-        """Test that NAME is correctly defined."""
-        assert NAME == "Internet Health Monitor"
-
-    def test_scan_interval_defaults(self):
-        """Test scan interval default values."""
-        assert DEFAULT_SCAN_INTERVAL == 60  # 1 minute
-        assert 10 <= DEFAULT_SCAN_INTERVAL <= 3600
-
-    def test_ping_count_default(self):
-        """Test ping count default value."""
-        assert DEFAULT_PING_COUNT == 3
-        assert 1 <= DEFAULT_PING_COUNT <= 10
-
-    def test_dns_server_default(self):
-        """Test DNS server default value."""
-        assert DEFAULT_DNS_SERVER == "auto"
-
-    def test_dns_servers_options(self):
-        """Test available DNS server options."""
-        assert "auto" in DNS_SERVERS
-        assert "1.1.1.1" in DNS_SERVERS  # Cloudflare
-        assert "8.8.8.8" in DNS_SERVERS  # Google
-        assert "9.9.9.9" in DNS_SERVERS  # Quad9
-
-    def test_config_keys_defined(self):
-        """Test that all config keys are defined."""
-        assert CONF_ENABLE_GATEWAY_MONITORING == "enable_gateway_monitoring"
-        assert CONF_ENABLE_DNS_MONITORING == "enable_dns_monitoring"
-        assert CONF_SCAN_INTERVAL == "scan_interval"
-        assert CONF_DNS_SERVER == "dns_server"
-        assert CONF_PING_COUNT == "ping_count"
-
-
-class TestConfigFlow:
-    """Test the config flow."""
-
-    def test_config_flow_version(self):
-        """Test that config flow version is set."""
-        assert ConfigFlow.VERSION == 1
-
-    @pytest.mark.asyncio
-    async def test_user_step_shows_form(self):
-        """Test that user step shows form when no input provided."""
-        flow = ConfigFlow()
-        flow.hass = Mock()
-
-        # Mock async_set_unique_id to succeed
-        with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
-            result = await flow.async_step_user(user_input=None)
-
-        assert result["type"] == "form"
-        assert result["step_id"] == "user"
-        assert "data_schema" in result
-
-    @pytest.mark.asyncio
-    async def test_user_step_creates_entry(self):
-        """Test that user step creates entry with valid input."""
-        flow = ConfigFlow()
-        flow.hass = Mock()
-
-        user_input = {
-            CONF_ENABLE_GATEWAY_MONITORING: True,
-            CONF_ENABLE_DNS_MONITORING: True,
-            CONF_SCAN_INTERVAL: 60,
-            CONF_DNS_SERVER: "auto",
-            CONF_PING_COUNT: 3,
-        }
-
-        with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
-            result = await flow.async_step_user(user_input=user_input)
-
-        assert result["type"] == "create_entry"
-        assert result["title"] == NAME
-        assert result["data"] == {}
-        assert result["options"] == user_input
-
-    @pytest.mark.asyncio
-    async def test_user_step_gateway_disabled(self):
-        """Test config with gateway monitoring disabled."""
-        flow = ConfigFlow()
-        flow.hass = Mock()
-
-        user_input = {
-            CONF_ENABLE_GATEWAY_MONITORING: False,
-            CONF_ENABLE_DNS_MONITORING: True,
-            CONF_SCAN_INTERVAL: 120,
-            CONF_DNS_SERVER: "8.8.8.8",
-            CONF_PING_COUNT: 5,
-        }
-
-        with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
-            result = await flow.async_step_user(user_input=user_input)
-
-        assert result["type"] == "create_entry"
-        assert result["options"][CONF_ENABLE_GATEWAY_MONITORING] is False
-        assert result["options"][CONF_ENABLE_DNS_MONITORING] is True
-
-    @pytest.mark.asyncio
-    async def test_user_step_dns_disabled(self):
-        """Test config with DNS monitoring disabled."""
-        flow = ConfigFlow()
-        flow.hass = Mock()
-
-        user_input = {
-            CONF_ENABLE_GATEWAY_MONITORING: True,
-            CONF_ENABLE_DNS_MONITORING: False,
-            CONF_SCAN_INTERVAL: 60,
-            CONF_DNS_SERVER: "auto",
-            CONF_PING_COUNT: 3,
-        }
-
-        with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
-            result = await flow.async_step_user(user_input=user_input)
-
-        assert result["type"] == "create_entry"
-        assert result["options"][CONF_ENABLE_GATEWAY_MONITORING] is True
-        assert result["options"][CONF_ENABLE_DNS_MONITORING] is False
-
-
-class TestOptionsFlow:
-    """Test the options flow."""
-
-    def test_options_flow_handler_exists(self):
-        """Test that OptionsFlowHandler exists."""
-        assert OptionsFlowHandler is not None
-
-    def test_options_flow_has_init_step(self):
-        """Test that options flow has init step."""
-        assert hasattr(OptionsFlowHandler, "async_step_init")
-
-    @pytest.mark.asyncio
-    async def test_options_step_shows_form(self, read_only_config_entry):
-        """Test that options step shows form with current values."""
-        mock_entry = Mock()
-        mock_entry.options = {
-            CONF_ENABLE_GATEWAY_MONITORING: True,
-            CONF_ENABLE_DNS_MONITORING: True,
-            CONF_SCAN_INTERVAL: 60,
-            CONF_DNS_SERVER: "auto",
-            CONF_PING_COUNT: 3,
-        }
-
-        read_only_config_entry.return_value = mock_entry
-        flow = _options_flow(mock_entry)
-
-        result = await flow.async_step_init(user_input=None)
-
-        assert result["type"] == "form"
-        assert result["step_id"] == "init"
-        assert "data_schema" in result
-
-    @pytest.mark.asyncio
-    async def test_options_step_updates_options(self, read_only_config_entry):
-        """Test that options step updates options."""
-        mock_entry = Mock()
-        mock_entry.options = {
-            CONF_ENABLE_GATEWAY_MONITORING: True,
-            CONF_ENABLE_DNS_MONITORING: True,
-            CONF_SCAN_INTERVAL: 60,
-            CONF_DNS_SERVER: "auto",
-            CONF_PING_COUNT: 3,
-        }
-
-        read_only_config_entry.return_value = mock_entry
-        flow = _options_flow(mock_entry)
-
-        new_options = {
-            CONF_ENABLE_GATEWAY_MONITORING: False,
-            CONF_ENABLE_DNS_MONITORING: True,
-            CONF_SCAN_INTERVAL: 120,
-            CONF_DNS_SERVER: "8.8.8.8",
-            CONF_PING_COUNT: 5,
-        }
-
-        result = await flow.async_step_init(user_input=new_options)
-
-        assert result["type"] == "create_entry"
-        assert result["data"] == new_options
-
-    @pytest.mark.asyncio
-    async def test_options_preserves_existing_values(self, read_only_config_entry):
-        """Test that options form shows existing values as defaults."""
-        mock_entry = Mock()
-        existing_options = {
-            CONF_ENABLE_GATEWAY_MONITORING: False,
-            CONF_ENABLE_DNS_MONITORING: False,
-            CONF_SCAN_INTERVAL: 300,
-            CONF_DNS_SERVER: "1.1.1.1",
-            CONF_PING_COUNT: 10,
-        }
-        mock_entry.options = existing_options
-
-        read_only_config_entry.return_value = mock_entry
-        flow = _options_flow(mock_entry)
-
-        result = await flow.async_step_init(user_input=None)
-
-        # Verify form is shown with schema
-        assert result["type"] == "form"
-        assert "data_schema" in result
-
-
-class TestOptionsFlowCreation:
-    """The options flow opens on current HA, where config_entry has no setter."""
-
-    def test_get_options_flow_does_not_assign_config_entry(self):
-        """Opening options must not assign config_entry (HA 2026.9 AttributeError)."""
-        with patch.object(
-            config_entries.OptionsFlow,
-            "config_entry",
-            property(lambda self: None),
-        ):
-            flow = ConfigFlow.async_get_options_flow(Mock())
-        assert isinstance(flow, OptionsFlowHandler)
-
-
-class TestConfigFlowRegistration:
-    """Test the config flow registration."""
-
-    def test_handler_is_registered(self):
-        """Test that the config flow handler is registered with correct domain."""
-        handler = config_entries.HANDLERS.get(DOMAIN)
-        assert handler is not None
-        assert handler == ConfigFlow
-
-
-class TestScanIntervalValidation:
-    """Test scan interval validation."""
-
-    def test_scan_interval_minimum(self):
-        """Test minimum scan interval is 10 seconds."""
-        # From config_flow schema: vol.Range(min=10, max=3600)
-        assert DEFAULT_SCAN_INTERVAL >= 10
-
-    def test_scan_interval_maximum(self):
-        """Test maximum scan interval is 1 hour."""
-        # From config_flow schema: vol.Range(min=10, max=3600)
-        assert DEFAULT_SCAN_INTERVAL <= 3600
-
-    def test_common_intervals_valid(self):
-        """Test common interval values are within valid range."""
-        common_intervals = [
-            10,  # Minimum
-            30,  # 30 seconds
-            60,  # 1 minute (default)
-            120,  # 2 minutes
-            300,  # 5 minutes
-            600,  # 10 minutes
-            3600,  # 1 hour (maximum)
-        ]
-        for interval in common_intervals:
-            assert 10 <= interval <= 3600
-
-
-class TestPingCountValidation:
-    """Test ping count validation."""
-
-    def test_ping_count_minimum(self):
-        """Test minimum ping count is 1."""
-        # From config_flow schema: vol.Range(min=1, max=10)
-        assert DEFAULT_PING_COUNT >= 1
-
-    def test_ping_count_maximum(self):
-        """Test maximum ping count is 10."""
-        # From config_flow schema: vol.Range(min=1, max=10)
-        assert DEFAULT_PING_COUNT <= 10
-
-
-class TestDNSServerValidation:
-    """Test DNS server validation."""
-
-    def test_dns_servers_is_dict(self):
-        """Test that DNS_SERVERS is a dictionary."""
-        assert isinstance(DNS_SERVERS, dict)
-
-    def test_dns_servers_have_labels(self):
-        """Test that all DNS servers have labels."""
-        for server, label in DNS_SERVERS.items():
-            assert isinstance(server, str)
-            assert isinstance(label, str)
-            assert len(label) > 0
-
-    def test_auto_option_exists(self):
-        """Test that auto-detect option exists."""
-        assert "auto" in DNS_SERVERS
-        assert DNS_SERVERS["auto"] == "Auto-detect"
-
-
-def _default(result: dict, key: str) -> object:
-    """Return the form default for key."""
-    marker = next(m for m in result["data_schema"].schema if m == key)
-    return marker.default()
-
-
-# Stored option -> options form default
+from .conftest import SetupEntry
+
+USER_INPUT: dict[str, Any] = {
+    CONF_ENABLE_GATEWAY_MONITORING: True,
+    CONF_ENABLE_DNS_MONITORING: False,
+    CONF_DNS_SERVER: "1.1.1.1",
+    CONF_PING_COUNT: 5,
+    CONF_HOP_OWNERSHIP: True,
+}
+
+# stored options -> form defaults for (dns server, ping count, hop ownership)
 # fmt: off
-HOP_OWNERSHIP_DEFAULT_CASES = [
-    ("never set", {},                           False),
-    ("enabled",   {CONF_HOP_OWNERSHIP: True},   True),
+DEFAULT_CASES = [
+    ("never set", {},                                                    ("auto", 3, False)),
+    ("stored",    {CONF_DNS_SERVER: "9.9.9.9", CONF_PING_COUNT: 2, CONF_HOP_OWNERSHIP: True},
+                                                                         ("9.9.9.9", 2, True)),
 ]
 # fmt: on
 
 
-@pytest.mark.asyncio
-async def test_hop_ownership_off_at_setup() -> None:
-    """Hop ownership is opt-in: the setup form defaults it to off."""
-    flow = ConfigFlow()
-    flow.hass = Mock()
-    with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
-        result = await flow.async_step_user(user_input=None)
-    assert _default(result, CONF_HOP_OWNERSHIP) is False
+def _defaults(schema: Any) -> dict[str, Any]:
+    """Form field -> default."""
+    return {marker.schema: marker.default() for marker in schema.schema}
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("description", "options", "expected"),
-    HOP_OWNERSHIP_DEFAULT_CASES,
-    ids=[c[0] for c in HOP_OWNERSHIP_DEFAULT_CASES],
-)
-async def test_hop_ownership_options_default(
-    read_only_config_entry, description: str, options: dict, expected: bool
-) -> None:
-    """The options form shows the stored choice, off when never set."""
-    entry = Mock()
-    entry.options = options
-    read_only_config_entry.return_value = entry
-    result = await _options_flow(entry).async_step_init(user_input=None)
-    assert _default(result, CONF_HOP_OWNERSHIP) is expected
+async def test_user_flow_creates_entry(hass: HomeAssistant) -> None:
+    """The form creates one entry, keyed to the domain, with the input as options."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == NAME
+    assert result["options"] == USER_INPUT
+    assert result["result"].unique_id == DOMAIN
 
 
-@pytest.mark.asyncio
-async def test_form_fields_carry_no_stray_arguments(read_only_config_entry) -> None:
-    """No field has a msg: a stray positional argument to vol.Required would land there."""
-    flow = ConfigFlow()
-    flow.hass = Mock()
-    with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
-        setup = await flow.async_step_user(user_input=None)
-    entry = Mock()
-    entry.options = {}
-    read_only_config_entry.return_value = entry
-    options = await _options_flow(entry).async_step_init(user_input=None)
-    for result in (setup, options):
-        assert [m.schema for m in result["data_schema"].schema if m.msg] == []
+async def test_second_entry_aborts(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """One host, one entry: a second setup is refused."""
+    await setup_entry()
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_options_flow_saves(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """The options form saves the new settings on the entry."""
+    entry = await setup_entry()
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.options.async_configure(result["flow_id"], USER_INPUT)
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert dict(entry.options) == USER_INPUT
+
+
+@pytest.mark.parametrize(("description", "stored", "expected"), DEFAULT_CASES, ids=[c[0] for c in DEFAULT_CASES])
+def test_form_defaults(description: str, stored: dict[str, Any], expected: tuple[str, int, bool]) -> None:
+    """The form shows stored values, else DEFAULTS; hop ownership is off unless chosen."""
+    defaults = _defaults(build_schema(stored))
+    assert (defaults[CONF_DNS_SERVER], defaults[CONF_PING_COUNT], defaults[CONF_HOP_OWNERSHIP]) == expected
+
+
+def test_form_fields_match_defaults() -> None:
+    """Every field has a default, and no field carries a stray argument (msg)."""
+    schema = build_schema({})
+    assert {m.schema for m in schema.schema} == set(DEFAULTS)
+    assert [m.schema for m in schema.schema if m.msg] == []
+
+
+@pytest.mark.parametrize(("value", "valid"), [(1, True), (10, True), (0, False), (11, False)])
+def test_ping_count_range(value: int, valid: bool) -> None:
+    """Ping count accepts 1 to 10 and is stored as an int."""
+    schema = build_schema({})
+    data = {**DEFAULTS, CONF_PING_COUNT: float(value)}
+    if valid:
+        assert schema(data)[CONF_PING_COUNT] == value
+        assert isinstance(schema(data)[CONF_PING_COUNT], int)
+    else:
+        with pytest.raises(Exception):  # noqa: B017 - voluptuous raises its own Invalid subclasses
+            schema(data)
+
+
+async def test_reconfigure_updates_and_reloads(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Reconfigure shows the current settings, saves the new ones and reloads."""
+    entry = await setup_entry(**{CONF_PING_COUNT: 2})
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert _defaults(result["data_schema"])[CONF_PING_COUNT] == 2
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert dict(entry.options) == USER_INPUT
+    assert entry.runtime_data.diagnostics.config.ping_count == 5

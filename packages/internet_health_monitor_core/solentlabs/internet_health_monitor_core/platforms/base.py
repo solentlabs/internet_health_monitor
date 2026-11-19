@@ -53,3 +53,9 @@ class Platform(Protocol):
 
     async def host_environment(self) -> HostEnvironment:
         """Describe the host: connection type, container, install type."""
+
+    def missing_tools(self) -> list[str]:
+        """Return required system tools that are not installed (blocking: run in an executor)."""
+
+    def missing_optional_tools(self) -> list[str]:
+        """Return optional tools that are not installed; each disables part of the measurements."""

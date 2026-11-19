@@ -5,20 +5,41 @@
         "title": "Internet Health Monitor",
         "description": "Configure network health monitoring",
         "data": {
-          "enable_gateway_monitoring": "Enable gateway monitoring",
-          "enable_dns_monitoring": "Enable DNS monitoring",
-          "scan_interval": "Scan interval (seconds)",
+          "enable_gateway_monitoring": "Monitor gateway and hops",
+          "enable_dns_monitoring": "Monitor DNS",
           "dns_server": "DNS server",
-          "ping_count": "Ping count",
+          "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop"
         },
         "data_description": {
+          "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
+          "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
+          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
+          "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
+          "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Internet Health Monitor",
+        "data": {
+          "enable_gateway_monitoring": "Monitor gateway and hops",
+          "enable_dns_monitoring": "Monitor DNS",
+          "dns_server": "DNS server",
+          "ping_count": "Pings per target",
+          "hop_ownership": "Look up who runs each hop"
+        },
+        "data_description": {
+          "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
+          "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
+          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
+          "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent."
         }
       }
     },
     "abort": {
-      "already_configured": "Internet Health Monitor is already configured"
+      "already_configured": "Internet Health Monitor is already configured",
+      "reconfigure_successful": "Settings were updated."
     }
   },
   "options": {
@@ -26,52 +47,101 @@
       "init": {
         "title": "Internet Health Monitor Options",
         "data": {
-          "enable_gateway_monitoring": "Enable gateway monitoring",
-          "enable_dns_monitoring": "Enable DNS monitoring",
-          "scan_interval": "Scan interval (seconds)",
+          "enable_gateway_monitoring": "Monitor gateway and hops",
+          "enable_dns_monitoring": "Monitor DNS",
           "dns_server": "DNS server",
-          "ping_count": "Ping count",
+          "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop"
         },
         "data_description": {
+          "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
+          "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
+          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
+          "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent."
         }
       }
     }
   },
+  "selector": {
+    "dns_server": {
+      "options": {
+        "auto": "Auto-detect",
+        "1.1.1.1": "Cloudflare (1.1.1.1)",
+        "8.8.8.8": "Google (8.8.8.8)",
+        "9.9.9.9": "Quad9 (9.9.9.9)",
+        "208.67.222.222": "OpenDNS (208.67.222.222)"
+      }
+    }
+  },
   "entity": {
     "sensor": {
-      "gateway_latency": {
-        "name": "Gateway Latency"
+      "hop_1_latency": {
+        "name": "Hop 1 latency (gateway)"
       },
-      "gateway_jitter": {
-        "name": "Gateway Jitter"
+      "hop_1_jitter": {
+        "name": "Hop 1 jitter (gateway)"
       },
-      "packet_loss": {
-        "name": "Packet Loss"
+      "hop_1_packet_loss": {
+        "name": "Hop 1 packet loss (gateway)"
       },
-      "isp_latency": {
-        "name": "ISP Latency"
+      "hop_2_latency": {
+        "name": "Hop 2 latency (ISP)"
+      },
+      "hop_2_jitter": {
+        "name": "Hop 2 jitter (ISP)"
+      },
+      "hop_2_packet_loss": {
+        "name": "Hop 2 packet loss (ISP)"
+      },
+      "hop_3_latency": {
+        "name": "Hop 3 latency (backbone)"
+      },
+      "hop_3_jitter": {
+        "name": "Hop 3 jitter (backbone)"
+      },
+      "hop_3_packet_loss": {
+        "name": "Hop 3 packet loss (backbone)"
       },
       "dns_latency": {
-        "name": "DNS Latency"
+        "name": "DNS latency"
       }
     },
     "binary_sensor": {
       "gateway_reachable": {
-        "name": "Gateway Reachable"
+        "name": "Gateway reachable"
       },
       "internet_reachable": {
-        "name": "Internet Reachable"
+        "name": "Internet reachable"
       }
     },
     "button": {
-      "refresh": {
-        "name": "Refresh"
+      "refresh_diagnostics": {
+        "name": "Refresh diagnostics"
       },
-      "reset_network_cache": {
-        "name": "Reset Network Cache"
+      "reset_cache": {
+        "name": "Reset network cache"
       }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "Network diagnostics failed: {error}"
+    },
+    "refresh_failed": {
+      "message": "The poll failed; see the log for details."
+    },
+    "unsupported_platform": {
+      "message": "Internet Health Monitor runs on Linux and Windows hosts only."
+    },
+    "missing_tools": {
+      "message": "Required system tools are missing on this host: {tools}. Install them, then reload the integration."
+    }
+  },
+  "issues": {
+    "traceroute_missing": {
+      "title": "traceroute is not installed",
+      "description": "Internet Health Monitor needs `traceroute` to find hops 2 and 3, so those sensors stay unknown. Install it on the Home Assistant host (`apt install traceroute` or `apk add traceroute`), then reload the integration. Gateway and DNS monitoring keep working."
     }
   }
 }
