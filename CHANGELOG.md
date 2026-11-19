@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Shorter entity ids.** The device is now "Internet Health", so new
+  installs get ids like `sensor.internet_health_hop_2_latency_isp`. Rename
+  the device for your own prefix (README.md § Renaming, ADR-010); existing
+  installs keep their ids.
+
 - **Jitter now means what speed tests mean by it** (ADR-009): the average
   change between consecutive ping round-trip times within each poll, as in
   RFC 3550 and Cloudflare's speed test. It was the spread of per-poll

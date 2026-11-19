@@ -70,10 +70,22 @@ automation:
     actions:
       - action: homeassistant.update_entity
         target:
-          entity_id: sensor.internet_health_monitor_dns_latency
+          entity_id: sensor.internet_health_dns_latency
 ```
 
 Updating any one IHM entity runs a full poll for all of them.
+
+### Renaming
+
+Every entity starts with the device name, "Internet Health", so a new
+install creates ids like `sensor.internet_health_hop_2_latency_isp`. To
+use your own prefix, go to Settings > Devices & services > Devices, open
+**Internet Health**, select the pencil icon, enter a new name (for example
+"Network"), and accept the offer to rename the entity ids. You get
+`sensor.network_hop_2_latency_isp`, and the names on your dashboards follow.
+There is no prefix setting: Home Assistant asks integrations to leave naming
+to this screen
+([ADR-010](docs/ARCHITECTURE_DECISIONS.md#adr-010-names-are-changed-by-renaming-the-device)).
 
 ### Hop Ownership
 
@@ -156,13 +168,13 @@ Entity ids below are the ones a new install creates. More examples:
 type: glance
 title: Network Path
 entities:
-  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
+  - entity: sensor.internet_health_hop_1_latency_gateway
     name: Gateway
-  - entity: sensor.internet_health_monitor_hop_2_latency_isp
+  - entity: sensor.internet_health_hop_2_latency_isp
     name: ISP
-  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
+  - entity: sensor.internet_health_hop_3_latency_backbone
     name: Backbone
-  - entity: sensor.internet_health_monitor_dns_latency
+  - entity: sensor.internet_health_dns_latency
     name: DNS
 ```
 
@@ -173,13 +185,13 @@ type: history-graph
 title: Network Path Latency (24h)
 hours_to_show: 24
 entities:
-  - entity: sensor.internet_health_monitor_hop_1_latency_gateway
+  - entity: sensor.internet_health_hop_1_latency_gateway
     name: Gateway
-  - entity: sensor.internet_health_monitor_hop_2_latency_isp
+  - entity: sensor.internet_health_hop_2_latency_isp
     name: ISP
-  - entity: sensor.internet_health_monitor_hop_3_latency_backbone
+  - entity: sensor.internet_health_hop_3_latency_backbone
     name: Backbone
-  - entity: sensor.internet_health_monitor_dns_latency
+  - entity: sensor.internet_health_dns_latency
     name: DNS
 ```
 
@@ -189,14 +201,14 @@ entities:
 type: entities
 title: Internet Health Monitor
 entities:
-  - entity: binary_sensor.internet_health_monitor_gateway_reachable
-  - entity: binary_sensor.internet_health_monitor_internet_reachable
+  - entity: binary_sensor.internet_health_gateway_reachable
+  - entity: binary_sensor.internet_health_internet_reachable
   - type: divider
-  - entity: sensor.internet_health_monitor_hop_1_packet_loss_gateway
-  - entity: sensor.internet_health_monitor_hop_2_packet_loss_isp
-  - entity: sensor.internet_health_monitor_hop_2_jitter_isp
+  - entity: sensor.internet_health_hop_1_packet_loss_gateway
+  - entity: sensor.internet_health_hop_2_packet_loss_isp
+  - entity: sensor.internet_health_hop_2_jitter_isp
   - type: divider
-  - entity: button.internet_health_monitor_refresh_diagnostics
+  - entity: button.internet_health_refresh_diagnostics
 ```
 
 ## Requirements

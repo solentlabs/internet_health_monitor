@@ -16,6 +16,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
 | [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
 | [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Open |
+| [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
 
 ---
 
@@ -351,3 +352,27 @@ one-way delay, since ping measures round trips.
 - No latency history is kept; each poll stands alone, and HA's long-term
   statistics carry the trend.
 - Docs call it jitter (the term users know) and define it as above.
+
+---
+
+## ADR-010: Names are changed by renaming the device
+
+**Status:** Accepted 2026-11-19
+
+**Context:** A customizable entity name prefix was on the Local list, a
+lesson from Cable Modem Monitor. HA core's integration guidance says "Do
+NOT allow users to set config entry names in config flows. Names are
+automatically generated or can be customized later in UI" (R16). IHM
+targets Platinum.
+
+**Decision:** No prefix setting. Entity names and ids start with the
+device name, which defaults to "Internet Health" (`const.DEVICE_NAME`),
+short enough for readable ids (`sensor.internet_health_hop_2_latency_isp`).
+Users who want another prefix rename the device in HA, which offers to
+rename the entity ids to match (README.md § Renaming).
+
+**Constraints:**
+- Docs use the default ids; `tests/components/test_docs.py` fails if an
+  example names an id a new install does not create.
+- The integration's own title stays "Internet Health Monitor"; only the
+  device and entity names use the short form.

@@ -12,7 +12,7 @@ from .conftest import SetupEntry
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = [ROOT / "README.md", ROOT / "docs" / "dashboard-examples.md"]
-ENTITY_ID = re.compile(r"\b(?:sensor|binary_sensor|button)\.internet_health_monitor_[a-z0-9_]+")
+ENTITY_ID = re.compile(r"\b(?:sensor|binary_sensor|button)\.internet_health_[a-z0-9_]+")
 
 
 async def test_doc_entity_ids_exist(hass: HomeAssistant, setup_entry: SetupEntry) -> None:

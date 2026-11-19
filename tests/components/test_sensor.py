@@ -47,7 +47,7 @@ async def test_names_come_from_translations(hass: HomeAssistant, setup_entry: Se
     entry = await setup_entry()
     state = hass.states.get(entity_id(hass, "sensor", entry, "hop_2_latency") or "")
     assert state is not None
-    assert state.attributes["friendly_name"] == "Internet Health Monitor Hop 2 latency (ISP)"
+    assert state.attributes["friendly_name"] == "Internet Health Hop 2 latency (ISP)"
 
 
 @pytest.mark.parametrize(

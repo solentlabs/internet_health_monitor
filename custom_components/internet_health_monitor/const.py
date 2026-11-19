@@ -10,6 +10,9 @@ __all__ = ["DEFAULT_DNS_SERVER", "DEFAULT_PING_COUNT", "PING_COUNT_MAX", "PING_C
 
 DOMAIN = "internet_health_monitor"
 NAME = "Internet Health Monitor"
+# The device, and so the start of every entity name and id. Users rename it
+# in HA instead of a prefix setting (ADR-010).
+DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
 TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet-health-monitor#troubleshooting"
 VERSION = "0.1.0"  # must equal manifest.json "version" (tests/components/test_const.py)

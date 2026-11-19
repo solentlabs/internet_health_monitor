@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, NAME, VERSION
+from .const import DEVICE_NAME, DOMAIN, MANUFACTURER, VERSION
 from .coordinator import InternetHealthCoordinator
 
 
@@ -21,7 +21,7 @@ class InternetHealthEntity(CoordinatorEntity[InternetHealthCoordinator]):
         self._attr_unique_id = f"{entry_id}_{key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
-            name=NAME,
+            name=DEVICE_NAME,
             manufacturer=MANUFACTURER,
             sw_version=VERSION,
             entry_type=DeviceEntryType.SERVICE,
