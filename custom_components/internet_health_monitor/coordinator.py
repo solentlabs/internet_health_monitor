@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import override
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -46,6 +47,7 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=SCAN_INTERVAL)
         self.diagnostics = diagnostics
 
+    @override
     async def _async_update_data(self) -> NetworkDiagnosticsResult:
         """Run one poll; a failure marks entities unavailable until the next success."""
         try:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, override
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -113,11 +113,13 @@ class ResultSensor(InternetHealthEntity, SensorEntity):
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
+    @override
     @property
     def native_value(self) -> float | None:
         """Return the measurement."""
         return self.entity_description.value_fn(self.coordinator.data)
 
+    @override
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return context for the measurement."""
@@ -139,12 +141,14 @@ class HopSensor(InternetHealthEntity, SensorEntity):
         """This sensor's hop in the latest result."""
         return self.coordinator.data.get_hop(self._hop_number)
 
+    @override
     @property
     def native_value(self) -> float | None:
         """Return the measurement, or None if the hop was not found."""
         hop = self._hop()
         return self.entity_description.value_fn(hop) if hop else None
 
+    @override
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Describe the hop: address, reachability, name, owner, packet counts."""

@@ -282,6 +282,25 @@ Defaults of comparable tools, read from their source 2026-11-19 [V]:
 | Uptime Kuma | 60 s | one check | `src/pages/EditMonitor.vue` (louislam/uptime-kuma, master) |
 | SmokePing | 300 s | 20 pings | `etc/config.dist.in` `step`, `pings` (oetiker/SmokePing, master) |
 
+## R17. Probatio replaces voluptuous
+
+HA developer blog, "Probatio is our validation engine", 2026-09-30
+(https://github.com/home-assistant/developers.home-assistant/blob/master/blog/2026-09-30-probatio-validation-engine.md)
+[V]: "Since Home Assistant Core 2026.9, schema validation runs on
+Probatio instead of voluptuous"; `import voluptuous` still works through
+an alias and "voluptuous is no longer installed at all"; "Core itself has
+moved to importing Probatio directly"; reaching probatio's typed results
+and translated errors "means importing `probatio` directly".
+
+HA core `pyproject.toml` at release tags [V]: `voluptuous==0.15.2` up to
+2026.7.0, `probatio==0.11.4` at 2026.9.0, `probatio==0.13.0` at 2026.10.0;
+2026.9.0 and later require Python >=3.14.2. Local mypy runs (2026-11-19)
+[V, local run]: HA 2026.9.4 still annotates flow `data_schema` as
+voluptuous; 2026.10.4 annotates it as `probatio.schema.Schema`.
+
+HA core strict typing settings: `mypy.ini`
+(https://github.com/home-assistant/core/blob/dev/mypy.ini) [V].
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

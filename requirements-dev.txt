@@ -1,11 +1,10 @@
 # Development dependencies for Internet Health Monitor
 # Install with: pip install -r requirements-dev.txt
 
-# Home Assistant (provides runtime dependencies). The Python version picks
-# the HA version: on Python 3.12 pip can only install 2025.1.x, the minimum
-# IHM supports (2025.2+ needs 3.13); on Python 3.14 it installs the newest.
-# `make test` runs on the minimum, `make test-current` on the newest.
-homeassistant>=2025.1.0
+# Home Assistant (provides runtime dependencies). Floor: ADR-008. `make setup`
+# adds ha-minimum.txt to install the oldest supported HA; `make setup-current`
+# installs the newest the test harness supports.
+homeassistant>=2026.10.0
 
 # IHM's own core package, editable (manifest.json pins the published version)
 -e packages/internet_health_monitor_core

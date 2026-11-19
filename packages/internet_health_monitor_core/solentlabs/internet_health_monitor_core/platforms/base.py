@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 @dataclass
@@ -20,7 +20,7 @@ class HostEnvironment:
     # Home Assistant installation type
     ha_install_type: str | None = None  # haos, container, core, supervised
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "connection_type": self.connection_type,

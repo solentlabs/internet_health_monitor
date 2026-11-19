@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import override
+
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -54,6 +56,7 @@ class _PollButton(InternetHealthEntity, ButtonEntity):
 class RefreshButton(_PollButton):
     """Run a poll now instead of waiting for the next one."""
 
+    @override
     async def async_press(self) -> None:
         """Poll now."""
         await self._poll()
@@ -62,6 +65,7 @@ class RefreshButton(_PollButton):
 class ResetCacheButton(_PollButton):
     """Forget the detected gateway, hops and hostnames, then detect them again."""
 
+    @override
     async def async_press(self) -> None:
         """Reset detection and poll."""
         self.coordinator.diagnostics.reset_all()

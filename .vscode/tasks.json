@@ -30,15 +30,7 @@
     {
       "label": "Setup Local Python Environment",
       "type": "shell",
-      "command": "./scripts/setup.sh",
-      "windows": {
-        "command": ".\\scripts\\setup.ps1",
-        "options": {
-          "shell": {
-            "executable": "powershell.exe"
-          }
-        }
-      },
+      "command": "make setup && make setup-current",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -46,7 +38,7 @@
         "focus": true
       },
       "problemMatcher": [],
-      "detail": "Create .venv and install all dependencies"
+      "detail": "Create .venv (oldest supported HA) and .venv-current (newest HA)"
     },
     {
       "label": "Run All Tests",
@@ -334,7 +326,7 @@
     {
       "label": "Docker: Run Tests in Container",
       "type": "shell",
-      "command": "docker run --rm -v ${workspaceFolder}:/app -w /app python:3.12-slim bash -c 'pip install -q -r requirements-dev.txt && pytest'",
+      "command": "docker run --rm -v ${workspaceFolder}:/app -w /app python:3.14-slim bash -c 'pip install -q -r requirements-dev.txt && pytest'",
       "dependsOn": [
         "🐳 Check Docker Status"
       ],

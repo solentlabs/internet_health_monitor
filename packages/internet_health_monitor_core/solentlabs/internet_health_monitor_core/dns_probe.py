@@ -14,6 +14,7 @@ import secrets
 import socket
 import struct
 import time
+from typing import override
 
 DNS_PORT = 53
 RCODE_NOERROR = 0
@@ -98,14 +99,17 @@ class _Exchange(asyncio.DatagramProtocol):
         self._done = done
         self.sent_at = 0.0
 
+    @override
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         self.sent_at = time.perf_counter()
         transport.sendto(self._query)  # type: ignore[attr-defined]
 
+    @override
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         if parse_rcode(data, self._query_id) is not None and not self._done.done():
             self._done.set_result((data, time.perf_counter()))
 
+    @override
     def error_received(self, exc: Exception) -> None:
         if not self._done.done():
             self._done.set_exception(exc)

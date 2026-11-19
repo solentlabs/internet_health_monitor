@@ -6,7 +6,7 @@ name = "internet-health-monitor"
 version = "0.1.0"
 description = "Internet health monitoring integration for Home Assistant - gateway latency, jitter, packet loss, DNS monitoring"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = {text = "MIT"}
 authors = [
     {name = "Solent Labs"},
@@ -17,8 +17,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
 
@@ -87,16 +85,36 @@ combine-as-imports = true
 # Mypy (static type checker)
 # -------------------------------
 [tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
+# Home Assistant core's strict-typing settings (its mypy.ini global section
+# plus the per-integration strict block; quality scale strict-typing).
+python_version = "3.14"
+mypy_path = "packages/internet_health_monitor_core"
 files = [
     "custom_components/internet_health_monitor/**/*.py",
     "packages/internet_health_monitor_core/solentlabs/**/*.py",
 ]
-mypy_path = "packages/internet_health_monitor_core"
+explicit_package_bases = true
+show_error_codes = true
+follow_imports = "normal"
+local_partial_types = true
+strict_equality = true
+strict_bytes = true
+no_implicit_optional = true
+warn_incomplete_stub = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+enable_error_code = ["deprecated", "explicit-override", "ignore-without-code", "redundant-self", "truthy-iterable"]
+disable_error_code = ["annotation-unchecked", "import-not-found", "import-untyped"]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+warn_return_any = true
+warn_unreachable = true
 
 # -------------------------------
 # Pytest (test runner)

@@ -5,8 +5,8 @@ help:
 	@echo "Internet Health Monitor - Available Commands"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make setup         - .venv on Python 3.12 via uv: minimum HA (2025.1.x)"
-	@echo "  make setup-current - .venv-current on Python 3.14 via uv: newest HA"
+	@echo "  make setup         - .venv: oldest supported HA (ha-minimum.txt), Python 3.14"
+	@echo "  make setup-current - .venv-current: newest HA the test harness supports"
 	@echo ""
 	@echo "Development:"
 	@echo "  make test        - Tests with coverage on minimum HA (.venv)"
@@ -27,16 +27,14 @@ help:
 # Setup development environment
 setup:
 	@echo "Creating virtual environment..."
-	uv venv --allow-existing --seed --python 3.12 .venv
+	uv venv --allow-existing --seed --python 3.14 .venv
 	@echo "Installing dependencies..."
-	@# pip, not uv pip: HA 2025.1.x pins a pre-release (aiohasupervisor==0.2.2b5),
-	@# which pip accepts and uv's resolver refuses.
-	.venv/bin/pip install -r requirements-dev.txt
+	uv pip install --python .venv -r requirements-dev.txt -c ha-minimum.txt
 	@echo "Installing pre-commit hooks..."
 	.venv/bin/pre-commit install
 	@echo "Setup complete! Activate with: source .venv/bin/activate"
 
-# Newest HA: needs Python 3.14 (uv installs it if missing)
+# Newest HA the test harness supports
 setup-current:
 	uv venv --allow-existing --python 3.14 .venv-current
 	uv pip install --python .venv-current -r requirements-dev.txt
@@ -86,7 +84,8 @@ lint-fix:
 # Type checking
 type-check:
 	@echo "Running mypy type checker..."
-	@.venv/bin/mypy --explicit-package-bases custom_components/internet_health_monitor packages/internet_health_monitor_core/solentlabs
+	@.venv/bin/mypy
+	@.venv-current/bin/mypy
 
 # Format code
 format:

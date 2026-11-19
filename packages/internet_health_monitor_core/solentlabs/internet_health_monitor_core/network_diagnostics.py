@@ -104,7 +104,7 @@ class HopInfo:
             return "isp"
         return "backbone"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result: dict[str, Any] = {
             "hop_number": self.hop_number,
@@ -178,7 +178,7 @@ class NetworkDiagnosticsResult:
         hop = self.get_hop(2)
         return hop.latency_ms if hop else None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for coordinator data."""
         return {
             "gateway_ip": self.gateway_ip,
@@ -364,28 +364,28 @@ class NetworkDiagnostics:
         # Handle gateway result
         if isinstance(results[0], Exception):
             _LOGGER.debug("Gateway check failed: %s", results[0])
-            gateway_result: dict = {
+            gateway_result: dict[str, Any] = {
                 "reachable": False,
                 "latency_ms": None,
                 "packets_sent": self.config.ping_count,
                 "packets_received": 0,
             }
         else:
-            gateway_result = results[0]  # type: ignore[assignment]
+            gateway_result = results[0]
 
         # Handle hops result
         if isinstance(results[1], Exception):
             _LOGGER.debug("Hops check failed: %s", results[1])
             hops_result: list[HopInfo] = []
         else:
-            hops_result = results[1]  # type: ignore[assignment]
+            hops_result = results[1]
 
         # Handle DNS result
         if isinstance(results[2], Exception):
             _LOGGER.debug("DNS check failed: %s", results[2])
-            dns_result: dict = {"success": False, "latency_ms": None}
+            dns_result: dict[str, Any] = {"success": False, "latency_ms": None}
         else:
-            dns_result = results[2]  # type: ignore[assignment]
+            dns_result = results[2]
 
         # Calculate gateway jitter from history
         gateway_jitter = self._calculate_jitter(self._gateway_latency_history)
@@ -564,7 +564,7 @@ class NetworkDiagnostics:
             **self._owner_fields(hop_number),
         )
 
-    async def _check_gateway(self) -> dict:
+    async def _check_gateway(self) -> dict[str, Any]:
         """Ping the gateway multiple times and collect metrics.
 
         Returns:
@@ -606,7 +606,7 @@ class NetworkDiagnostics:
         """Ping once; return (reply received, round-trip ms or None if not reported)."""
         return await self._platform.ping(host, self.config.ping_timeout)
 
-    async def _check_dns(self) -> dict:
+    async def _check_dns(self) -> dict[str, Any]:
         """Time one query to the DNS server under test (dns_probe, R14)."""
         server = self._dns_server or FALLBACK_DNS_SERVER
         try:

@@ -10,7 +10,7 @@
 ```bash
 git clone <repo-url>
 cd internet_health_monitor
-./scripts/setup.sh    # Creates .venv and installs dependencies
+make setup && make setup-current    # needs uv: creates .venv and .venv-current
 code .                # Opens VS Code - that's it!
 ```
 
@@ -54,7 +54,7 @@ Do you have dependency or environment issues?
 ## Option 1: Local Python Setup
 
 ### Prerequisites
-- **Python 3.12+**
+- **[uv](https://docs.astral.sh/uv/)** (installs Python 3.14 for you)
 - **Git**
 
 ### Steps
@@ -63,7 +63,7 @@ Do you have dependency or environment issues?
    ```bash
    git clone <repo-url>
    cd internet_health_monitor
-   ./scripts/setup.sh
+   make setup && make setup-current
    ```
 
 2. **Open in VS Code:**
@@ -134,7 +134,7 @@ Press `Ctrl+Shift+P` → **"Tasks: Run Task"**:
 ## Troubleshooting
 
 ### "Cannot find Python interpreter"
-- **Local:** Run `./scripts/setup.sh`, then `source .venv/bin/activate`
+- **Local:** Run `make setup`, then `source .venv/bin/activate`
 - **Container:** Press `F1` → "Dev Containers: Rebuild Container"
 
 ### "Tests not running"
@@ -143,7 +143,7 @@ Press `Ctrl+Shift+P` → **"Tasks: Run Task"**:
 pip list | grep pytest
 
 # Reinstall dependencies
-./scripts/setup.sh
+make setup && make setup-current
 ```
 
 ### "Docker container won't start"
@@ -157,7 +157,7 @@ pip list | grep pytest
 
 | Task | Command |
 |------|---------|
-| Setup local | `./scripts/setup.sh` |
+| Setup local | `make setup && make setup-current` |
 | Activate venv | `source .venv/bin/activate` |
 | Run tests | `pytest` |
 | Format code | `black .` |

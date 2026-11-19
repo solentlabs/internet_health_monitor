@@ -1,0 +1,4 @@
+# The oldest Home Assistant IHM supports (ADR-008). `make setup` and the CI
+# "minimum" job install with this constraint; hacs.json and
+# requirements-dev.txt state the same floor (tests/components/test_const.py).
+homeassistant>=2026.10.0,<2026.11

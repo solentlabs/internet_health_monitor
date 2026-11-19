@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import override
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -68,6 +69,7 @@ class ReachabilitySensor(InternetHealthEntity, BinarySensorEntity):
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
+    @override
     @property
     def is_on(self) -> bool | None:
         """Return whether the target answered."""

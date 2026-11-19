@@ -14,6 +14,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
 | [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
+| [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
 
 ---
 
@@ -292,3 +293,35 @@ the interval and users do not get a field for it, in setup or options
   refuses an `--interval` shorter than that bound for the chosen ping count.
 - Passive bufferbloat (ADR-001) needs about one probe per second, which no
   poll interval provides; it gets its own cadence when it is built.
+
+---
+
+## ADR-008: Minimum Home Assistant 2026.10
+
+**Status:** Accepted 2026-11-19
+
+**Context:** IHM targets HA's Platinum quality scale, whose `strict-typing`
+rule means the integration type-checks against the HA it runs on, with HA
+core's mypy settings. HA 2026.9 replaced voluptuous with probatio; 2026.10
+is the first release whose flow APIs are typed for probatio (R17). Code
+cannot be strictly typed against both sides of that change without
+compatibility imports and suppressed errors.
+
+**Decision:** The minimum is HA 2026.10.0, and forms import `probatio`
+directly, as HA core does (R17).
+- IHM is unreleased, so no installed user is cut off; its `brand/` icon
+  already needed HA 2026.3.
+- HA's blog says custom integrations may keep `import voluptuous`; IHM
+  does not, because strict typing and probatio's typed and translated
+  validation need the direct import (R17). Cable Modem Monitor keeps
+  voluptuous on a 2025.1 floor; this decision is IHM's alone (ADR-002).
+
+**Constraints:**
+- The floor is stated in `hacs.json`, `requirements-dev.txt` and
+  `ha-minimum.txt`; a test fails if they disagree.
+- `make setup` and the CI "minimum" job install with `ha-minimum.txt`;
+  `make setup-current` and the "newest" job install the newest HA the test
+  harness supports. Both run Python 3.14 and HA core's mypy settings
+  (`pyproject.toml [tool.mypy]`).
+- Core alone still supports Python 3.12 (its CLI); a CI job tests it there.
+- Raising the floor again needs a reason recorded here.

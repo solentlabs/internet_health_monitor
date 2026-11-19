@@ -9,7 +9,7 @@
   //
   // Want Local mode instead?
   // 1. F1 → "Dev Containers: Reopen Folder Locally"
-  // 2. Run: ./scripts/setup.sh
+  // 2. Run: make setup && make setup-current
   //
   // See docs/GETTING_STARTED.md for comparison
   // ========================================
@@ -35,7 +35,7 @@
         "streetsidesoftware.code-spell-checker"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python3.12",
+        "python.defaultInterpreterPath": "/usr/local/bin/python3.14",
 
         "python.linting.enabled": true,
         "python.linting.flake8Enabled": false,
@@ -60,7 +60,7 @@
         ],
         "python.testing.autoTestDiscoverOnSaveEnabled": true,
 
-        "black-formatter.interpreter": ["/usr/local/bin/python3.12"],
+        "black-formatter.interpreter": ["/usr/local/bin/python3.14"],
         "black-formatter.path": ["black"],
 
         "task.allowAutomaticTasks": "on"

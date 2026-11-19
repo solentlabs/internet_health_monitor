@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, override
 
-import voluptuous as vol
+import probatio
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
@@ -44,32 +44,34 @@ DEFAULTS: dict[str, Any] = {
 }
 
 
-def build_schema(current: Mapping[str, Any]) -> vol.Schema:
+def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
     """Return the form, pre-filled from current values or DEFAULTS."""
 
     def default(key: str) -> Any:
         return current.get(key, DEFAULTS[key])
 
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Required(CONF_ENABLE_GATEWAY_MONITORING, default=default(CONF_ENABLE_GATEWAY_MONITORING)): (
+            probatio.Required(CONF_ENABLE_GATEWAY_MONITORING, default=default(CONF_ENABLE_GATEWAY_MONITORING)): (
                 BooleanSelector()
             ),
-            vol.Required(CONF_ENABLE_DNS_MONITORING, default=default(CONF_ENABLE_DNS_MONITORING)): BooleanSelector(),
-            vol.Required(CONF_DNS_SERVER, default=default(CONF_DNS_SERVER)): SelectSelector(
+            probatio.Required(
+                CONF_ENABLE_DNS_MONITORING, default=default(CONF_ENABLE_DNS_MONITORING)
+            ): BooleanSelector(),
+            probatio.Required(CONF_DNS_SERVER, default=default(CONF_DNS_SERVER)): SelectSelector(
                 SelectSelectorConfig(
                     options=list(DNS_SERVERS),
                     mode=SelectSelectorMode.DROPDOWN,
                     translation_key=CONF_DNS_SERVER,
                 )
             ),
-            vol.Required(CONF_PING_COUNT, default=default(CONF_PING_COUNT)): vol.All(
+            probatio.Required(CONF_PING_COUNT, default=default(CONF_PING_COUNT)): probatio.All(
                 NumberSelector(
                     NumberSelectorConfig(min=PING_COUNT_MIN, max=PING_COUNT_MAX, step=1, mode=NumberSelectorMode.BOX)
                 ),
-                vol.Coerce(int),
+                probatio.Coerce(int),
             ),
-            vol.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),
+            probatio.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),
         }
     )
 
@@ -79,6 +81,7 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @override
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Show the settings, then create the entry."""
         await self.async_set_unique_id(DOMAIN)
@@ -94,6 +97,7 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_update_reload_and_abort(entry, options=user_input)
         return self.async_show_form(step_id="reconfigure", data_schema=build_schema(entry.options))
 
+    @override
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> InternetHealthOptionsFlow:

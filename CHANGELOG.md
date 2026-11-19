@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Home Assistant 2026.10.0 is now the minimum** (ADR-008). IHM uses
+  probatio, HA's validation library since 2026.9, and is strictly typed
+  with HA core's own type-checking settings. Development and CI run on
+  Python 3.14; Core's command line still supports Python 3.12.
+- **One way to set up development:** `make setup` and `make setup-current`.
+  The `scripts/setup.py`, `setup.sh` and `setup.ps1` scripts are gone: they
+  duplicated it, and would have installed the wrong Home Assistant for the
+  minimum environment.
+
 - **Built to Home Assistant's quality scale**: Silver and Gold rules met,
   Bronze except publishing Core to PyPI (README.md § Quality Scale). Setup now
   stops with a clear error when the host cannot measure (unsupported OS,

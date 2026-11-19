@@ -171,5 +171,5 @@ rules:
     status: exempt
     comment: Core makes no HTTP requests (subprocess probes and UDP DNS).
   strict-typing:
-    status: todo
-    comment: Core ships py.typed, but pyproject.toml [tool.mypy] is not strict; no typed config entry; button.py uses unparameterised CoordinatorEntity and DataUpdateCoordinator.
+    status: done
+    comment: "HA core's mypy settings (pyproject.toml [tool.mypy], from HA mypy.ini) pass with no errors on the minimum and newest HA (make type-check, CI); Core ships py.typed; typed InternetHealthConfigEntry used throughout; @override on every override."

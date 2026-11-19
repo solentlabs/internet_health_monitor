@@ -201,7 +201,7 @@ entities:
 
 ## Requirements
 
-- Home Assistant 2025.1.0 or newer, on a Linux host (HA OS, Container, Supervised or Core)
+- Home Assistant 2026.10.0 or newer, on a Linux host (HA OS, Container, Supervised or Core)
 - `ip` and `ping` on the host (setup stops with an error naming any that are missing)
 - `traceroute` for hops 2 and 3 (without it, those sensors stay unknown)
 
@@ -256,7 +256,7 @@ Home Assistant grades only its built-in integrations against its [Integration Qu
 | 🥉 Bronze | 19 / 20 | [`dependency-transparency`](https://contributors.home-assistant.io/core/quality-scale/dependency-transparency/) |
 | 🥈 Silver | 10 / 10 | None |
 | 🥇 Gold | 21 / 21 | None |
-| 🏆 Platinum | 2 / 3 | [`strict-typing`](https://contributors.home-assistant.io/core/quality-scale/strict-typing/) |
+| 🏆 Platinum | 3 / 3 | None |
 <!-- END GENERATED: quality-scale -->
 
 ## Command Line
@@ -273,8 +273,8 @@ git clone https://github.com/solentlabs/internet-health-monitor.git
 cd internet_health_monitor
 
 # Set up development environments (needs uv: https://docs.astral.sh/uv/)
-make setup           # Python 3.12, oldest supported HA (2025.1.x)
-make setup-current   # Python 3.14, newest HA
+make setup           # .venv: oldest supported HA (2026.10.x), Python 3.14
+make setup-current   # .venv-current: newest HA the test harness supports
 
 # Run tests on both HA versions
 make test-all

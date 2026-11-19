@@ -1,5 +1,5 @@
-# Use official Python 3.12 slim image
-FROM python:3.12-slim
+# Python 3.14: Home Assistant 2026.10+ requires it (ADR-008)
+FROM python:3.14-slim
 
 # Set working directory inside container
 WORKDIR /workspaces/internet_health_monitor
