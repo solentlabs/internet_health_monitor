@@ -7,6 +7,9 @@
 # `make test` runs on the minimum, `make test-current` on the newest.
 homeassistant>=2025.1.0
 
+# IHM's own core package, editable (manifest.json pins the published version)
+-e packages/internet_health_monitor_core
+
 # Testing
 pytest>=8.0
 pytest-cov>=5.0

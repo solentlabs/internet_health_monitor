@@ -9,11 +9,6 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import PERCENTAGE, UnitOfTime
 
 from custom_components.internet_health_monitor.const import DOMAIN, MANUFACTURER, NAME
-from custom_components.internet_health_monitor.core.network_diagnostics import (
-    HopInfo,
-    HostEnvironment,
-    NetworkDiagnosticsResult,
-)
 from custom_components.internet_health_monitor.sensor import (
     DNS_SENSOR,
     HopJitterSensor,
@@ -21,6 +16,11 @@ from custom_components.internet_health_monitor.sensor import (
     HopPacketLossSensor,
     InternetHealthSensor,
     async_setup_entry,
+)
+from solentlabs.internet_health_monitor_core.network_diagnostics import (
+    HopInfo,
+    HostEnvironment,
+    NetworkDiagnosticsResult,
 )
 
 

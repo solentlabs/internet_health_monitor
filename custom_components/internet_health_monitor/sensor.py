@@ -22,8 +22,9 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
+from solentlabs.internet_health_monitor_core.network_diagnostics import NUM_HOPS, HopInfo, NetworkDiagnosticsResult
+
 from .const import DOMAIN, MANUFACTURER, NAME
-from .core.network_diagnostics import NUM_HOPS, HopInfo, NetworkDiagnosticsResult
 
 _LOGGER = logging.getLogger(__name__)
 

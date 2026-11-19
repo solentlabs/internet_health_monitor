@@ -38,7 +38,7 @@ repos:
         # HA-free core only, as CMM does: this isolated env has no
         # homeassistant, so HA types would read as Any. The HA layer is
         # type-checked from a venv with HA installed (make type-check).
-        files: ^custom_components/internet_health_monitor/core/.*\.py$
+        files: ^packages/internet_health_monitor_core/solentlabs/.*\.py$
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks

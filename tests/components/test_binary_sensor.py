@@ -15,7 +15,7 @@ from custom_components.internet_health_monitor.binary_sensor import (
     async_setup_entry,
 )
 from custom_components.internet_health_monitor.const import DOMAIN, MANUFACTURER, NAME
-from custom_components.internet_health_monitor.core.network_diagnostics import (
+from solentlabs.internet_health_monitor_core.network_diagnostics import (
     HopInfo,
     HostEnvironment,
     NetworkDiagnosticsResult,

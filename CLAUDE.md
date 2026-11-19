@@ -26,6 +26,7 @@ Cable Modem Monitor (`docs/ARCHITECTURE_DECISIONS.md` § ADR-002).
 | Sources, licences, evidence labels | `docs/REFERENCES.md` |
 | Speed test backends compared | `docs/SPEED_TEST_BACKENDS.md` |
 | User-facing overview | `README.md` |
+| Core package: command line, library use | `packages/internet_health_monitor_core/README.md` |
 
 ## Core Principles
 

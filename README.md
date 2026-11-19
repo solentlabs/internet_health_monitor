@@ -266,6 +266,12 @@ sudo apt install dnsutils
 apk add bind-tools
 ```
 
+## Command Line
+
+The measurement engine is a separate package that runs without Home
+Assistant (Linux): see
+[packages/internet_health_monitor_core/README.md](packages/internet_health_monitor_core/README.md).
+
 ## Development
 
 ```bash

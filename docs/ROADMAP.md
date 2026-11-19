@@ -61,22 +61,17 @@ custom_components/internet_health_monitor/
 ├── binary_sensor.py         # Connection health, reachability
 ├── diagnostics.py           # HA diagnostics download
 ├── strings.json             # English strings
-├── translations/            # Multi-language support
-│   ├── en.json
-│   ├── de.json
-│   ├── es.json
-│   ├── fr.json
-│   └── pt-BR.json
-└── core/
-    ├── network_diagnostics.py   # Lightweight monitoring
-    ├── multi_hop.py             # Traceroute-based hop analysis
-    ├── bandwidth.py             # Bandwidth testing
-    └── backends/                # Pluggable bandwidth backends
-        ├── base.py              # Abstract backend
-        ├── cloudflare.py
-        ├── ndt7.py              # M-Lab
-        ├── fastcom.py
-        └── librespeed.py
+└── translations/            # en, de, es, fr, pt-BR, zh-CN
+
+packages/internet_health_monitor_core/solentlabs/internet_health_monitor_core/
+├── network_diagnostics.py   # Detection, probes, jitter, hop hostnames
+├── cli.py                   # Command line: one JSON line per poll
+├── bandwidth.py             # Speed test interface (planned)
+└── backends/                # One module per backend (planned)
+    ├── ndt7.py              # M-Lab
+    ├── cloudflare.py
+    ├── fastcom.py
+    └── librespeed.py
 ```
 
 ---
@@ -91,10 +86,12 @@ Monitor is the reference for how each is done.
    coverage gates, icon, configuration UX, a customizable entity name
    prefix, sensor history (long-term statistics), metrics.
 2. **GitHub.** Push to `solentlabs/internet-health-monitor` with CI.
-3. **Live HA.** Install on the developer's deployed HA from GitHub and
+3. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
+   version `manifest.json` pins (ADR-005). HA installs it from there.
+4. **Live HA.** Install on the developer's deployed HA from GitHub and
    verify on a real network path (hops 2 and 3 cannot be seen from
    Docker Desktop: ARCHITECTURE.md).
-4. **Publish.** Release zip installs, then HACS submission.
+5. **Publish.** Release zip installs, then HACS submission.
 
 ---
 
@@ -293,7 +290,7 @@ sensor.internet_health_download_speed:
 
 ### Phase 1: Core Foundation ✓ (Existing)
 - [x] Gateway latency/jitter/packet loss
-- [x] ISP hop detection (single hop)
+- [x] ISP hop detection
 - [x] DNS latency
 - [x] Config flow + options flow
 - [x] Refresh/reset buttons
@@ -301,14 +298,12 @@ sensor.internet_health_download_speed:
 - [x] Basic tests
 
 ### Phase 2: Multi-Hop & Polish
-- [ ] Multi-hop implementation (hops 1, 2, 3+)
-  - [ ] Extend traceroute parsing for multiple hops
-  - [ ] Create HopLatencySensor for each hop
-  - [ ] Add hop count to config options
-  - [ ] Cache hop IPs, refresh on reset
-- [ ] Wire up config toggles (gateway/DNS/ISP enable flags)
-- [ ] Binary sensors (reachable)
-- [ ] Solent Labs branding in device info
+- [x] Multi-hop: hops 1 to 3, each with latency, jitter and loss sensors;
+      hop IPs cached and re-detected on reset
+- [x] Config toggles (gateway, DNS)
+- [x] Binary sensors (gateway reachable, internet reachable)
+- [x] Solent Labs branding in device info and integration icon
+- [x] Core as a portable package with a command line (ADR-005)
 - [ ] Bundled dashboard card, following CMM's pattern (pattern reuse, no
       code dependency: ARCHITECTURE_DECISIONS.md ADR-002). Reference:
       CMM `custom_components/cable_modem_monitor/docs/DASHBOARD_CARD_SPEC.md`
@@ -319,7 +314,7 @@ sensor.internet_health_download_speed:
   - [ ] Shows each measurement separately (no composite, ADR-004)
 
 ### Phase 3: Bandwidth Testing
-- [ ] Core bandwidth module (`core/bandwidth.py`)
+- [ ] Core bandwidth module (`bandwidth.py`)
 - [ ] Backend interface (ADR-003): download, upload, idle and loaded latency per direction
 - [ ] Backends, one module each (docs/SPEED_TEST_BACKENDS.md)
   - [ ] Cloudflare
@@ -380,7 +375,6 @@ sensor.internet_health_download_speed:
 
 - IPv6 support for all detection
 - Custom hop targets (user-specified IPs to trace)
-- Per-hop jitter tracking
 - Network interface selection (for multi-NIC hosts)
 - SNMP polling for router stats
 - Integration with Solent Aggregator for correlation

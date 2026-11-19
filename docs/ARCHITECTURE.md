@@ -21,19 +21,28 @@ detects bufferbloat passively (ADR-001).
 
 ## Layers
 
-Two layers, one-way dependency.
+Two layers, one-way dependency. Core is its own package (ADR-005), so
+other hosts can use it; the command line is the second.
 
 ```
-HA layer  (custom_components/internet_health_monitor/*.py)
-    config flow, coordinator, sensors, binary sensors, buttons, diagnostics
-        │ calls run_diagnostics(), receives NetworkDiagnosticsResult
-        ▼
-Core      (custom_components/internet_health_monitor/core/)
+HA layer  (custom_components/internet_health_monitor/*.py)    CLI (cli.py)
+    config flow, coordinator, sensors,                    one JSON line
+    binary sensors, buttons, diagnostics                  per poll
+        │ calls run_diagnostics(), receives NetworkDiagnosticsResult │
+        ▼                                                            ▼
+Core      (packages/internet_health_monitor_core/, module
+           solentlabs.internet_health_monitor_core, on PyPI as
+           solentlabs-internet-health-monitor-core)
     network_diagnostics.py: detection, probes, jitter, hop hostnames
-        │ subprocesses (ping, traceroute, dig) and sockets
+        │ subprocesses (ip, ping, traceroute, dig) and sockets
         ▼
 The network
 ```
+
+`manifest.json` pins the Core version, and HA installs it from PyPI. In
+development, `requirements-dev.txt` and the test container
+(`scripts/dev/ha-entrypoint.sh`) install the local copy instead. The
+probes use Linux commands, so Core runs on Linux only today.
 
 **Core** has no `homeassistant` import. `NetworkDiagnostics` takes a
 `NetworkDiagnosticsConfig` and returns a `NetworkDiagnosticsResult`
@@ -109,11 +118,11 @@ Not built yet; designs are fixed by the ADRs named.
 ```
 HA layer: schedule, run-now button, speed test sensors
         │
-        ▼
-core/bandwidth.py ── one interface: run a test, return download,
+        ▼   (in Core)
+bandwidth.py ── one interface: run a test, return download,
         │            upload, idle and loaded latency per direction
         ▼
-core/backends/  ndt7.py (first) · cloudflare.py · fastcom.py · librespeed.py
+backends/  ndt7.py (first) · cloudflare.py · fastcom.py · librespeed.py
 ```
 
 A backend is one module implementing that interface. Adding a provider

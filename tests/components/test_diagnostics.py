@@ -11,14 +11,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from custom_components.internet_health_monitor.const import DOMAIN, VERSION
-from custom_components.internet_health_monitor.core.network_diagnostics import (
+from custom_components.internet_health_monitor.diagnostics import (
+    async_get_config_entry_diagnostics,
+)
+from solentlabs.internet_health_monitor_core.network_diagnostics import (
     HopInfo,
     HostEnvironment,
     NetworkDiagnostics,
     NetworkDiagnosticsResult,
-)
-from custom_components.internet_health_monitor.diagnostics import (
-    async_get_config_entry_diagnostics,
 )
 
 

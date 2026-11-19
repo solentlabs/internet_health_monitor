@@ -42,7 +42,7 @@ setup-current:
 
 # Run full test suite with coverage (minimum HA)
 test:
-	@.venv/bin/pytest --cov=custom_components/internet_health_monitor --cov-report=term-missing
+	@.venv/bin/pytest
 
 # Tests on the newest HA
 test-current:
@@ -75,7 +75,7 @@ lint-fix:
 # Type checking
 type-check:
 	@echo "Running mypy type checker..."
-	@.venv/bin/mypy --explicit-package-bases custom_components/internet_health_monitor
+	@.venv/bin/mypy --explicit-package-bases custom_components/internet_health_monitor packages/internet_health_monitor_core/solentlabs
 
 # Format code
 format:

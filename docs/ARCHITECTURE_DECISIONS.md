@@ -183,7 +183,11 @@ one directly observed state.
 
 **Decision:** The measurement core is a standalone Python package under
 the Solent Labs namespace, following Cable Modem Monitor's packaging
-(`solentlabs.cable_modem_monitor_core`). It can run outside Home
+(`solentlabs.cable_modem_monitor_core`): `solentlabs.internet_health_monitor_core`,
+published to PyPI as `solentlabs-internet-health-monitor-core`. The
+integration's `manifest.json` pins its version, as CMM's does, so each
+release publishes Core to PyPI before the integration (ROADMAP § Path to
+Release). It can run outside Home
 Assistant: a CLI, a cron job, a Windows service or scheduled task. Each
 host is a thin adapter over the same core; the HA integration is one of
 them.

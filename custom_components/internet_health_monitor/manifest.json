@@ -1,13 +1,21 @@
 {
   "domain": "internet_health_monitor",
   "name": "Internet Health Monitor",
-  "codeowners": ["@solentlabs", "@kwschulz"],
+  "codeowners": [
+    "@solentlabs",
+    "@kwschulz"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/solentlabs/internet-health-monitor",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/solentlabs/internet-health-monitor/issues",
-  "requirements": [],
+  "loggers": [
+    "solentlabs.internet_health_monitor_core"
+  ],
+  "requirements": [
+    "solentlabs-internet-health-monitor-core==0.1.0"
+  ],
   "version": "0.1.0"
 }

@@ -20,6 +20,8 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsConfig
+
 from .const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
@@ -33,10 +35,9 @@ from .const import (
     NAME,
     VERSION,
 )
-from .core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsConfig
 
 if TYPE_CHECKING:
-    from .core.network_diagnostics import NetworkDiagnosticsResult
+    from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnosticsResult
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -42,10 +42,10 @@ jobs:
           black --check .
 
       - name: Run type checking
-        run: mypy --explicit-package-bases custom_components/internet_health_monitor
+        run: mypy --explicit-package-bases custom_components/internet_health_monitor packages/internet_health_monitor_core/solentlabs
 
       - name: Run tests
-        run: pytest --cov=custom_components/internet_health_monitor --cov-report=xml
+        run: pytest --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

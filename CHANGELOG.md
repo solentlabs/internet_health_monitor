@@ -9,12 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Command line.** `internet-health-monitor` runs one poll and prints the
+  result as JSON; `--interval` keeps polling, one JSON line per poll.
 - **Integration icon.** A sonar ping: a green home node and three arcs for
   the three hops, with a light-mode and a dark-mode version. Ships in `brand/`, which Home Assistant
   2026.3 and later shows without a brands-repo submission.
 
 ### Changed
 
+- **Core is its own package**, `solentlabs-internet-health-monitor-core`
+  (module `solentlabs.internet_health_monitor_core`), so it can run outside
+  Home Assistant. The integration requires it; HA installs it from PyPI.
 - **No more third-party lookups.** Hop IPs are no longer sent to ip-api.com
   and the gateway's MAC address is no longer sent to macvendors.com, so the
   hop ISP, ASN, location and MAC vendor attributes are gone. Hostnames still
@@ -44,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Command line.** `internet-health-monitor` runs one poll and prints the
+  result as JSON; `--interval` keeps polling, one JSON line per poll.
 - **Initial Release** - Internet Health Monitor for Home Assistant
 
 #### Sensors
