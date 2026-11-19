@@ -12,7 +12,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [003](#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3) | Speed testing with user-selected backends (ROADMAP Phase 3) | Accepted 2026-11-18 |
 | [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
-| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Open |
+| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
 
 ---
 
@@ -219,7 +219,7 @@ Adding it is one module implementing `Platform`, one branch in
 
 ## ADR-006: Outside services only by user choice
 
-**Status:** Open. Recommendation: accept.
+**Status:** Accepted 2026-11-19
 
 **Context:** Hop enrichment sent each public hop IP to ip-api.com over
 plain HTTP and the gateway's MAC address to api.macvendors.com, always

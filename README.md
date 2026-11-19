@@ -266,6 +266,19 @@ The integration uses `ip route show default` to detect your gateway. If this fai
 1. Check that your HA host has a default route
 2. Manually configure your gateway IP in Home Assistant
 
+## Quality Scale
+
+Home Assistant grades only its built-in integrations against its [Integration Quality Scale](https://contributors.home-assistant.io/core/quality-scale/). This is a self-assessment against the same rules; each rule's status and evidence is in [quality_scale.yaml](custom_components/internet_health_monitor/quality_scale.yaml). A tier is reached when all of its rules and every rule below it are met.
+
+<!-- BEGIN GENERATED: quality-scale (from custom_components/internet_health_monitor/quality_scale.yaml; run scripts/generate_quality_scale_table.py) -->
+| Tier | Rules met | Open rules |
+| ---- | --------- | ---------- |
+| 🥉 Bronze | 12 / 20 | [`appropriate-polling`](https://contributors.home-assistant.io/core/quality-scale/appropriate-polling/), [`common-modules`](https://contributors.home-assistant.io/core/quality-scale/common-modules/), [`config-flow`](https://contributors.home-assistant.io/core/quality-scale/config-flow/), [`config-flow-test-coverage`](https://contributors.home-assistant.io/core/quality-scale/config-flow-test-coverage/), [`dependency-transparency`](https://contributors.home-assistant.io/core/quality-scale/dependency-transparency/), [`docs-removal-instructions`](https://contributors.home-assistant.io/core/quality-scale/docs-removal-instructions/), [`runtime-data`](https://contributors.home-assistant.io/core/quality-scale/runtime-data/), [`test-before-setup`](https://contributors.home-assistant.io/core/quality-scale/test-before-setup/) |
+| 🥈 Silver | 6 / 10 | [`action-exceptions`](https://contributors.home-assistant.io/core/quality-scale/action-exceptions/), [`entity-unavailable`](https://contributors.home-assistant.io/core/quality-scale/entity-unavailable/), [`parallel-updates`](https://contributors.home-assistant.io/core/quality-scale/parallel-updates/), [`test-coverage`](https://contributors.home-assistant.io/core/quality-scale/test-coverage/) |
+| 🥇 Gold | 10 / 21 | [`devices`](https://contributors.home-assistant.io/core/quality-scale/devices/), [`docs-examples`](https://contributors.home-assistant.io/core/quality-scale/docs-examples/), [`docs-known-limitations`](https://contributors.home-assistant.io/core/quality-scale/docs-known-limitations/), [`docs-supported-functions`](https://contributors.home-assistant.io/core/quality-scale/docs-supported-functions/), [`docs-troubleshooting`](https://contributors.home-assistant.io/core/quality-scale/docs-troubleshooting/), [`entity-disabled-by-default`](https://contributors.home-assistant.io/core/quality-scale/entity-disabled-by-default/), [`entity-translations`](https://contributors.home-assistant.io/core/quality-scale/entity-translations/), [`exception-translations`](https://contributors.home-assistant.io/core/quality-scale/exception-translations/), [`icon-translations`](https://contributors.home-assistant.io/core/quality-scale/icon-translations/), [`reconfiguration-flow`](https://contributors.home-assistant.io/core/quality-scale/reconfiguration-flow/), [`repair-issues`](https://contributors.home-assistant.io/core/quality-scale/repair-issues/) |
+| 🏆 Platinum | 2 / 3 | [`strict-typing`](https://contributors.home-assistant.io/core/quality-scale/strict-typing/) |
+<!-- END GENERATED: quality-scale -->
+
 ## Command Line
 
 The measurement engine is a separate package that runs without Home

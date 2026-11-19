@@ -377,3 +377,18 @@ async def test_hop_ownership_options_default(
     read_only_config_entry.return_value = entry
     result = await _options_flow(entry).async_step_init(user_input=None)
     assert _default(result, CONF_HOP_OWNERSHIP) is expected
+
+
+@pytest.mark.asyncio
+async def test_form_fields_carry_no_stray_arguments(read_only_config_entry) -> None:
+    """No field has a msg: a stray positional argument to vol.Required would land there."""
+    flow = ConfigFlow()
+    flow.hass = Mock()
+    with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
+        setup = await flow.async_step_user(user_input=None)
+    entry = Mock()
+    entry.options = {}
+    read_only_config_entry.return_value = entry
+    options = await _options_flow(entry).async_step_init(user_input=None)
+    for result in (setup, options):
+        assert [m.schema for m in result["data_schema"].schema if m.msg] == []

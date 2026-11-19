@@ -55,7 +55,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(
                         CONF_ENABLE_GATEWAY_MONITORING,
-                        CONF_HOP_OWNERSHIP,
                         default=True,
                     ): bool,
                     vol.Required(
@@ -107,7 +106,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_ENABLE_GATEWAY_MONITORING,
-                        CONF_HOP_OWNERSHIP,
                         default=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
                     ): bool,
                     vol.Required(
