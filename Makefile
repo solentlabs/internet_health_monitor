@@ -1,4 +1,4 @@
-.PHONY: help spell-check hassfest setup-current test-current test-all test-windows coverage-gates test test-quick clean lint lint-fix type-check format format-check check setup
+.PHONY: help pyright spell-check hassfest setup-current test-current test-all test-windows coverage-gates test test-quick clean lint lint-fix type-check format format-check check setup
 
 # Default target - show help
 help:
@@ -20,11 +20,12 @@ help:
 	@echo "  make lint        - Run ruff linter"
 	@echo "  make lint-fix    - Run ruff linter and auto-fix issues"
 	@echo "  make type-check  - Run mypy type checker"
+	@echo "  make pyright     - Pyright as VS Code runs it (pyrightconfig.json; needs Node.js; same as CI)"
 	@echo "  make format      - Format code with black"
 	@echo "  make format-check - Check code formatting without modifying"
 	@echo "  make spell-check - cspell over the repo (needs Node.js; same as CI)"
 	@echo "  make hassfest    - HA's integration validator (Docker; same image as CI)"
-	@echo "  make check       - Run all code quality checks (lint, format, type, spelling)"
+	@echo "  make check       - Run all code quality checks (lint, format, mypy, pyright, spelling)"
 
 # Setup development environment
 setup:
@@ -89,6 +90,13 @@ type-check:
 	@.venv/bin/mypy
 	@.venv-current/bin/mypy
 
+# Pyright, as VS Code's Pylance runs it (pyrightconfig.json), on both HA versions. Same as CI.
+PYRIGHT := npx --yes pyright@1.1.408
+pyright:
+	@echo "Running pyright..."
+	@$(PYRIGHT) --pythonpath .venv/bin/python
+	@$(PYRIGHT) --pythonpath .venv-current/bin/python
+
 # Format code
 format:
 	@echo "Formatting code with Black..."
@@ -108,5 +116,5 @@ spell-check:
 hassfest:
 	@docker run --rm -v "$(CURDIR)://github/workspace" ghcr.io/home-assistant/hassfest
 
-check: lint format-check type-check spell-check
+check: lint format-check type-check pyright spell-check
 	@echo "All code quality checks passed!"

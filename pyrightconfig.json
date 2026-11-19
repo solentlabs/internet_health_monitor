@@ -1,0 +1,5 @@
+{
+  "typeCheckingMode": "basic",
+  "include": ["custom_components", "packages", "tests", "scripts"],
+  "exclude": ["**/.venv", "**/.venv-current", "**/__pycache__", "test-ha-config"]
+}

@@ -50,6 +50,9 @@ jobs:
       - name: Run type checking (HA strict-typing settings, pyproject.toml)
         run: mypy
 
+      - name: Run pyright (as VS Code runs it, pyrightconfig.json; same as make pyright)
+        run: npx --yes pyright@1.1.408 --pythonpath "$(which python)"
+
       - name: Run tests
         run: pytest --cov-report=xml
 

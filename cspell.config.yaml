@@ -29,6 +29,7 @@ words:
   - conftest # pytest fixtures file
   - clientsession # async_get_clientsession
   - pytestmark
+  - pyrightconfig # pyright config file
   - caplog # pytest fixture
   - capsys # pytest fixture
   - timedelta
