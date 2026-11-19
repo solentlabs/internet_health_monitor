@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -13,6 +14,7 @@ from solentlabs.internet_health_monitor_core.network_diagnostics import (
     NetworkDiagnosticsConfig,
     NetworkDiagnosticsResult,
     _detect_system_dns_sync,
+    format_ms,
     parse_ping_rtt_ms,
     parse_traceroute_hops,
 )
@@ -81,6 +83,22 @@ TRACEROUTE_CASES = [
 ]
 # fmt: on
 
+
+# Log value -> text. A missing measurement shows as "n/a", never 0.0ms.
+# fmt: off
+FORMAT_MS_CASES = [
+    ("value",   1.234, "1.2ms"),
+    ("zero",    0.0,   "0.0ms"),
+    ("missing", None,  "n/a"),
+]
+
+# gethostbyaddr result (or exception) -> hostname IHM keeps
+REVERSE_DNS_CASES = [
+    ("name found",           ("router.example.com", [], ["192.0.2.1"]), "router.example.com"),
+    ("resolver echoes IP",   ("192.0.2.1", [], ["192.0.2.1"]),          None),
+    ("no PTR record",        socket.herror(1, "Unknown host"),          None),
+]
+# fmt: on
 
 # Reverse DNS result per hop -> cached hostnames. Lookups that find no name
 # or raise are left out.
@@ -378,6 +396,25 @@ async def test_collect_hostnames(
         await diag._collect_hostnames()
 
     assert diag._hop_hostnames == expected
+
+
+@pytest.mark.parametrize(("description", "value", "expected"), FORMAT_MS_CASES, ids=[c[0] for c in FORMAT_MS_CASES])
+def test_format_ms(description: str, value: float | None, expected: str) -> None:
+    """Summary log shows missing values as n/a."""
+    assert format_ms(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("description", "lookup", "expected"), REVERSE_DNS_CASES, ids=[c[0] for c in REVERSE_DNS_CASES]
+)
+async def test_reverse_dns_lookup(
+    description: str, lookup: tuple[str, list[str], list[str]] | Exception, expected: str | None
+) -> None:
+    """Only a real name counts; an echoed IP or a failed lookup gives None."""
+    target = "solentlabs.internet_health_monitor_core.network_diagnostics.socket.gethostbyaddr"
+    kwargs = {"side_effect": lookup} if isinstance(lookup, Exception) else {"return_value": lookup}
+    with patch(target, **kwargs):
+        assert await NetworkDiagnostics()._reverse_dns_lookup("192.0.2.1") == expected
 
 
 class TestNetworkDiagnosticsAsync:

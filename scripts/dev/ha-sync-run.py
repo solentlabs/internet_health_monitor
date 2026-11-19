@@ -50,6 +50,8 @@ SYNC = "\U0001f504" if USE_UNICODE else "~"
 CONTAINER_NAME = "ha-internet-health-test"
 COMPOSE_FILE = "docker-compose.test.yml"
 HA_PORT = 8123
+# Must match docker-compose.test.yml; installs Core before HA starts.
+ENTRYPOINT = "/workspace/scripts/dev/ha-entrypoint.sh"
 
 # Other HA test containers that might be using the same port
 OTHER_HA_CONTAINERS = [
@@ -134,6 +136,20 @@ def is_container_running() -> bool:
             timeout=10,
         )
         return result.returncode == 0 and result.stdout.strip().lower() == "true"
+    except subprocess.SubprocessError:
+        return False
+
+
+def has_current_entrypoint() -> bool:
+    """Check the container was created with the Core-installing entrypoint."""
+    try:
+        result = subprocess.run(
+            ["docker", "inspect", CONTAINER_NAME, "--format", '{{join .Config.Entrypoint " "}}'],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.returncode == 0 and result.stdout.strip() == ENTRYPOINT
     except subprocess.SubprocessError:
         return False
 
@@ -265,6 +281,7 @@ def stop_other_ha_containers() -> list[str]:
 
 _INTEGRATION_LOGGERS = [
     "custom_components.internet_health_monitor",
+    "solentlabs.internet_health_monitor_core",
 ]
 
 
@@ -340,7 +357,11 @@ def ensure_dev_config(log_level: str = "info") -> None:
             updated = content
             for ns in _INTEGRATION_LOGGERS:
                 pattern = re.compile(rf"({re.escape(ns)}:\s*)\w+")
-                updated = pattern.sub(rf"\g<1>{log_level}", updated)
+                if pattern.search(updated):
+                    updated = pattern.sub(rf"\g<1>{log_level}", updated)
+                else:
+                    # Logger added since the file was written: insert under logs:
+                    updated = updated.replace("  logs:\n", f"  logs:\n    {ns}: {log_level}\n", 1)
 
             if updated != content:
                 _write_config(config_dir, config_file, updated)
@@ -446,8 +467,9 @@ def main() -> int:
 
     total_steps = 2
 
-    # Step 1: Start or restart container
-    if is_container_running():
+    # Step 1: Start or restart container. A container from an older compose
+    # file is recreated, since a restart keeps its old entrypoint.
+    if is_container_running() and has_current_entrypoint():
         print_step(1, total_steps, "Restarting Home Assistant...")
         ensure_dev_config(log_level)
         if not restart_container():

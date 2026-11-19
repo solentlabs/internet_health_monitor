@@ -98,6 +98,11 @@ def parse_traceroute_hops(output: str) -> dict[int, str]:
     return hops
 
 
+def format_ms(value: float | None) -> str:
+    """Format a latency for logs; a missing measurement reads n/a, not 0.0ms."""
+    return "n/a" if value is None else f"{value:.1f}ms"
+
+
 def is_private_ip(ip: str) -> bool:
     """Check if an IP address is in a private range."""
     return ip.startswith(PRIVATE_IP_PREFIXES)
@@ -507,20 +512,20 @@ class NetworkDiagnostics:
         # Log summary
         hop_summary = (
             ", ".join(
-                f"hop{h.hop_number}={'up' if h.reachable else 'down'}({h.latency_ms or 0:.1f}ms)" for h in hops_result
+                f"hop{h.hop_number}={'up' if h.reachable else 'down'}({format_ms(h.latency_ms)})" for h in hops_result
             )
             if hops_result
             else "no hops detected"
         )
 
         _LOGGER.debug(
-            "Network diagnostics: gateway=%s (%.1fms), %s, jitter=%.1fms, loss=%.1f%%, dns=%.1fms",
+            "Network diagnostics: gateway=%s (%s), %s, jitter=%s, loss=%s, dns=%s",
             "up" if result.gateway_reachable else "down",
-            result.gateway_latency_ms or 0,
+            format_ms(result.gateway_latency_ms),
             hop_summary,
-            result.gateway_jitter_ms or 0,
-            result.packet_loss_percent or 0,
-            result.dns_latency_ms or 0,
+            format_ms(result.gateway_jitter_ms),
+            "n/a" if result.packet_loss_percent is None else f"{result.packet_loss_percent:.1f}%",
+            format_ms(result.dns_latency_ms),
         )
 
         return result
@@ -1040,6 +1045,9 @@ class NetworkDiagnostics:
                 timeout=5.0,
             )
             hostname = result[0]
+            if hostname == ip:
+                # Some resolvers (Docker's among them) echo the address back
+                return None
             _LOGGER.debug("Reverse DNS for %s: %s", ip, hostname)
             return hostname
         except (socket.herror, socket.gaierror):
