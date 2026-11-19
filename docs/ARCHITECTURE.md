@@ -77,7 +77,11 @@ scheduling. It contains no measurement logic.
    reverse DNS and detect the host environment (container, connection
    type, install type).
 4. **Every poll, in parallel:** ping the gateway, ping each hop, query
-   DNS. Each target gets `ping_count` single pings (`ping -c 1`), run one
+   DNS. The DNS query is one UDP message Core builds itself (RFC 1035,
+   [REFERENCES.md § R14](REFERENCES.md#r14-dns-message-format)), sent to the
+   configured server for a random name (`_ihm-<random>.cloudflare.com`),
+   so no cache can answer; latency is the time to its reply, NOERROR or
+   NXDOMAIN, measured in-process. Same on every OS, no `dig` needed. Each target gets `ping_count` single pings (`ping -c 1`), run one
    after another.
 5. Latency is the round-trip time `ping` itself reports, read from its
    min/avg/max summary line in both iputils and BusyBox formats. It is

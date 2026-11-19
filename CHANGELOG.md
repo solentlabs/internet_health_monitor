@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **DNS latency is accurate everywhere.** Core sends its own uncached query
+  to the chosen DNS server instead of running `dig`. Without `dig` (all of
+  Windows, and Linux hosts without it), the old fallback timed the system's
+  own lookup, which could answer from a local cache.
+
 - **Options open on current Home Assistant.** Opening options failed with
   `AttributeError: property 'config_entry' ... has no setter` because the
   flow set `config_entry` itself, which HA stopped allowing after 2025.12.

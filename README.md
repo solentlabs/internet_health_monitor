@@ -21,7 +21,7 @@ Part of the **Solent Networks Suite** - tools for comprehensive home network vis
 |---------|-----------------|------------------------|
 | Gateway Detection | Manual config | Auto-detected via `ip route` |
 | Multi-hop Visibility | Single target only | Trace hops 1-10 (unique in HA) |
-| DNS Latency | Cache-affected | Accurate RTT via `dig` |
+| DNS Latency | Cache-affected | Uncached query to your chosen DNS server |
 | Configuration | YAML editing | Zero-config UI setup |
 
 ## Installation
@@ -232,7 +232,6 @@ show:
 - Python 3.12+
 - Linux host (for gateway detection via `ip route`)
 - `traceroute` command (for multi-hop latency)
-- Optional: `dig` for accurate DNS latency measurement
 
 ## Troubleshooting
 
@@ -253,18 +252,6 @@ apk add traceroute
 The integration uses `ip route show default` to detect your gateway. If this fails:
 1. Check that your HA host has a default route
 2. Manually configure your gateway IP in Home Assistant
-
-### DNS latency is very low (0-1ms)
-
-This usually means the `dig` command is not available and the integration is falling back to cached DNS resolution. Install bind-tools for accurate measurement:
-
-```bash
-# Debian/Ubuntu
-sudo apt install dnsutils
-
-# Alpine
-apk add bind-tools
-```
 
 ## Command Line
 

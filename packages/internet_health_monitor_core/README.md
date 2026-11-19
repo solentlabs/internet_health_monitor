@@ -5,8 +5,8 @@ integration, usable on its own. It finds the gateway and the first three
 hops toward the internet, then reports per-hop latency, jitter and packet
 loss, plus DNS latency. It has no Home Assistant dependency.
 
-Runs on Linux and Windows. On Linux it calls `ip`, `ping`, `traceroute`
-and, if present, `dig`. On Windows it calls the IP Helper API directly, so
+Runs on Linux and Windows. On Linux it calls `ip`, `ping` and
+`traceroute`. On Windows it calls the IP Helper API directly, so
 it needs no extra tools and no admin rights; Windows reports round-trip
 times in whole milliseconds, so a sub-millisecond gateway reads 0 or 1 ms.
 

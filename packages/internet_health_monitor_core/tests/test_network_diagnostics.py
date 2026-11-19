@@ -548,40 +548,24 @@ async def test_auto_dns_falls_back_when_undetected() -> None:
     assert result.trace_target == "1.1.1.1"
 
 
-# dig output -> DNS check result. dig missing falls back to the resolver.
+# DNS probe outcome -> DNS check result
 # fmt: off
-DIG_CASES = [
-    ("query time",   0, ";; Query time: 23 msec\n", {"success": True, "latency_ms": 23.0}),
-    ("unparseable",  0, "garbage\n",                {"success": False, "latency_ms": None, "dig_available": True}),
-    ("dig failed",   9, "",                         {"success": False, "latency_ms": None, "dig_available": True}),
+DNS_CHECK_CASES = [
+    ("answered",       {"return_value": 23.5},                 {"success": True,  "latency_ms": 23.5}),
+    ("no answer",      {"return_value": None},                 {"success": False, "latency_ms": None}),
+    ("socket error",   {"side_effect": OSError("unreachable")}, {"success": False, "latency_ms": None}),
+    ("bad server",     {"side_effect": ValueError("not an IP")}, {"success": False, "latency_ms": None}),
 ]
 # fmt: on
 
 
-@pytest.mark.parametrize(("description", "code", "stdout", "expected"), DIG_CASES, ids=[c[0] for c in DIG_CASES])
-async def test_check_dns_with_dig(description: str, code: int, stdout: str, expected: dict) -> None:
-    """dig's own query time is the DNS latency."""
-    proc = AsyncMock(returncode=code)
-    proc.communicate.return_value = (stdout.encode(), b"")
+@pytest.mark.parametrize(("description", "probe", "expected"), DNS_CHECK_CASES, ids=[c[0] for c in DNS_CHECK_CASES])
+async def test_check_dns(description: str, probe: dict, expected: dict) -> None:
+    """DNS latency is one timed query to the server under test, on every OS."""
     diag = NetworkDiagnostics(dns_server="1.1.1.1", platform=FakePlatform())  # type: ignore[arg-type]
     diag._dns_server = "1.1.1.1"
-    with patch("asyncio.create_subprocess_exec", return_value=proc):
-        assert await diag._check_dns_with_dig() == expected
-
-
-async def test_check_dns_without_dig_uses_resolver() -> None:
-    """Without dig, DNS is timed through the system resolver."""
-    diag = NetworkDiagnostics(platform=FakePlatform())  # type: ignore[arg-type]
-    with (
-        patch("asyncio.create_subprocess_exec", side_effect=FileNotFoundError),
-        patch("socket.getaddrinfo", return_value=[]),
-    ):
-        result = await diag._check_dns()
-    assert result["success"] is True
-
-
-async def test_check_dns_resolver_failure() -> None:
-    """A resolver error is a failed DNS check."""
-    diag = NetworkDiagnostics(platform=FakePlatform())  # type: ignore[arg-type]
-    with patch("socket.getaddrinfo", side_effect=socket.gaierror("no")):
-        assert await diag._check_dns_with_socket() == {"success": False, "latency_ms": None}
+    with patch(
+        "solentlabs.internet_health_monitor_core.network_diagnostics.dns_probe.query_time_ms", AsyncMock(**probe)
+    ) as query:
+        assert await diag._check_dns() == expected
+    assert query.await_args.args[0] == "1.1.1.1"

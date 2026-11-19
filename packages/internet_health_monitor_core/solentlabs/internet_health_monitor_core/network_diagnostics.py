@@ -23,6 +23,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
+from . import dns_probe
 from .platforms import HostEnvironment, Platform, get_platform
 
 _LOGGER = logging.getLogger(__name__)
@@ -587,132 +588,14 @@ class NetworkDiagnostics:
         return await self._platform.ping(host, self.config.ping_timeout)
 
     async def _check_dns(self) -> dict:
-        """Check DNS resolution timing.
-
-        Uses `dig` command for accurate DNS latency measurement.
-        Falls back to socket.getaddrinfo if dig is not available.
-
-        Returns:
-            Dict with success and latency_ms.
-        """
-        # Try dig first for accurate measurement
-        result = await self._check_dns_with_dig()
-        if result["success"] or result.get("dig_available", True):
-            return result
-
-        # Fall back to socket-based resolution
-        return await self._check_dns_with_socket()
-
-    async def _check_dns_with_dig(self) -> dict:
-        """Check DNS using dig command for accurate latency.
-
-        Uses dig to query the configured DNS server directly.
-        Queries a random subdomain to bypass DNS caching at all levels
-        (local resolver, upstream DNS, etc.) for accurate RTT measurement.
-
-        Returns:
-            Dict with success, latency_ms, and dig_available flag.
-        """
+        """Time one query to the DNS server under test (dns_probe, R14)."""
+        server = self._dns_server or FALLBACK_DNS_SERVER
         try:
-            # Use a random subdomain to bypass DNS caching
-            # The subdomain won't exist, but we still get accurate RTT
-            # from the NXDOMAIN response after full resolution
-            # Prefix with "_ha-nd-" (Home Assistant Network Diagnostics)
-            # so network admins can identify the source of these queries
-            import uuid
-
-            random_suffix = uuid.uuid4().hex[:8]
-            test_hostname = f"_ha-nd-{random_suffix}.cloudflare.com"
-
-            proc = await asyncio.create_subprocess_exec(
-                "dig",
-                f"@{self._dns_server}",
-                test_hostname,
-                "+noall",
-                "+stats",
-                "+time=3",  # 3 second timeout
-                "+tries=1",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(),
-                timeout=self.config.dns_timeout,
-            )
-
-            if proc.returncode != 0:
-                _LOGGER.debug("dig command failed: %s", stderr.decode())
-                return {"success": False, "latency_ms": None, "dig_available": True}
-
-            # Parse dig output for query time
-            # Format: ";; Query time: 23 msec"
-            output = stdout.decode()
-            for line in output.splitlines():
-                if "Query time:" in line:
-                    # Extract milliseconds: ";; Query time: 23 msec"
-                    parts = line.split()
-                    for i, part in enumerate(parts):
-                        if part == "time:" and i + 1 < len(parts):
-                            try:
-                                latency_ms = float(parts[i + 1])
-                                return {"success": True, "latency_ms": latency_ms}
-                            except ValueError:
-                                pass
-
-            _LOGGER.debug("Could not parse dig output: %s", output)
-            return {"success": False, "latency_ms": None, "dig_available": True}
-
-        except FileNotFoundError:
-            _LOGGER.debug("dig command not found, falling back to socket")
-            return {"success": False, "latency_ms": None, "dig_available": False}
-        except TimeoutError:
-            _LOGGER.debug("dig command timed out")
-            return {"success": False, "latency_ms": None, "dig_available": True}
-        except Exception as e:
-            _LOGGER.debug("dig error: %s", e)
-            return {"success": False, "latency_ms": None, "dig_available": True}
-
-    async def _check_dns_with_socket(self) -> dict:
-        """Check DNS using socket.getaddrinfo (fallback).
-
-        Note: This goes through the system resolver and may return
-        cached results, showing lower latency than actual DNS RTT.
-
-        Returns:
-            Dict with success and latency_ms.
-        """
-        try:
-            test_hostname = "cloudflare.com"
-            start_time = time.time()
-
-            loop = asyncio.get_event_loop()
-            await asyncio.wait_for(
-                loop.run_in_executor(
-                    None,
-                    lambda: socket.getaddrinfo(
-                        test_hostname,
-                        None,
-                        socket.AF_INET,
-                        socket.SOCK_STREAM,
-                    ),
-                ),
-                timeout=self.config.dns_timeout,
-            )
-
-            latency_ms = (time.time() - start_time) * 1000
-
-            return {"success": True, "latency_ms": latency_ms}
-
-        except TimeoutError:
-            _LOGGER.debug("DNS resolution timed out")
-            return {"success": False, "latency_ms": None}
-        except socket.gaierror as e:
-            _LOGGER.debug("DNS resolution failed: %s", e)
-            return {"success": False, "latency_ms": None}
-        except Exception as e:
-            _LOGGER.debug("DNS check error: %s", e)
-            return {"success": False, "latency_ms": None}
+            latency_ms = await dns_probe.query_time_ms(server, self.config.dns_timeout)
+        except (OSError, ValueError) as e:
+            _LOGGER.debug("DNS probe to %s failed: %s", server, e)
+            latency_ms = None
+        return {"success": latency_ms is not None, "latency_ms": latency_ms}
 
     def _calculate_jitter(self, history: deque[float]) -> float | None:
         """Calculate jitter from latency history.

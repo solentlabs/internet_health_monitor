@@ -228,6 +228,15 @@ answered; no elevation is needed [V, local run]. `MAX_HOSTNAME_LEN` and
 `MAX_DOMAIN_NAME_LEN` of 128 come from the Windows SDK headers [U]; the
 local run read the DNS server list correctly with them.
 
+## R14. DNS message format
+
+RFC 1035 (https://www.rfc-editor.org/rfc/rfc1035), read 2026-11-19:
+§ 4.1.1 header (ID, QR bit marks a response, RD "Recursion Desired",
+RCODE 0 no error and 3 "Name Error"), § 4.1.2 question (each label "a
+length octet followed by that number of characters", QTYPE, QCLASS),
+§ 3.2.2 TYPE A = 1, § 3.2.4 CLASS IN = 1, § 4.2.1 UDP usage [V]. Used by
+`dns_probe.py`.
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a
