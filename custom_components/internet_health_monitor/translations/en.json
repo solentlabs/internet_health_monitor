@@ -340,12 +340,16 @@
       "description": "Returns the YAML for a dashboard card showing reachability, latency, jitter and packet loss. The Internet Health card in Add card shows the same layout without YAML.",
       "fields": {
         "include_status": {
-          "name": "Status",
-          "description": "Reachability, each hop's and DNS latency, and Refresh diagnostics."
+          "name": "Network status",
+          "description": "Gateway and internet reachable, DNS latency, and Refresh diagnostics."
+        },
+        "include_hops": {
+          "name": "Each hop",
+          "description": "A card per hop with its current latency, jitter and packet loss."
         },
         "include_latency": {
-          "name": "Latency graph",
-          "description": "History of hop and DNS latency."
+          "name": "Latency graphs",
+          "description": "History of hop latency, and of DNS latency on its own graph."
         },
         "include_jitter": {
           "name": "Jitter graph",

@@ -340,12 +340,16 @@
       "description": "Retorna o YAML de um cartão de painel com alcançabilidade, latência, jitter e perda de pacotes. O cartão Internet Health em Adicionar cartão mostra o mesmo sem YAML.",
       "fields": {
         "include_status": {
-          "name": "Status",
-          "description": "Alcançabilidade, latência de cada salto e do DNS, e Atualizar diagnóstico."
+          "name": "Status da rede",
+          "description": "Gateway e internet alcançáveis, latência DNS e Atualizar diagnóstico."
+        },
+        "include_hops": {
+          "name": "Cada salto",
+          "description": "Um cartão por salto com latência, jitter e perda de pacotes atuais."
         },
         "include_latency": {
-          "name": "Gráfico de latência",
-          "description": "Histórico da latência dos saltos e do DNS."
+          "name": "Gráficos de latência",
+          "description": "Histórico da latência dos saltos e, em gráfico próprio, da latência DNS."
         },
         "include_jitter": {
           "name": "Gráfico de jitter",

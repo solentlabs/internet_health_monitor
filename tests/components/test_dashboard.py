@@ -25,84 +25,100 @@ from .conftest import SetupEntry, entity_id
 
 FRONTEND = Path(__file__).parents[2] / "custom_components" / DOMAIN / "card" / "frontend"
 
-HOP_LATENCY = [
-    "sensor.internet_health_hop_1_latency_gateway",
-    "sensor.internet_health_hop_2_latency_isp",
-    "sensor.internet_health_hop_3_latency_backbone",
-]
-DNS_LATENCY = "sensor.internet_health_dns_latency"
 GATEWAY_REACHABLE = "binary_sensor.internet_health_gateway_reachable"
 INTERNET_REACHABLE = "binary_sensor.internet_health_internet_reachable"
+DNS_LATENCY = "sensor.internet_health_dns_latency"
 REFRESH = "button.internet_health_refresh_diagnostics"
+SUFFIX = {1: "gateway", 2: "isp", 3: "backbone"}
+
+
+def _hop(hop: int, metric: str) -> str:
+    """A hop sensor's default entity id."""
+    return f"sensor.internet_health_hop_{hop}_{metric}_{SUFFIX[hop]}"
+
+
+def _graph(title: str, metric: str) -> dict[str, Any]:
+    """A default hop graph: one line per hop, named for the hop."""
+    lines = [{"entity": _hop(h, metric), "name": n} for h, n in ((1, "Gateway"), (2, "ISP"), (3, "Backbone"))]
+    return {"type": "history-graph", "title": title, "hours_to_show": 24, "entities": lines}
+
+
+def _hop_card(hop: int, name: str) -> dict[str, Any]:
+    """A default per-hop card: current latency, jitter and loss."""
+    rows = [("latency", "Latency"), ("jitter", "Jitter"), ("packet_loss", "Packet loss")]
+    return {
+        "type": "entities",
+        "title": f"Hop {hop} · {name}",
+        "entities": [{"entity": _hop(hop, metric), "name": label} for metric, label in rows],
+    }
+
 
 DEFAULT_CARD: dict[str, Any] = {
     "type": "vertical-stack",
     "cards": [
         {
             "type": "entities",
-            "entities": [GATEWAY_REACHABLE, INTERNET_REACHABLE, *HOP_LATENCY, DNS_LATENCY, REFRESH],
-        },
-        {"type": "history-graph", "title": "Latency", "hours_to_show": 24, "entities": [*HOP_LATENCY, DNS_LATENCY]},
-        {
-            "type": "history-graph",
-            "title": "Jitter",
-            "hours_to_show": 24,
+            "title": "Network Status",
             "entities": [
-                "sensor.internet_health_hop_1_jitter_gateway",
-                "sensor.internet_health_hop_2_jitter_isp",
-                "sensor.internet_health_hop_3_jitter_backbone",
+                {"entity": GATEWAY_REACHABLE, "name": "Gateway"},
+                {"entity": INTERNET_REACHABLE, "name": "Internet"},
+                {"entity": DNS_LATENCY, "name": "DNS latency"},
+                {"entity": REFRESH, "name": "Refresh"},
             ],
         },
+        _hop_card(1, "Gateway"),
+        _hop_card(2, "ISP"),
+        _hop_card(3, "Backbone"),
+        _graph("Hop latency", "latency"),
         {
             "type": "history-graph",
-            "title": "Packet loss",
+            "title": "DNS latency",
             "hours_to_show": 24,
-            "entities": [
-                "sensor.internet_health_hop_1_packet_loss_gateway",
-                "sensor.internet_health_hop_2_packet_loss_isp",
-                "sensor.internet_health_hop_3_packet_loss_backbone",
-            ],
+            "entities": [{"entity": DNS_LATENCY, "name": "DNS"}],
         },
+        _graph("Jitter", "jitter"),
+        _graph("Packet loss", "packet_loss"),
     ],
 }
 
-# Parts as (title, or type when untitled; first entity).
-STATUS = ("entities", GATEWAY_REACHABLE)
-LATENCY = ("Latency", HOP_LATENCY[0])
-JITTER = ("Jitter", "sensor.internet_health_hop_1_jitter_gateway")
-LOSS = ("Packet loss", "sensor.internet_health_hop_1_packet_loss_gateway")
+HOPS = ["Hop 1 · Gateway", "Hop 2 · ISP", "Hop 3 · Backbone"]
+STATUS = "Network Status"
+GRAPHS = ["Hop latency", "DNS latency", "Jitter", "Packet loss"]
+NO_JITTER = ["Hop latency", "DNS latency", "Packet loss"]
+HOP_GRAPHS = ["Hop latency", "Jitter", "Packet loss"]
 NO_GRAPHS = {"include_latency": False, "include_jitter": False, "include_packet_loss": False}
 NO_GATEWAY = {"enable_gateway_monitoring": False}
 NO_DNS = {"enable_dns_monitoring": False}
-DNS_ONLY = [("entities", INTERNET_REACHABLE), ("Latency", DNS_LATENCY)]
 
-# ┌──────────────────────────┬──────────────────────┬────────────────────────────────────────┬──────────────────┐
-# │ entry options            │ card options         │ expected parts                         │ description      │
-# ├──────────────────────────┼──────────────────────┼────────────────────────────────────────┼──────────────────┤
-# │ defaults                 │ {}                   │ status, latency, jitter, loss          │ everything       │
-# │ defaults                 │ include_jitter off   │ status, latency, loss                  │ one part off     │
-# │ defaults                 │ graphs off           │ status                                 │ graphs off       │
-# │ gateway monitoring off   │ {}                   │ status (internet first), latency (dns) │ no hop entities  │
-# │ dns monitoring off       │ {}                   │ status, latency (hops), jitter, loss   │ no dns entities  │
-# └──────────────────────────┴──────────────────────┴────────────────────────────────────────┴──────────────────┘
+# ┌──────────────────────────┬──────────────────────┬──────────────────────────────────────────────┬──────────────┐
+# │ entry options            │ card options         │ expected part titles                         │ description  │
+# ├──────────────────────────┼──────────────────────┼──────────────────────────────────────────────┼──────────────┤
+# │ defaults                 │ {}                   │ status, 3 hops, 4 graphs                     │ everything   │
+# │ defaults                 │ include_hops off     │ status, 4 graphs                             │ hops off     │
+# │ defaults                 │ include_jitter off   │ status, 3 hops, latency, dns, loss           │ one graph    │
+# │ defaults                 │ graphs off           │ status, 3 hops                               │ graphs off   │
+# │ gateway monitoring off   │ {}                   │ status, dns graph                            │ no hops      │
+# │ dns monitoring off       │ {}                   │ status, 3 hops, hop graphs (no dns graph)    │ no dns       │
+# └──────────────────────────┴──────────────────────┴──────────────────────────────────────────────┴──────────────┘
 # fmt: off
-LAYOUT_CASES: list[tuple[dict[str, Any], dict[str, Any], list[tuple[str, str]], str]] = [
-    ({},         {},                        [STATUS, LATENCY, JITTER, LOSS], "everything"),
-    ({},         {"include_jitter": False}, [STATUS, LATENCY, LOSS],         "one_part_off"),
-    ({},         NO_GRAPHS,                 [STATUS],                        "graphs_off"),
-    (NO_GATEWAY, {},                        DNS_ONLY,                        "no_hops"),
-    (NO_DNS,     {},                        [STATUS, LATENCY, JITTER, LOSS], "no_dns"),
+LAYOUT_CASES: list[tuple[dict[str, Any], dict[str, Any], list[str], str]] = [
+    ({},         {},                        [STATUS, *HOPS, *GRAPHS],         "everything"),
+    ({},         {"include_hops": False},   [STATUS, *GRAPHS],                "hops_off"),
+    ({},         {"include_jitter": False}, [STATUS, *HOPS, *NO_JITTER],      "one_graph_off"),
+    ({},         NO_GRAPHS,                 [STATUS, *HOPS],                  "graphs_off"),
+    (NO_GATEWAY, {},                        [STATUS, "DNS latency"],          "no_hops"),
+    (NO_DNS,     {},                        [STATUS, *HOPS, *HOP_GRAPHS],     "no_dns"),
 ]
 # fmt: on
 
 
-def _parts(card: dict[str, Any]) -> list[tuple[str, str]]:
-    """Each part as (title, or type when untitled; its first entity)."""
-    return [(part.get("title", part["type"]), part["entities"][0]) for part in card["cards"]]
+def _titles(card: dict[str, Any]) -> list[str]:
+    """Each part's title."""
+    return [part["title"] for part in card["cards"]]
 
 
 async def test_default_layout(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """A new install's card: status rows, then latency, jitter and loss graphs."""
+    """A new install's card: status, one card per hop, then hop latency, DNS, jitter and loss graphs."""
     await setup_entry()
     assert build_card_config(hass, CARD_OPTIONS_SCHEMA({})) == DEFAULT_CARD
 
@@ -113,32 +129,35 @@ async def test_layout_follows_options(
     setup_entry: SetupEntry,
     entry_options: dict[str, Any],
     card_options: dict[str, Any],
-    expected: list[tuple[str, str]],
+    expected: list[str],
     desc: str,
 ) -> None:
     """Parts follow the card's options and the entities the entry created."""
     await setup_entry(**entry_options)
-    assert _parts(build_card_config(hass, CARD_OPTIONS_SCHEMA(card_options))) == expected, desc
+    assert _titles(build_card_config(hass, CARD_OPTIONS_SCHEMA(card_options))) == expected, desc
 
 
-async def test_layout_uses_registry_ids_and_skips_disabled(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """A renamed entity keeps its place under its new id; a disabled one is left out."""
+async def test_layout_uses_registry_ids_names_and_skips_disabled(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """A renamed entity keeps its place under its new id and its own name; a disabled one is left out."""
     entry = await setup_entry()
     registry = er.async_get(hass)
-    dns = entity_id(hass, "sensor", entry, "dns_latency")
+    hop_1 = entity_id(hass, "sensor", entry, "hop_1_latency")
     hop_3 = entity_id(hass, "sensor", entry, "hop_3_latency")
-    assert dns and hop_3
-    registry.async_update_entity(dns, new_entity_id="sensor.my_dns")
+    assert hop_1 and hop_3
+    registry.async_update_entity(hop_1, new_entity_id="sensor.my_router", name="My router")
     registry.async_update_entity(hop_3, disabled_by=er.RegistryEntryDisabler.USER)
-    graph = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))["cards"][1]
-    assert graph["entities"] == [*HOP_LATENCY[:2], "sensor.my_dns"]
+    graph = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))["cards"][4]
+    assert graph["entities"] == [
+        {"entity": "sensor.my_router", "name": "My router"},
+        {"entity": _hop(2, "latency"), "name": "ISP"},
+    ]
 
 
 async def test_graph_hours_applies_to_every_graph(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
     """graph_hours sets hours_to_show on each history graph."""
     await setup_entry()
     card = build_card_config(hass, CARD_OPTIONS_SCHEMA({"graph_hours": 48}))
-    assert {part["hours_to_show"] for part in card["cards"][1:]} == {48}
+    assert {part["hours_to_show"] for part in card["cards"] if part["type"] == "history-graph"} == {48}
 
 
 # ┌────────────────────────────┬───────────────────────┬──────────────────────────┐
@@ -147,7 +166,7 @@ async def test_graph_hours_applies_to_every_graph(hass: HomeAssistant, setup_ent
 # │ no entry                   │ {}                    │ not_set_up               │
 # │ entry                      │ everything off        │ nothing_to_show          │
 # └────────────────────────────┴───────────────────────┴──────────────────────────┘
-ALL_OFF = {"include_status": False, **NO_GRAPHS}
+ALL_OFF = {"include_status": False, "include_hops": False, **NO_GRAPHS}
 # fmt: off
 ERROR_CASES: list[tuple[bool, dict[str, Any], str]] = [
     (False, {},      "not_set_up"),
@@ -307,12 +326,12 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     speed, throughput = card["cards"][-2:]
     assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
         "Speed test",
-        "sensor.internet_health_speed_test_download",
-        "button.internet_health_run_speed_test",
+        {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
+        {"entity": "button.internet_health_run_speed_test", "name": "Run speed test"},
     )
     assert throughput["entities"] == [
-        "sensor.internet_health_speed_test_download",
-        "sensor.internet_health_speed_test_upload",
+        {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
+        {"entity": "sensor.internet_health_speed_test_upload", "name": "Upload"},
     ]
     hidden = build_card_config(hass, CARD_OPTIONS_SCHEMA({"include_speed_test": False}))
     assert len(hidden["cards"]) == len(card["cards"]) - 2

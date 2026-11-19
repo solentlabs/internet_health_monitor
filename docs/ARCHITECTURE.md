@@ -101,6 +101,13 @@ scheduling. It contains no measurement logic.
    difference between consecutive round-trip times within the poll
    (ADR-009, [REFERENCES.md § R18](REFERENCES.md#r18-jitter)).
 
+**Reachability between polls** (ADR-012): the binary sensors show a
+confirmed state. A failed result starts quick checks (one gateway ping or
+one DNS query, 5 s apart); three failures in a row turn the sensor off,
+and while off a check runs every 10 s until one answers. Core
+(`reachability.py`) decides; the coordinator schedules. Nothing runs
+between polls while everything answers.
+
 **Failure isolation:** the three checks run under `asyncio.gather` with
 `return_exceptions=True`, so one failing check yields an unreachable or
 empty result for that check only. The reset buttons clear the caches,

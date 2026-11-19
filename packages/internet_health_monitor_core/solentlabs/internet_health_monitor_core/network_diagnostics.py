@@ -609,6 +609,18 @@ class NetworkDiagnostics:
         mean = sum(rtts) / len(rtts) if rtts else None
         return replies, mean, consecutive_jitter(rtts)
 
+    async def check_gateway(self) -> bool:
+        """One ping to the detected gateway, between polls (ADR-012); False if none was detected."""
+        if not self._gateway_ip:
+            return False
+        ok, _ = await self._single_ping(self._gateway_ip)
+        return ok
+
+    async def check_internet(self) -> bool:
+        """One DNS query to the server under test, between polls (ADR-012)."""
+        self.counts.dns_queries += 1
+        return bool((await self._check_dns())["success"])
+
     async def _single_ping(self, host: str) -> tuple[bool, float | None]:
         """Ping once; return (reply received, round-trip ms or None if not reported)."""
         self.counts.pings += 1

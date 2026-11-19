@@ -340,12 +340,16 @@
       "description": "Renvoie le YAML d'une carte de tableau de bord affichant l'accessibilité, la latence, la gigue et la perte de paquets. La carte Internet Health dans Ajouter une carte affiche la même chose sans YAML.",
       "fields": {
         "include_status": {
-          "name": "État",
-          "description": "Accessibilité, latence de chaque saut et du DNS, et Actualiser le diagnostic."
+          "name": "État du réseau",
+          "description": "Passerelle et internet accessibles, latence DNS et Actualiser le diagnostic."
+        },
+        "include_hops": {
+          "name": "Chaque saut",
+          "description": "Une carte par saut avec sa latence, sa gigue et sa perte de paquets actuelles."
         },
         "include_latency": {
-          "name": "Graphique de latence",
-          "description": "Historique de la latence des sauts et du DNS."
+          "name": "Graphiques de latence",
+          "description": "Historique de la latence des sauts et, sur son propre graphique, de la latence DNS."
         },
         "include_jitter": {
           "name": "Graphique de gigue",

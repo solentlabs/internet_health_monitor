@@ -340,12 +340,16 @@
       "description": "Gibt das YAML für eine Dashboard-Karte mit Erreichbarkeit, Latenz, Jitter und Paketverlust zurück. Die Karte „Internet Health“ unter „Karte hinzufügen“ zeigt dasselbe ohne YAML.",
       "fields": {
         "include_status": {
-          "name": "Status",
-          "description": "Erreichbarkeit, Latenz jedes Hops und von DNS sowie „Diagnose aktualisieren“."
+          "name": "Netzwerkstatus",
+          "description": "Gateway und Internet erreichbar, DNS-Latenz und „Diagnose aktualisieren“."
+        },
+        "include_hops": {
+          "name": "Jeder Hop",
+          "description": "Eine Karte pro Hop mit aktueller Latenz, Jitter und Paketverlust."
         },
         "include_latency": {
-          "name": "Latenzdiagramm",
-          "description": "Verlauf der Hop- und DNS-Latenz."
+          "name": "Latenzdiagramme",
+          "description": "Verlauf der Hop-Latenz und, in einem eigenen Diagramm, der DNS-Latenz."
         },
         "include_jitter": {
           "name": "Jitterdiagramm",

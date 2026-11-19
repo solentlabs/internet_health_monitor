@@ -73,3 +73,10 @@ SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S = 3600
 
 # Hosts that keep running usage totals write them at most this often (and on unload).
 USAGE_SAVE_DELAY_S = 300
+
+# Reachability (ADR-012): a failure turns a target off only after this many quick
+# checks also fail, this far apart; while off, it is re-checked this often. While
+# healthy, nothing runs between polls.
+REACHABILITY_CONFIRM_CHECKS = 2
+REACHABILITY_CONFIRM_INTERVAL_S = 5.0
+REACHABILITY_DOWN_RECHECK_S = 10.0

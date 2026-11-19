@@ -340,12 +340,16 @@
       "description": "Devuelve el YAML de una tarjeta de panel con accesibilidad, latencia, jitter y pérdida de paquetes. La tarjeta Internet Health en Añadir tarjeta muestra lo mismo sin YAML.",
       "fields": {
         "include_status": {
-          "name": "Estado",
-          "description": "Accesibilidad, latencia de cada salto y de DNS, y Actualizar diagnóstico."
+          "name": "Estado de la red",
+          "description": "Puerta de enlace e internet accesibles, latencia DNS y Actualizar diagnóstico."
+        },
+        "include_hops": {
+          "name": "Cada salto",
+          "description": "Una tarjeta por salto con su latencia, jitter y pérdida de paquetes actuales."
         },
         "include_latency": {
-          "name": "Gráfico de latencia",
-          "description": "Historial de latencia de saltos y DNS."
+          "name": "Gráficos de latencia",
+          "description": "Historial de la latencia de los saltos y, en su propio gráfico, de la latencia DNS."
         },
         "include_jitter": {
           "name": "Gráfico de jitter",

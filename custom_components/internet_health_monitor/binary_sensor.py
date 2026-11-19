@@ -14,9 +14,12 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnosticsResult
-
-from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator, InternetHealthRuntimeData
+from .coordinator import (
+    InternetHealthConfigEntry,
+    InternetHealthCoordinator,
+    InternetHealthRuntimeData,
+    ReachabilityTarget,
+)
 from .entity import InternetHealthEntity
 
 # Entities only read coordinator data; no per-entity update calls.
@@ -27,7 +30,7 @@ PARALLEL_UPDATES = 0
 class ReachabilityEntityDescription(BinarySensorEntityDescription):
     """A reachability state read from the poll result."""
 
-    value_fn: Callable[[NetworkDiagnosticsResult], bool | None]
+    target: ReachabilityTarget
     enabled_fn: Callable[[InternetHealthRuntimeData], bool]
 
 
@@ -36,14 +39,14 @@ BINARY_SENSORS: tuple[ReachabilityEntityDescription, ...] = (
         key="gateway_reachable",
         translation_key="gateway_reachable",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        value_fn=lambda r: r.gateway_reachable,
+        target="gateway",
         enabled_fn=lambda d: d.enable_gateway,
     ),
     ReachabilityEntityDescription(
         key="internet_reachable",
         translation_key="internet_reachable",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        value_fn=lambda r: r.dns_success,
+        target="internet",
         enabled_fn=lambda d: d.enable_dns,
     ),
 )
@@ -60,7 +63,7 @@ async def async_setup_entry(
 
 
 class ReachabilitySensor(InternetHealthEntity[InternetHealthCoordinator], BinarySensorEntity):
-    """On when the target answered in the latest poll."""
+    """On when the target answers; off only once quick checks confirm a failure (ADR-012)."""
 
     entity_description: ReachabilityEntityDescription
 
@@ -72,5 +75,5 @@ class ReachabilitySensor(InternetHealthEntity[InternetHealthCoordinator], Binary
     @override
     @property
     def is_on(self) -> bool | None:
-        """Return whether the target answered."""
-        return self.entity_description.value_fn(self.coordinator.data)
+        """Whether the target answers, confirmed by quick checks before turning off (ADR-012)."""
+        return self.coordinator.reachability[self.entity_description.target].reachable

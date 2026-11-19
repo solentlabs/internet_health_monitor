@@ -23,6 +23,7 @@ GRAPH_HOURS_MAX = 168
 CARD_OPTIONS_SCHEMA = probatio.Schema(
     {
         probatio.Optional("include_status", default=True): cv.boolean,
+        probatio.Optional("include_hops", default=True): cv.boolean,
         probatio.Optional("include_latency", default=True): cv.boolean,
         probatio.Optional("include_jitter", default=True): cv.boolean,
         probatio.Optional("include_packet_loss", default=True): cv.boolean,
@@ -33,27 +34,96 @@ CARD_OPTIONS_SCHEMA = probatio.Schema(
     }
 )
 
+# (platform, entity key, short label). Labels and titles are English (docs/DASHBOARD_CARD.md § Layout);
+# a name the user gave the entity replaces the label.
+Row = tuple[str, str, str]
+
+HOP_NAMES = {1: "Gateway", 2: "ISP", 3: "Backbone"}
 _HOPS = range(1, NUM_HOPS + 1)
-_LATENCY = [*(f"hop_{n}_latency" for n in _HOPS), "dns_latency"]
-_STATUS: list[tuple[str, str]] = [
-    ("binary_sensor", "gateway_reachable"),
-    ("binary_sensor", "internet_reachable"),
-    *(("sensor", key) for key in _LATENCY),
-    ("button", "refresh_diagnostics"),
+
+_STATUS: list[Row] = [
+    ("binary_sensor", "gateway_reachable", "Gateway"),
+    ("binary_sensor", "internet_reachable", "Internet"),
+    ("sensor", "dns_latency", "DNS latency"),
+    ("button", "refresh_diagnostics", "Refresh"),
 ]
-_SPEED_TEST: list[tuple[str, str]] = [
-    *(
-        ("sensor", f"speed_test_{field}")
-        for field in ("download", "upload", "idle_latency", "download_latency", "upload_latency", "data_used")
-    ),
-    ("button", "run_speed_test"),
+
+
+def _hop_rows(hop: int) -> list[Row]:
+    """One hop's current readings."""
+    return [
+        ("sensor", f"hop_{hop}_latency", "Latency"),
+        ("sensor", f"hop_{hop}_jitter", "Jitter"),
+        ("sensor", f"hop_{hop}_packet_loss", "Packet loss"),
+    ]
+
+
+def _hop_lines(metric: str) -> list[Row]:
+    """One metric across the hops, for a graph."""
+    return [("sensor", f"hop_{hop}_{metric}", HOP_NAMES[hop]) for hop in _HOPS]
+
+
+# Option -> (graph title, lines).
+_GRAPHS: list[tuple[str, str, list[Row]]] = [
+    ("include_latency", "Hop latency", _hop_lines("latency")),
+    ("include_latency", "DNS latency", [("sensor", "dns_latency", "DNS")]),
+    ("include_jitter", "Jitter", _hop_lines("jitter")),
+    ("include_packet_loss", "Packet loss", _hop_lines("packet_loss")),
 ]
-# Option -> (graph title, sensor keys). Titles are English (docs/DASHBOARD_CARD.md § Layout).
-_GRAPHS: list[tuple[str, str, list[str]]] = [
-    ("include_latency", "Latency", _LATENCY),
-    ("include_jitter", "Jitter", [f"hop_{n}_jitter" for n in _HOPS]),
-    ("include_packet_loss", "Packet loss", [f"hop_{n}_packet_loss" for n in _HOPS]),
+
+_SPEED_TEST: list[Row] = [
+    ("sensor", "speed_test_download", "Download"),
+    ("sensor", "speed_test_upload", "Upload"),
+    ("sensor", "speed_test_idle_latency", "Idle latency"),
+    ("sensor", "speed_test_download_latency", "Download latency"),
+    ("sensor", "speed_test_upload_latency", "Upload latency"),
+    ("sensor", "speed_test_data_used", "Data used"),
+    ("button", "run_speed_test", "Run speed test"),
 ]
+_THROUGHPUT: list[Row] = [
+    ("sensor", "speed_test_download", "Download"),
+    ("sensor", "speed_test_upload", "Upload"),
+]
+
+
+def _rows(registry: er.EntityRegistry, entry_id: str, targets: list[Row]) -> list[dict[str, str]]:
+    """Registered, enabled entities as named rows, in order."""
+    found = []
+    for platform, key, label in targets:
+        entity_id = registry.async_get_entity_id(platform, DOMAIN, f"{entry_id}_{key}")
+        entity = registry.async_get(entity_id) if entity_id else None
+        if entity and not entity.disabled:
+            found.append({"entity": entity.entity_id, "name": entity.name or label})
+    return found
+
+
+def _entities(title: str, rows: list[dict[str, str]]) -> dict[str, Any]:
+    """An entities card."""
+    return {"type": "entities", "title": title, "entities": rows}
+
+
+def _graph(title: str, lines: list[dict[str, str]], hours: int) -> dict[str, Any]:
+    """A history graph."""
+    return {"type": "history-graph", "title": title, "hours_to_show": hours, "entities": lines}
+
+
+def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every part the options switch on that has entities, in card order."""
+
+    def rows(targets: list[Row]) -> list[dict[str, str]]:
+        """This entry's rows for *targets*."""
+        return _rows(registry, entry_id, targets)
+
+    hours = options["graph_hours"]
+    parts: list[dict[str, Any]] = []
+    if options["include_status"] and (status := rows(_STATUS)):
+        parts.append(_entities("Network Status", status))
+    if options["include_hops"]:
+        parts += [_entities(f"Hop {h} · {HOP_NAMES[h]}", r) for h in _HOPS if (r := rows(_hop_rows(h)))]
+    parts += [_graph(title, lines, hours) for opt, title, t in _GRAPHS if options[opt] and (lines := rows(t))]
+    if options["include_speed_test"] and (speed := rows(_SPEED_TEST)):
+        parts += [_entities("Speed test", speed), _graph("Throughput", rows(_THROUGHPUT), hours)]
+    return parts
 
 
 def build_card_config(hass: HomeAssistant, options: dict[str, Any]) -> dict[str, Any]:
@@ -61,38 +131,7 @@ def build_card_config(hass: HomeAssistant, options: dict[str, Any]) -> dict[str,
     entries = hass.config_entries.async_entries(DOMAIN)
     if not entries:
         raise ServiceValidationError(translation_domain=DOMAIN, translation_key="not_set_up")
-    entry_id = entries[0].entry_id
-    registry = er.async_get(hass)
-
-    def ids(targets: list[tuple[str, str]]) -> list[str]:
-        """Registered, enabled entity ids for (platform, key) pairs, in order."""
-        found = []
-        for platform, key in targets:
-            entity_id = registry.async_get_entity_id(platform, DOMAIN, f"{entry_id}_{key}")
-            entity = registry.async_get(entity_id) if entity_id else None
-            if entity and not entity.disabled:
-                found.append(entity.entity_id)
-        return found
-
-    cards: list[dict[str, Any]] = []
-    if options["include_status"] and (status := ids(_STATUS)):
-        cards.append({"type": "entities", "entities": status})
-    for option, title, keys in _GRAPHS:
-        if options[option] and (graphed := ids([("sensor", key) for key in keys])):
-            cards.append(
-                {"type": "history-graph", "title": title, "hours_to_show": options["graph_hours"], "entities": graphed}
-            )
-    if options["include_speed_test"] and (speed := ids(_SPEED_TEST)):
-        cards.append({"type": "entities", "title": "Speed test", "entities": speed})
-        throughput = ids([("sensor", "speed_test_download"), ("sensor", "speed_test_upload")])
-        cards.append(
-            {
-                "type": "history-graph",
-                "title": "Throughput",
-                "hours_to_show": options["graph_hours"],
-                "entities": throughput,
-            }
-        )
+    cards = _parts(er.async_get(hass), entries[0].entry_id, options)
     if not cards:
         raise ServiceValidationError(translation_domain=DOMAIN, translation_key="nothing_to_show")
     return {"type": "vertical-stack", "cards": cards}

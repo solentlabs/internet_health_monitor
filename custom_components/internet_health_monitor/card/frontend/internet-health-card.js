@@ -14,8 +14,9 @@ const RETRY_MS = 30000;
 const GRAPH_HOURS_MAX = 168;
 
 const LABELS = {
-  include_status: "Status",
-  include_latency: "Latency graph",
+  include_status: "Network status",
+  include_hops: "Each hop",
+  include_latency: "Latency graphs",
   include_jitter: "Jitter graph",
   include_packet_loss: "Packet loss graph",
   include_speed_test: "Speed test",
@@ -32,6 +33,7 @@ class InternetHealthCard extends HTMLElement {
       // One field per line: tests read name and default from these lines.
       schema: [
         { name: "include_status", default: true, selector: { boolean: {} } },
+        { name: "include_hops", default: true, selector: { boolean: {} } },
         { name: "include_latency", default: true, selector: { boolean: {} } },
         { name: "include_jitter", default: true, selector: { boolean: {} } },
         { name: "include_packet_loss", default: true, selector: { boolean: {} } },

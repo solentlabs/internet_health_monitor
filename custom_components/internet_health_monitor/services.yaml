@@ -4,6 +4,10 @@ generate_dashboard_card:
       default: true
       selector:
         boolean:
+    include_hops:
+      default: true
+      selector:
+        boolean:
     include_latency:
       default: true
       selector:

@@ -340,12 +340,16 @@
       "description": "返回一张显示可达性、延迟、抖动和丢包的仪表板卡片的 YAML。“添加卡片”中的 Internet Health 卡片无需 YAML 即可显示相同内容。",
       "fields": {
         "include_status": {
-          "name": "状态",
-          "description": "可达性、每一跳和 DNS 的延迟，以及“刷新诊断”。"
+          "name": "网络状态",
+          "description": "网关和互联网可达性、DNS 延迟以及“刷新诊断”。"
+        },
+        "include_hops": {
+          "name": "每一跳",
+          "description": "每一跳一张卡片，显示当前延迟、抖动和丢包。"
         },
         "include_latency": {
           "name": "延迟图",
-          "description": "跳点和 DNS 延迟的历史。"
+          "description": "跳点延迟的历史，DNS 延迟单独一张图。"
         },
         "include_jitter": {
           "name": "抖动图",

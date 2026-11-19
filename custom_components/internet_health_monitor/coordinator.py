@@ -6,7 +6,8 @@ import logging
 import random
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import Any, override
+from functools import partial
+from typing import Any, Literal, override
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant
@@ -18,6 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsResult
+from solentlabs.internet_health_monitor_core.reachability import Reachability
 from solentlabs.internet_health_monitor_core.speed_test import (
     BackendName,
     SpeedTestError,
@@ -40,6 +42,8 @@ _LOGGER = logging.getLogger(__name__)
 # Users who want another interval disable polling and call
 # homeassistant.update_entity from an automation (README.md § Polling).
 SCAN_INTERVAL = timedelta(seconds=POLL_INTERVAL_S)
+
+ReachabilityTarget = Literal["gateway", "internet"]
 
 
 @dataclass
@@ -72,17 +76,46 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
         entry: InternetHealthConfigEntry,
         diagnostics: NetworkDiagnostics,
         usage: UsageTracker,
+        targets: tuple[ReachabilityTarget, ...] = ("gateway", "internet"),
     ) -> None:
-        """Poll the given diagnostics every SCAN_INTERVAL, adding what each poll sends to *usage*."""
+        """Poll every SCAN_INTERVAL, adding what each poll sends to *usage*; track reachability of *targets*."""
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=SCAN_INTERVAL)
         self.diagnostics = diagnostics
         self.usage = usage
+        # Confirm before off, re-check fast while off (ADR-012); quick checks run only then.
+        self.reachability: dict[ReachabilityTarget, Reachability] = {t: Reachability() for t in targets}
+        self._pending: dict[ReachabilityTarget, CALLBACK_TYPE] = {}
+        entry.async_on_unload(self._cancel_checks)
+
+    def _cancel_checks(self) -> None:
+        """Cancel quick checks still waiting (the entry is unloading)."""
+        for cancel in self._pending.values():
+            cancel()
+        self._pending.clear()
+
+    def _observe(self, target: ReachabilityTarget, ok: bool) -> None:
+        """Feed one result to *target*; schedule the quick check it asks for, or cancel one no longer needed."""
+        delay = self.reachability[target].observe(ok)
+        if delay is None:
+            if cancel := self._pending.pop(target, None):
+                cancel()
+        elif target not in self._pending:
+            job = HassJob(partial(self._async_quick_check, target), cancel_on_shutdown=True)
+            self._pending[target] = async_call_later(self.hass, delay, job)
+
+    async def _async_quick_check(self, target: ReachabilityTarget, _now: Any) -> None:
+        """One gateway ping or one DNS query, then show the result."""
+        self._pending.pop(target, None)
+        check = self.diagnostics.check_gateway if target == "gateway" else self.diagnostics.check_internet
+        self._observe(target, await check())
+        self.usage.add_probes(self.diagnostics.counts)
+        self.async_update_listeners()
 
     @override
     async def _async_update_data(self) -> NetworkDiagnosticsResult:
         """Run one poll; a failure marks entities unavailable until the next success."""
         try:
-            return await self.diagnostics.run_diagnostics()
+            result = await self.diagnostics.run_diagnostics()
         except Exception as err:  # a failed poll still sent its probes; finally counts them
             raise UpdateFailed(
                 translation_domain=DOMAIN,
@@ -91,6 +124,10 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
             ) from err
         finally:
             self.usage.add_probes(self.diagnostics.counts)
+        observed = {"gateway": result.gateway_reachable, "internet": result.dns_success}
+        for target in self.reachability:
+            self._observe(target, observed[target])
+        return result
 
 
 STORAGE_KEY = f"{DOMAIN}.speed_test"

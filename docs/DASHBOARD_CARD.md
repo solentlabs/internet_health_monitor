@@ -39,8 +39,9 @@ YAML. One schema in `dashboard.py` validates all three.
 
 | Option | Default | Shows |
 |--------|---------|-------|
-| `include_status` | true | Entities card: gateway and internet reachable, each hop's and DNS latency, Refresh diagnostics |
-| `include_latency` | true | History graph: hop and DNS latency |
+| `include_status` | true | Network Status card: gateway and internet reachable, DNS latency, Refresh diagnostics |
+| `include_hops` | true | One card per hop (Gateway, ISP, Backbone): its current latency, jitter and packet loss |
+| `include_latency` | true | History graphs: hop latency, and DNS latency on its own (its scale would flatten the hops) |
 | `include_jitter` | true | History graph: hop jitter |
 | `include_packet_loss` | true | History graph: hop packet loss |
 | `include_speed_test` | true | Entities card: each speed test reading and Run speed test; history graph: download and upload. Shown only when a speed test service is chosen |
@@ -52,7 +53,7 @@ map the old key, and CHANGELOG.md records it.
 ## Layout
 
 `build_card_config` returns one `vertical-stack` holding the parts
-switched on. Entity ids come from the entity registry by unique id, so a
+switched on, in the order of the table above. Entity ids come from the entity registry by unique id, so a
 renamed device or entity still resolves (ADR-010). Entities that were
 not created (gateway or DNS monitoring off) or that the user disabled
 are left out, and a part with no entities is left out.
@@ -67,10 +68,11 @@ Errors, raised as translated `ServiceValidationError`:
 A failed poll is not an error: the layout comes from the registry, and
 the entities show their own unavailable state.
 
-Card titles ("Latency", "Jitter", "Packet loss", "Speed test", "Throughput") are English: Lovelace
-config holds plain text, and the frontend has no translation hook for a
-custom integration's card. Entity rows use the entities' translated
-names.
+Every row and graph line carries a short name ("Latency", "Gateway"),
+so the device name is not repeated on each line; a name the user gave
+the entity in HA replaces it. Titles and these names are English:
+Lovelace config holds plain text, and the frontend has no translation
+hook for a custom integration's card.
 
 ## Action
 

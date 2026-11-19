@@ -641,3 +641,40 @@ async def test_counts_what_was_sent() -> None:
     # and owned (origin + AS name = 2 queries); hops 1 and 2 are private (none sent).
     assert counts.dns_queries == 2 + 3 + 2
     assert counts.to_dict() == {"pings": counts.pings, "traceroutes": 1, "dns_queries": 7}
+
+
+# ┌──────────────────────────────────────┬──────────────────┬────────────┬────────────────────────────────────┐
+# │ platform                             │ gateway check    │ pings sent │ description                        │
+# ├──────────────────────────────────────┼──────────────────┼────────────┼────────────────────────────────────┤
+# │ gateway answers                      │ True             │ 1          │ one ping, not ping_count           │
+# │ gateway silent                       │ False            │ 1          │                                    │
+# │ no gateway detected                  │ False            │ 0          │ nothing to ping                    │
+# └──────────────────────────────────────┴──────────────────┴────────────┴────────────────────────────────────┘
+# fmt: off
+QUICK_GATEWAY_CASES: list[tuple[dict, bool, int, str]] = [
+    ({},                  True,  1, "answers"),
+    ({"rtt": {}},         False, 1, "silent"),
+    ({"gateway": None},   False, 0, "undetected"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize("kwargs,expected,pings,desc", QUICK_GATEWAY_CASES, ids=[c[3] for c in QUICK_GATEWAY_CASES])
+async def test_quick_gateway_check(kwargs: dict, expected: bool, pings: int, desc: str) -> None:
+    """The between-poll gateway check is one ping to the detected gateway (ADR-012)."""
+    diag = _diag(**kwargs)
+    await diag.run_diagnostics()
+    before = diag.counts.pings
+    assert await diag.check_gateway() is expected
+    assert diag.counts.pings - before == pings
+
+
+async def test_quick_internet_check() -> None:
+    """The between-poll internet check is one DNS query, counted."""
+    diag = _diag()
+    await diag.run_diagnostics()
+    before = diag.counts.dns_queries
+    assert await diag.check_internet() is True
+    diag._check_dns = AsyncMock(return_value={"success": False, "latency_ms": None})  # type: ignore[method-assign]
+    assert await diag.check_internet() is False
+    assert diag.counts.dns_queries - before == 2

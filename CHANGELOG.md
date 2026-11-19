@@ -51,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Reachability reacts faster without extra traffic.** A failed check is
+  confirmed by two quick re-checks before Gateway or Internet reachable
+  turns off, so one lost packet no longer shows a minute-long outage;
+  while off, IHM re-checks every 10 s, so recovery shows within seconds.
+  Nothing extra runs while everything answers (ADR-012).
+- **Dashboard card grouped by hop**, with short row names and DNS latency
+  on its own graph.
 - **Security hardening.** Probes refuse any target that is not an IP
   address, so no outside text can become a `ping` or `traceroute`
   option; speed tests use only `https`/`wss` URLs that a provider

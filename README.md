@@ -151,8 +151,13 @@ integration is removed.
 
 | Sensor | On when |
 |--------|---------|
-| Gateway reachable | The gateway answered a ping in the latest poll |
-| Internet reachable | The DNS lookup succeeded in the latest poll |
+| Gateway reachable | The gateway answers a ping |
+| Internet reachable | A DNS lookup succeeds |
+
+A failure turns a sensor off only after two quick re-checks, 5 s apart,
+also fail, so one lost packet never shows as an outage. While off, IHM
+re-checks every 10 s, so recovery shows within about 10 s. While
+everything answers, nothing extra runs between polls.
 
 ### Buttons
 
@@ -225,8 +230,9 @@ the browser: it learns of the card when the page loads.
 
 | Option | Default | Shows |
 |--------|---------|-------|
-| Status | on | Gateway and internet reachable, each hop's and DNS latency, Refresh diagnostics |
-| Latency graph | on | Hop and DNS latency history |
+| Network status | on | Gateway and internet reachable, DNS latency, Refresh diagnostics |
+| Each hop | on | A card per hop (Gateway, ISP, Backbone) with its current latency, jitter and packet loss |
+| Latency graphs | on | Hop latency history, and DNS latency on its own graph |
 | Jitter graph | on | Hop jitter history |
 | Packet loss graph | on | Hop packet loss history |
 | Speed test | on | Each speed test reading, Run speed test, and a throughput graph. Shown only with a speed test service |
@@ -235,14 +241,14 @@ the browser: it learns of the card when the page loads.
 Each measurement has its own row or line; there is no combined score
 ([ADR-004](docs/ARCHITECTURE_DECISIONS.md#adr-004-no-composite-health-sensors)).
 Disabled entities, and those of monitoring you turned off, are left out.
-Graph titles are in English. If the card fails to load, monitoring is
+Titles and row names are in English; a name you give an entity replaces its row name. If the card fails to load, monitoring is
 unaffected. Design: [docs/DASHBOARD_CARD.md](docs/DASHBOARD_CARD.md).
 
 ### Generate Dashboard Card Action
 
 `internet_health_monitor.generate_dashboard_card` returns the same card
 as YAML, for pasting into a dashboard's code editor. It takes the
-options above (`include_status`, `include_latency`, `include_jitter`,
+options above (`include_status`, `include_hops`, `include_latency`, `include_jitter`,
 `include_packet_loss`, `include_speed_test`, `graph_hours`) and responds with `yaml`. Run it
 from Developer tools > Actions with **Return response** on. It fails
 with a message when IHM is not set up or every part is off.

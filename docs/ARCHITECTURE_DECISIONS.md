@@ -18,6 +18,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Accepted 2026-11-19 |
 | [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
 | [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19 |
+| [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Open |
 
 ---
 
@@ -437,3 +438,38 @@ The project does not defer work: each is built or cut with a reason.
 
 **Constraint:** Building any of these needs a use case in USE_CASES.md
 and a new decision here.
+
+---
+
+## ADR-012: Reachability confirms before off and re-checks fast while off
+
+**Status:** Open. Records the developer's choice of 2026-11-19; awaiting his Accept.
+
+**Context:** Gateway reachable and Internet reachable changed only on the
+60-second poll (ADR-007). Internet reachable rested on one DNS query, so
+one lost UDP packet showed a false outage for a minute, and recovery took
+up to a minute to show. Cable Modem Monitor runs a separate health probe
+every 30 s by default (its `modem_health.py`); a constant faster probe
+costs traffic all the time.
+
+**Decision:** Check faster only while something is failing.
+- While healthy, nothing runs between polls.
+- A failed poll result does not turn a sensor off. Quick checks (one
+  gateway ping, or one DNS query) follow 5 s apart; only if 2 more fail
+  does it turn off. One answer keeps it on.
+- While off, one quick check every 10 s; the first answer turns it back
+  on. A successful poll also turns it on at once.
+- A first poll that fails shows unknown until confirmed.
+
+Core holds the logic (`reachability.py`) and the checks
+(`NetworkDiagnostics.check_gateway`, `check_internet`); the host does the
+scheduling (ADR-005). The counts are in `timing.py`.
+
+**Consequences:** An outage shows within the poll interval plus about
+10 s; recovery within about 10 s. Quick checks are counted in the usage
+totals. During an outage the internet check costs one DNS query every
+10 s.
+
+**Constraint:** Nothing is added to the healthy path; a faster constant
+cadence needs a new decision (ADR-001's passive bufferbloat probe would
+be one).

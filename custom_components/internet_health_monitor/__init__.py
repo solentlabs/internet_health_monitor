@@ -46,6 +46,7 @@ from .coordinator import (
     InternetHealthConfigEntry,
     InternetHealthCoordinator,
     InternetHealthRuntimeData,
+    ReachabilityTarget,
     SpeedTestCoordinator,
 )
 from .services import async_setup_services
@@ -95,7 +96,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
 
     usage = UsageTracker(hass)
     await usage.async_load()
-    coordinator = InternetHealthCoordinator(hass, entry, diagnostics, usage)
+    targets: list[ReachabilityTarget] = []
+    if options.get(CONF_ENABLE_GATEWAY_MONITORING, True):
+        targets.append("gateway")
+    if options.get(CONF_ENABLE_DNS_MONITORING, True):
+        targets.append("internet")
+    coordinator = InternetHealthCoordinator(hass, entry, diagnostics, usage, tuple(targets))
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = InternetHealthRuntimeData(
