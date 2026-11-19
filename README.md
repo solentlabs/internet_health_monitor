@@ -244,6 +244,14 @@ Disabled entities, and those of monitoring you turned off, are left out.
 Titles and row names are in English; a name you give an entity replaces its row name. If the card fails to load, monitoring is
 unaffected. Design: [docs/DASHBOARD_CARD.md](docs/DASHBOARD_CARD.md).
 
+The reachable sensors are connectivity sensors, and HA colors any binary
+sensor that is on in amber. The card keeps your theme's colors. For
+green, add this to your [theme](https://www.home-assistant.io/integrations/frontend/#defining-themes):
+
+```yaml
+state-binary_sensor-connectivity-on-color: var(--green-color)
+```
+
 ### Generate Dashboard Card Action
 
 `internet_health_monitor.generate_dashboard_card` returns the same card

@@ -2,23 +2,26 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.internet_health_monitor.const import DOMAIN
 from custom_components.internet_health_monitor.usage import STORAGE_KEY, UsageTotals
-from solentlabs.internet_health_monitor_core.network_diagnostics import ProbeCounts
+from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, ProbeCounts
 from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
 
-from .conftest import SetupEntry, entity_id
+from .conftest import SetupEntry, entity_id, make_result
 
 RESULT = SpeedTestResult("cloudflare", "speed.cloudflare.com", 100.0, 20.0, 10.0, 30.0, 40.0, 80.3, 1.0, 50.1, 30.2)
 
@@ -90,6 +93,31 @@ async def test_probe_totals_follow_core_and_survive_reload(hass: HomeAssistant, 
     await entry.runtime_data.coordinator.async_refresh()
     await hass.async_block_till_done()
     assert (_value(hass, entry, "usage_pings"), _value(hass, entry, "usage_traceroutes")) == ("15", "1")
+
+
+async def test_quick_checks_add_to_totals_at_once(
+    hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """A quick check between polls (ADR-012) shows in the totals when it runs, not at the next poll."""
+    entry = await _enabled(hass, setup_entry)
+    diagnostics = entry.runtime_data.diagnostics
+    diagnostics.counts = ProbeCounts(pings=10)
+
+    async def one_ping() -> bool:
+        diagnostics.counts.pings += 1
+        return False
+
+    with patch.object(NetworkDiagnostics, "check_gateway", side_effect=one_ping):
+        poll.return_value = make_result(gateway_reachable=False)
+        await entry.runtime_data.coordinator.async_refresh()
+        await hass.async_block_till_done()
+        assert _value(hass, entry, "usage_pings") == "10"
+        polls = poll.await_count
+        freezer.tick(5)
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=0))
+        await hass.async_block_till_done()
+    assert _value(hass, entry, "usage_pings") == "11"
+    assert poll.await_count == polls  # no poll ran: the quick check alone updated the sensor
 
 
 async def test_speed_tests_add_runs_and_data(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
