@@ -7,31 +7,64 @@ import logging
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import (
+    config_validation as cv,
+    entity_registry as er,
+    issue_registry as ir,
+)
+from homeassistant.helpers.storage import Store
+from homeassistant.helpers.system_info import async_get_system_info
+from homeassistant.helpers.typing import ConfigType
 
+from solentlabs.internet_health_monitor_core import timing
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsConfig
 from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
 from solentlabs.internet_health_monitor_core.platforms.linux import OPTIONAL_TOOLS
 
+from .card import async_register_card
 from .const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
+    CONF_SPEED_TEST_BACKEND,
+    CONF_SPEED_TEST_DAILY_LIMIT,
+    CONF_SPEED_TEST_DATA_LIMIT,
     DEFAULT_DNS_SERVER,
     DEFAULT_PING_COUNT,
     DNS_SERVERS,
     DOMAIN,
     NAME,
+    SPEED_TEST_OFF,
     TROUBLESHOOTING_URL,
     VERSION,
 )
-from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator, InternetHealthRuntimeData
+from .coordinator import (
+    STORAGE_KEY,
+    InternetHealthConfigEntry,
+    InternetHealthCoordinator,
+    InternetHealthRuntimeData,
+    SpeedTestCoordinator,
+)
+from .services import async_setup_services
+from .usage import (
+    STORAGE_KEY as USAGE_STORAGE_KEY,
+    UsageTracker,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions and the dashboard card, once per HA start."""
+    async_setup_services(hass)
+    await async_register_card(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
@@ -60,7 +93,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
     optional_missing = await hass.async_add_executor_job(diagnostics.platform.missing_optional_tools)
     _sync_missing_tool_issues(hass, optional_missing)
 
-    coordinator = InternetHealthCoordinator(hass, entry, diagnostics)
+    usage = UsageTracker(hass)
+    await usage.async_load()
+    coordinator = InternetHealthCoordinator(hass, entry, diagnostics, usage)
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = InternetHealthRuntimeData(
@@ -68,10 +103,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
         diagnostics=diagnostics,
         enable_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
         enable_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
+        installation_type=(await async_get_system_info(hass))["installation_type"],
+        speed_test=await _async_speed_test(hass, entry, usage),
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _remove_stale_entities(hass, entry)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_options_change))
     return True
+
+
+async def _async_speed_test(
+    hass: HomeAssistant, entry: InternetHealthConfigEntry, usage: UsageTracker
+) -> SpeedTestCoordinator | None:
+    """The speed test runner, if the user chose a backend (and consented, for M-Lab); never runs here."""
+    options = entry.options
+    backend = options.get(CONF_SPEED_TEST_BACKEND, SPEED_TEST_OFF)
+    if backend == SPEED_TEST_OFF or (backend == "mlab" and not options.get(CONF_MLAB_CONSENT)):
+        return None
+    coordinator = SpeedTestCoordinator(
+        hass,
+        entry,
+        backend,
+        data_limit_mb=options.get(CONF_SPEED_TEST_DATA_LIMIT, timing.SPEED_TEST_DATA_LIMIT_MB_DEFAULT),
+        daily_limit=options.get(CONF_SPEED_TEST_DAILY_LIMIT, timing.SPEED_TEST_DAILY_DEFAULT),
+        usage=usage,
+    )
+    await coordinator.async_load()
+    return coordinator
+
+
+def _remove_stale_entities(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:
+    """Remove this entry's entities that the current options no longer create."""
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.unique_id not in entry.runtime_data.unique_ids:
+            registry.async_remove(entity.entity_id)
 
 
 def _sync_missing_tool_issues(hass: HomeAssistant, missing: list[str]) -> None:
@@ -93,9 +159,11 @@ def _sync_missing_tool_issues(hass: HomeAssistant, missing: list[str]) -> None:
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:
-    """Clear this integration's repair issues when it is removed."""
+    """Clear this integration's repair issues and stored speed test history when it is removed."""
     for tool in OPTIONAL_TOOLS:
         ir.async_delete_issue(hass, DOMAIN, f"{tool}_missing")
+    await Store[dict[str, object]](hass, 1, STORAGE_KEY).async_remove()
+    await Store[dict[str, object]](hass, 1, USAGE_STORAGE_KEY).async_remove()
 
 
 def dns_server_address(choice: str) -> str:
@@ -109,5 +177,6 @@ async def _async_reload_on_options_change(hass: HomeAssistant, entry: InternetHe
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
-    """Unload a config entry; runtime_data is released by HA."""
+    """Unload a config entry, writing the usage totals first; runtime_data is released by HA."""
+    await entry.runtime_data.coordinator.usage.async_save()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

@@ -12,6 +12,8 @@ from homeassistant.helpers import issue_registry as ir
 
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
+    CONF_ENABLE_DNS_MONITORING,
+    CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
     DOMAIN,
@@ -19,7 +21,7 @@ from custom_components.internet_health_monitor.const import (
 from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
 from solentlabs.internet_health_monitor_core.platforms.linux import LinuxPlatform
 
-from .conftest import SetupEntry
+from .conftest import SetupEntry, entity_id
 
 # options -> what reaches the core's config
 # fmt: off
@@ -123,3 +125,38 @@ async def test_poll_interval_comes_from_core(setup_entry: SetupEntry) -> None:
 
     entry = await setup_entry()
     assert entry.runtime_data.coordinator.update_interval == timedelta(seconds=POLL_INTERVAL_S)
+
+
+# ┌──────────────────────────────────┬──────────────────────────────┬──────────────────────────────────┐
+# │ options changed to               │ removed                      │ description                      │
+# ├──────────────────────────────────┼──────────────────────────────┼──────────────────────────────────┤
+# │ gateway monitoring off           │ hop sensors, gateway binary  │ hop entities no longer created   │
+# │ dns monitoring off               │ dns sensor, internet binary  │ dns entities no longer created   │
+# └──────────────────────────────────┴──────────────────────────────┴──────────────────────────────────┘
+# fmt: off
+STALE_CASES: list[tuple[dict[str, Any], set[tuple[str, str]], str]] = [
+    ({CONF_ENABLE_GATEWAY_MONITORING: False},
+     {("sensor", "hop_2_latency"), ("binary_sensor", "gateway_reachable")}, "gateway_off"),
+    ({CONF_ENABLE_DNS_MONITORING: False},
+     {("sensor", "dns_latency"), ("binary_sensor", "internet_reachable")},  "dns_off"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize("changed,removed,desc", STALE_CASES, ids=[c[2] for c in STALE_CASES])
+async def test_entities_no_longer_created_are_removed(
+    hass: HomeAssistant, setup_entry: SetupEntry, changed: dict[str, Any], removed: set[tuple[str, str]], desc: str
+) -> None:
+    """Turning monitoring off removes its entities; turning it back on restores the same ids."""
+    entry = await setup_entry()
+    before = {key: entity_id(hass, platform, entry, key) for platform, key in removed}
+    disabled_button = entity_id(hass, "button", entry, "reset_cache")
+
+    hass.config_entries.async_update_entry(entry, options={**entry.options, **changed})
+    await hass.async_block_till_done()
+    assert all(entity_id(hass, platform, entry, key) is None for platform, key in removed), desc
+    assert entity_id(hass, "button", entry, "reset_cache") == disabled_button  # disabled by default, still created
+
+    hass.config_entries.async_update_entry(entry, options={})
+    await hass.async_block_till_done()
+    assert {key: entity_id(hass, platform, entry, key) for platform, key in removed} == before

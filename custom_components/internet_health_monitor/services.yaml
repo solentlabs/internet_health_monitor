@@ -1,0 +1,29 @@
+generate_dashboard_card:
+  fields:
+    include_status:
+      default: true
+      selector:
+        boolean:
+    include_latency:
+      default: true
+      selector:
+        boolean:
+    include_jitter:
+      default: true
+      selector:
+        boolean:
+    include_packet_loss:
+      default: true
+      selector:
+        boolean:
+    include_speed_test:
+      default: true
+      selector:
+        boolean:
+    graph_hours:
+      default: 24
+      selector:
+        number:
+          min: 1
+          max: 168
+          mode: box

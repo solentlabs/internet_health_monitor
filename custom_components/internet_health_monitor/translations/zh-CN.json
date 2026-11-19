@@ -9,14 +9,20 @@
           "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
           "ping_count": "每个目标的 ping 次数",
-          "hop_ownership": "查询每一跳的运营方"
+          "hop_ownership": "查询每一跳的运营方",
+          "speed_test_backend": "测速服务",
+          "speed_test_data_limit_mb": "每次测试数据上限",
+          "speed_test_daily_limit": "每日测试次数"
         },
         "data_description": {
           "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
           "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
           "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
-          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
+          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
+          "speed_test_backend": "默认关闭。仅在您按下“运行测速”或自动化触发时才会测试。测试会与所选服务在每个方向下载和上传最多 10 秒，该服务会看到您的公网 IP 地址。M-Lab 会永久公开每次结果及该地址；使用前会请您确认。Cloudflare 保留匿名化结果。LibreSpeed 使用志愿者服务器。IHM 与这些服务均无关联。",
+          "speed_test_data_limit_mb": "一次测试最多可使用的数据量，两个方向合计（100 到 10000 MB）；每个方向用到一半即停止。在高速线路上，较低的上限会让测试更短、精度更低。",
+          "speed_test_daily_limit": "任意 24 小时内的最多测试次数，包括按钮和自动化（1 到 40）。M-Lab 要求自动测试不超过 4 次。"
         }
       },
       "reconfigure": {
@@ -26,20 +32,36 @@
           "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
           "ping_count": "每个目标的 ping 次数",
-          "hop_ownership": "查询每一跳的运营方"
+          "hop_ownership": "查询每一跳的运营方",
+          "speed_test_backend": "测速服务",
+          "speed_test_data_limit_mb": "每次测试数据上限",
+          "speed_test_daily_limit": "每日测试次数"
         },
         "data_description": {
           "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
           "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
           "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
-          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
+          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
+          "speed_test_backend": "默认关闭。仅在您按下“运行测速”或自动化触发时才会测试。测试会与所选服务在每个方向下载和上传最多 10 秒，该服务会看到您的公网 IP 地址。M-Lab 会永久公开每次结果及该地址；使用前会请您确认。Cloudflare 保留匿名化结果。LibreSpeed 使用志愿者服务器。IHM 与这些服务均无关联。",
+          "speed_test_data_limit_mb": "一次测试最多可使用的数据量，两个方向合计（100 到 10000 MB）；每个方向用到一半即停止。在高速线路上，较低的上限会让测试更短、精度更低。",
+          "speed_test_daily_limit": "任意 24 小时内的最多测试次数，包括按钮和自动化（1 到 40）。M-Lab 要求自动测试不超过 4 次。"
+        }
+      },
+      "mlab_consent": {
+        "title": "M-Lab 会公开您的结果",
+        "description": "M-Lab 会公开每次测试结果，包括您的公网 IP 地址及日期和时间，并无限期保留（measurementlab.net/privacy）。确认后即可使用 M-Lab，或关闭此对话框并选择其他服务。",
+        "data": {
+          "mlab_consent": "我同意 M-Lab 公开我的结果"
         }
       }
     },
     "abort": {
       "already_configured": "互联网健康监控已配置",
       "reconfigure_successful": "设置已更新。"
+    },
+    "error": {
+      "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。"
     }
   },
   "options": {
@@ -51,16 +73,32 @@
           "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
           "ping_count": "每个目标的 ping 次数",
-          "hop_ownership": "查询每一跳的运营方"
+          "hop_ownership": "查询每一跳的运营方",
+          "speed_test_backend": "测速服务",
+          "speed_test_data_limit_mb": "每次测试数据上限",
+          "speed_test_daily_limit": "每日测试次数"
         },
         "data_description": {
           "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
           "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
           "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
-          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
+          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
+          "speed_test_backend": "默认关闭。仅在您按下“运行测速”或自动化触发时才会测试。测试会与所选服务在每个方向下载和上传最多 10 秒，该服务会看到您的公网 IP 地址。M-Lab 会永久公开每次结果及该地址；使用前会请您确认。Cloudflare 保留匿名化结果。LibreSpeed 使用志愿者服务器。IHM 与这些服务均无关联。",
+          "speed_test_data_limit_mb": "一次测试最多可使用的数据量，两个方向合计（100 到 10000 MB）；每个方向用到一半即停止。在高速线路上，较低的上限会让测试更短、精度更低。",
+          "speed_test_daily_limit": "任意 24 小时内的最多测试次数，包括按钮和自动化（1 到 40）。M-Lab 要求自动测试不超过 4 次。"
+        }
+      },
+      "mlab_consent": {
+        "title": "M-Lab 会公开您的结果",
+        "description": "M-Lab 会公开每次测试结果，包括您的公网 IP 地址及日期和时间，并无限期保留（measurementlab.net/privacy）。确认后即可使用 M-Lab，或关闭此对话框并选择其他服务。",
+        "data": {
+          "mlab_consent": "我同意 M-Lab 公开我的结果"
         }
       }
+    },
+    "error": {
+      "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。"
     }
   },
   "selector": {
@@ -71,6 +109,14 @@
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
         "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "speed_test_backend": {
+      "options": {
+        "none": "关闭",
+        "cloudflare": "Cloudflare",
+        "mlab": "M-Lab NDT7（公开您的 IP 地址）",
+        "librespeed": "LibreSpeed（志愿者服务器）"
       }
     }
   },
@@ -105,6 +151,132 @@
       },
       "dns_latency": {
         "name": "DNS 延迟"
+      },
+      "connection_type": {
+        "name": "连接类型",
+        "state": {
+          "ethernet": "以太网",
+          "wifi": "Wi-Fi",
+          "bridge": "网桥",
+          "veth": "虚拟以太网"
+        },
+        "state_attributes": {
+          "interface": {
+            "name": "接口"
+          }
+        }
+      },
+      "install_type": {
+        "name": "安装类型",
+        "state": {
+          "os": "Home Assistant OS",
+          "supervised": "Supervised",
+          "container": "容器",
+          "core": "Core",
+          "third_party_container": "第三方容器"
+        }
+      },
+      "speed_test_download": {
+        "name": "测速下载",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_upload": {
+        "name": "测速上传",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_idle_latency": {
+        "name": "测速空闲延迟",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_download_latency": {
+        "name": "测速下载延迟",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_upload_latency": {
+        "name": "测速上传延迟",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_data_used": {
+        "name": "测速数据用量",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "usage_pings": {
+        "name": "已发送 Ping"
+      },
+      "usage_traceroutes": {
+        "name": "已运行 Traceroute"
+      },
+      "usage_dns_queries": {
+        "name": "已发送 DNS 查询"
+      },
+      "usage_speed_tests": {
+        "name": "已运行测速"
+      },
+      "usage_downloaded": {
+        "name": "测速下载数据"
+      },
+      "usage_uploaded": {
+        "name": "测速上传数据"
       }
     },
     "binary_sensor": {
@@ -121,6 +293,9 @@
       },
       "reset_cache": {
         "name": "重置网络缓存"
+      },
+      "run_speed_test": {
+        "name": "运行测速"
       }
     }
   },
@@ -136,12 +311,59 @@
     },
     "missing_tools": {
       "message": "本机缺少必需的系统工具：{tools}。请安装后重新加载集成。"
+    },
+    "not_set_up": {
+      "message": "Internet Health Monitor 尚未设置。"
+    },
+    "nothing_to_show": {
+      "message": "卡片没有可显示的内容：所有部分均已关闭，或其实体已禁用。"
+    },
+    "speed_test_failed": {
+      "message": "测速失败：{error}"
+    },
+    "daily_limit_reached": {
+      "message": "已达到测速上限：过去 24 小时内已测试 {limit} 次。请在选项中提高“每日测试次数”或稍后再试。"
+    },
+    "mlab_automated_limit": {
+      "message": "M-Lab 每天最多允许 {limit} 次自动测试，过去 24 小时内已运行 {limit} 次。由人在仪表板上发起的测试不受此限制。"
     }
   },
   "issues": {
     "traceroute_missing": {
       "title": "未安装 traceroute",
       "description": "互联网健康监控需要 `traceroute` 来发现第 2 和第 3 跳，因此这些传感器会保持未知。请在 Home Assistant 主机上安装（`apt install traceroute` 或 `apk add traceroute`），然后重新加载集成。网关和 DNS 监控不受影响。"
+    }
+  },
+  "services": {
+    "generate_dashboard_card": {
+      "name": "生成仪表板卡片",
+      "description": "返回一张显示可达性、延迟、抖动和丢包的仪表板卡片的 YAML。“添加卡片”中的 Internet Health 卡片无需 YAML 即可显示相同内容。",
+      "fields": {
+        "include_status": {
+          "name": "状态",
+          "description": "可达性、每一跳和 DNS 的延迟，以及“刷新诊断”。"
+        },
+        "include_latency": {
+          "name": "延迟图",
+          "description": "跳点和 DNS 延迟的历史。"
+        },
+        "include_jitter": {
+          "name": "抖动图",
+          "description": "跳点抖动的历史。"
+        },
+        "include_packet_loss": {
+          "name": "丢包图",
+          "description": "跳点丢包的历史。"
+        },
+        "include_speed_test": {
+          "name": "测速",
+          "description": "每项测速读数、“运行测速”以及下载和上传图表。仅在选择了测速服务时显示。"
+        },
+        "graph_hours": {
+          "name": "图表小时数",
+          "description": "每个图表显示的小时数（1 到 168）。"
+        }
+      }
     }
   }
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 from types import SimpleNamespace
@@ -11,6 +12,7 @@ import pytest
 
 from solentlabs.internet_health_monitor_core import cli
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnosticsResult
+from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
 
 # argv -> (dns_server, ping_count, interval, hop_ownership)
 # fmt: off
@@ -126,3 +128,47 @@ def test_interval_must_fit_a_poll(description: str, argv: list[str], accepted: b
         else:
             with pytest.raises(SystemExit):
                 cli.main(argv)
+
+
+# ┌──────────────────────────────────────────────┬───────────────────────────────────────────┐
+# │ argv                                         │ rejected because                          │
+# ├──────────────────────────────────────────────┼───────────────────────────────────────────┤
+# │ --speed-test mlab                            │ no consent to M-Lab publishing the IP     │
+# │ --speed-test cloudflare --interval 60        │ a speed test runs once                    │
+# │ --speed-test ookla                           │ not a backend                             │
+# │ --data-limit 99                              │ below the minimum                         │
+# └──────────────────────────────────────────────┴───────────────────────────────────────────┘
+# fmt: off
+SPEED_REJECT_CASES: list[tuple[list[str], str]] = [
+    (["--speed-test", "mlab"],                            "mlab-consent"),
+    (["--speed-test", "cloudflare", "--interval", "60"],  "runs once"),
+    (["--speed-test", "ookla"],                           "invalid choice"),
+    (["--data-limit", "99"],                              "must be 100"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize("argv,message", SPEED_REJECT_CASES, ids=[c[1] for c in SPEED_REJECT_CASES])
+def test_speed_test_arguments_rejected(argv: list[str], message: str, capsys: pytest.CaptureFixture[str]) -> None:
+    """Bad speed test arguments exit with a usage error naming the problem."""
+    with pytest.raises(SystemExit):
+        cli.main(argv)
+    assert message in capsys.readouterr().err
+
+
+def test_speed_test_prints_result_or_reason() -> None:
+    """A speed test prints its result as JSON; a failure prints the reason and exits 1."""
+    result = SpeedTestResult("mlab", "s", 100.0, 10.0, 12.0, 40.0, 300.0, 140.0, 1.0)
+    with patch.object(cli, "run_speed_test", AsyncMock(return_value=result)) as run:
+        assert cli.main(["--speed-test", "mlab", "--mlab-consent", "--data-limit", "200"]) == 0
+    assert run.call_args.args[0] == "mlab" and run.call_args.kwargs["data_limit_mb"] == 200
+
+    out, err = io.StringIO(), io.StringIO()
+    args = cli.build_parser().parse_args(["--speed-test", "cloudflare"])
+    with patch.object(cli, "run_speed_test", AsyncMock(side_effect=SpeedTestError("no route"))):
+        assert asyncio.run(cli.speed_test(args, out, err)) == 1
+    assert "no route" in err.getvalue()
+
+    with patch.object(cli, "run_speed_test", AsyncMock(return_value=result)):
+        assert asyncio.run(cli.speed_test(args, out, err)) == 0
+    assert json.loads(out.getvalue())["download_mbps"] == 100.0

@@ -395,7 +395,6 @@ class TestHostEnvironment:
         assert env.connection_type == "unknown"
         assert env.interface_name is None
         assert env.container_type is None
-        assert env.ha_install_type is None
 
     def test_custom_values(self):
         """Test custom values."""
@@ -403,12 +402,10 @@ class TestHostEnvironment:
             connection_type="ethernet",
             interface_name="eth0",
             container_type="docker",
-            ha_install_type="container",
         )
         assert env.connection_type == "ethernet"
         assert env.interface_name == "eth0"
         assert env.container_type == "docker"
-        assert env.ha_install_type == "container"
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -436,6 +433,7 @@ class FakePlatform:
         self.rtt = {"192.168.1.1": 1.0, "10.0.0.1": 8.0, "198.51.100.1": 12.0} if rtt is None else rtt
         self.dns = dns
         self.trace_calls = 0
+        self.ping_calls = 0
 
     async def default_gateway(self) -> str | None:
         """Return the scripted gateway."""
@@ -447,6 +445,7 @@ class FakePlatform:
 
     async def ping(self, host: str, timeout_s: int) -> tuple[bool, float | None]:
         """Reply with the scripted RTT, or not at all."""
+        self.ping_calls += 1
         return (True, self.rtt[host]) if host in self.rtt else (False, None)
 
     async def trace(self, target: str, max_hops: int) -> dict[int, str]:
@@ -615,3 +614,30 @@ async def test_detection_state_reports_cache() -> None:
     assert state["platform"] == "fake"
     assert state["hop_detection_failed"] is False
     assert state["trace_target"] == "8.8.8.8"
+
+
+async def test_counts_what_was_sent() -> None:
+    """counts records every ping, traceroute and DNS query actually sent, across polls (usage totals)."""
+    from solentlabs.internet_health_monitor_core.hop_owner import HopOwner
+
+    async def fake_lookup(ip: str, server: str, timeout_s: float) -> HopOwner | None:
+        return HopOwner(64500, "EXAMPLE-NET") if ip == "198.51.100.1" else None
+
+    diag = _diag()
+    diag.config.hop_ownership = True
+    platform = diag._platform
+    # Documentation addresses are not public, so treat hop 3 as public here (REFERENCES.md § R12).
+    public = {"198.51.100.1": "1.100.51.198.origin.asn.cymru.com"}
+    with (
+        patch("solentlabs.internet_health_monitor_core.network_diagnostics.lookup_owner", side_effect=fake_lookup),
+        patch("solentlabs.internet_health_monitor_core.network_diagnostics.origin_query_name", public.get),
+    ):
+        await diag.run_diagnostics()
+        await diag.run_diagnostics()
+    counts = diag.counts
+    assert counts.pings == platform.ping_calls > 0  # type: ignore[attr-defined]
+    assert counts.traceroutes == platform.trace_calls == 1  # type: ignore[attr-defined]
+    # 2 latency probes, 3 reverse lookups (once, at detection), ownership: hop 3 is public
+    # and owned (origin + AS name = 2 queries); hops 1 and 2 are private (none sent).
+    assert counts.dns_queries == 2 + 3 + 2
+    assert counts.to_dict() == {"pings": counts.pings, "traceroutes": 1, "dns_queries": 7}

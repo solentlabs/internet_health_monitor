@@ -1,4 +1,4 @@
-"""Button platform: refresh now, and reset detected network details."""
+"""Button platform: refresh now, reset detected network details, run a speed test."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator
+from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator, SpeedTestCoordinator
 from .entity import InternetHealthEntity
 
 # Presses run one poll at a time.
@@ -27,6 +27,8 @@ RESET_CACHE = ButtonEntityDescription(
     entity_registry_enabled_default=False,
 )
 
+RUN_SPEED_TEST = ButtonEntityDescription(key="run_speed_test", translation_key="run_speed_test")
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -35,10 +37,13 @@ async def async_setup_entry(
 ) -> None:
     """Add the buttons."""
     coordinator = entry.runtime_data.coordinator
-    async_add_entities([RefreshButton(coordinator, REFRESH), ResetCacheButton(coordinator, RESET_CACHE)])
+    buttons: list[ButtonEntity] = [RefreshButton(coordinator, REFRESH), ResetCacheButton(coordinator, RESET_CACHE)]
+    if speed_test := entry.runtime_data.speed_test:
+        buttons.append(RunSpeedTestButton(speed_test, RUN_SPEED_TEST))
+    async_add_entities(buttons)
 
 
-class _PollButton(InternetHealthEntity, ButtonEntity):
+class _PollButton(InternetHealthEntity[InternetHealthCoordinator], ButtonEntity):
     """A button whose press ends in a poll that must succeed."""
 
     def __init__(self, coordinator: InternetHealthCoordinator, description: ButtonEntityDescription) -> None:
@@ -70,3 +75,24 @@ class ResetCacheButton(_PollButton):
         """Reset detection and poll."""
         self.coordinator.diagnostics.reset_all()
         await self._poll()
+
+
+class RunSpeedTestButton(InternetHealthEntity[SpeedTestCoordinator], ButtonEntity):
+    """Run one speed test now; automations press it to schedule tests (README.md § Speed Testing)."""
+
+    def __init__(self, coordinator: SpeedTestCoordinator, description: ButtonEntityDescription) -> None:
+        """Attach the description."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @override
+    @property
+    def available(self) -> bool:
+        """Stays available after a failed test, so the user can try again."""
+        return True
+
+    @override
+    async def async_press(self) -> None:
+        """Run a test; a press with no user behind it (automation, script) counts as automated."""
+        person = self._context is not None and self._context.user_id is not None
+        await self.coordinator.async_run(automated=not person)

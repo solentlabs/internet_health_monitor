@@ -17,6 +17,7 @@ pip install solentlabs-internet-health-monitor-core
 
 internet-health-monitor                 # one poll, one JSON line
 internet-health-monitor --interval 60   # one JSON line per poll until stopped
+internet-health-monitor --speed-test cloudflare   # one speed test, one JSON line
 ```
 
 | Option | Default | Meaning |
@@ -25,9 +26,13 @@ internet-health-monitor --interval 60   # one JSON line per poll until stopped
 | `--ping-count` | 3 | Pings per target per poll (1 to 10) |
 | `--interval` | none | Seconds between polls (up to 3600, and at least as long as a poll can take: 5 s per ping per target). Without it, one poll and exit. The HA integration uses 60 |
 | `--hop-ownership` | off | Add each public hop's network operator; sends those hop addresses to Team Cymru |
+| `--speed-test` | none | Run one speed test with `cloudflare`, `mlab` or `librespeed`, print it, and exit. The service sees your public IP address |
+| `--data-limit` | 1000 | Most MB one speed test may use, both directions together (100 to 10000) |
+| `--mlab-consent` | off | Required with `--speed-test mlab`: M-Lab publishes every result with your public IP address, permanently |
 
-Jitter is the spread of latency across polls, so a single poll reports
-none; use `--interval` to get it.
+Jitter is the mean change between consecutive ping round trips within a
+poll, so it needs `--ping-count` of 2 or more. Speed test services and
+their terms: [docs/SPEED_TEST_BACKENDS.md](https://github.com/solentlabs/internet-health-monitor/blob/main/docs/SPEED_TEST_BACKENDS.md).
 
 ## Library
 
@@ -38,6 +43,13 @@ from solentlabs.internet_health_monitor_core.network_diagnostics import (
 
 result = await NetworkDiagnostics().run_diagnostics()
 print(result.to_dict())
+
+# Speed test: pass your own aiohttp session; failures raise SpeedTestError.
+import aiohttp
+from solentlabs.internet_health_monitor_core.speed_test import run_speed_test
+
+async with aiohttp.ClientSession() as session:
+    speed = await run_speed_test("cloudflare", session, data_limit_mb=500)
 ```
 
 License: MIT.

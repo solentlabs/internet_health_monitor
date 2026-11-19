@@ -1,4 +1,4 @@
-"""Sensor platform: per-hop latency, jitter and packet loss, and DNS latency."""
+"""Sensor platform: per-hop latency, jitter and packet loss, DNS latency, and the host environment."""
 
 from __future__ import annotations
 
@@ -12,14 +12,18 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTime
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfDataRate, UnitOfInformation, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
+from homeassistant.util import dt as dt_util
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import NUM_HOPS, HopInfo, NetworkDiagnosticsResult
+from solentlabs.internet_health_monitor_core.speed_test import SpeedTestResult
 
-from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator
+from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator, SpeedTestCoordinator
 from .entity import InternetHealthEntity
+from .usage import UsageTotals
 
 # Entities only read coordinator data; no per-entity update calls.
 PARALLEL_UPDATES = 0
@@ -36,7 +40,7 @@ class HopSensorEntityDescription(SensorEntityDescription):
 class ResultSensorEntityDescription(SensorEntityDescription):
     """A measurement read from the whole poll result."""
 
-    value_fn: Callable[[NetworkDiagnosticsResult], float | None]
+    value_fn: Callable[[NetworkDiagnosticsResult], StateType]
     attrs_fn: Callable[[NetworkDiagnosticsResult], dict[str, Any]]
 
 
@@ -87,6 +91,121 @@ DNS_SENSOR = ResultSensorEntityDescription(
     attrs_fn=lambda r: {"dns_server": r.dns_server, "success": r.dns_success},
 )
 
+# Connection types Core can classify; "unknown" reads as the unknown state.
+CONNECTION_TYPES = ["ethernet", "wifi", "bridge", "veth"]
+
+CONNECTION_TYPE_SENSOR = ResultSensorEntityDescription(
+    key="connection_type",
+    translation_key="connection_type",
+    device_class=SensorDeviceClass.ENUM,
+    options=CONNECTION_TYPES,
+    entity_category=EntityCategory.DIAGNOSTIC,
+    value_fn=lambda r: (
+        r.host_environment.connection_type
+        if r.host_environment and r.host_environment.connection_type in CONNECTION_TYPES
+        else None
+    ),
+    attrs_fn=lambda r: {"interface": r.host_environment.interface_name if r.host_environment else None},
+)
+
+# HA's installation_type (helpers/system_info.py) -> state; anything else is unknown.
+INSTALL_TYPES: dict[str, str] = {
+    "Home Assistant OS": "os",
+    "Home Assistant Supervised": "supervised",
+    "Home Assistant Container": "container",
+    "Home Assistant Core": "core",
+    "Unsupported Third Party Container": "third_party_container",
+}
+
+
+@dataclass(frozen=True, kw_only=True)
+class SpeedTestSensorEntityDescription(SensorEntityDescription):
+    """One field of the latest speed test."""
+
+    value_fn: Callable[[SpeedTestResult], float | None]
+
+
+def _speed(
+    key: str, value_fn: Callable[[SpeedTestResult], float | None], **kwargs: Any
+) -> SpeedTestSensorEntityDescription:
+    """A speed test sensor with long-term statistics."""
+    return SpeedTestSensorEntityDescription(
+        key=f"speed_test_{key}",
+        translation_key=f"speed_test_{key}",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=value_fn,
+        **kwargs,
+    )
+
+
+_RATE: dict[str, Any] = {
+    "native_unit_of_measurement": UnitOfDataRate.MEGABITS_PER_SECOND,
+    "device_class": SensorDeviceClass.DATA_RATE,
+}
+_MS: dict[str, Any] = {
+    "native_unit_of_measurement": UnitOfTime.MILLISECONDS,
+    "device_class": SensorDeviceClass.DURATION,
+}
+
+SPEED_TEST_SENSORS: tuple[SpeedTestSensorEntityDescription, ...] = (
+    _speed("download", lambda r: r.download_mbps, **_RATE),
+    _speed("upload", lambda r: r.upload_mbps, **_RATE),
+    _speed("idle_latency", lambda r: r.idle_latency_ms, **_MS),
+    _speed("download_latency", lambda r: r.download_latency_ms, **_MS),
+    _speed("upload_latency", lambda r: r.upload_latency_ms, **_MS),
+    _speed(
+        "data_used",
+        lambda r: r.data_used_mb,
+        native_unit_of_measurement=UnitOfInformation.MEGABYTES,
+        device_class=SensorDeviceClass.DATA_SIZE,
+    ),
+)
+
+
+@dataclass(frozen=True, kw_only=True)
+class UsageSensorEntityDescription(SensorEntityDescription):
+    """One running total of what IHM has sent since install."""
+
+    value_fn: Callable[[UsageTotals], float]
+
+
+def _usage(key: str, value_fn: Callable[[UsageTotals], float], **kwargs: Any) -> UsageSensorEntityDescription:
+    """A diagnostic, ever-increasing total, off until the user enables it."""
+    return UsageSensorEntityDescription(
+        key=f"usage_{key}",
+        translation_key=f"usage_{key}",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=value_fn,
+        **kwargs,
+    )
+
+
+_MB: dict[str, Any] = {
+    "native_unit_of_measurement": UnitOfInformation.MEGABYTES,
+    "device_class": SensorDeviceClass.DATA_SIZE,
+    "suggested_display_precision": 1,
+}
+
+USAGE_SENSORS: tuple[UsageSensorEntityDescription, ...] = (
+    _usage("pings", lambda u: u.pings),
+    _usage("traceroutes", lambda u: u.traceroutes),
+    _usage("dns_queries", lambda u: u.dns_queries),
+    _usage("speed_tests", lambda u: u.speed_tests),
+    _usage("downloaded", lambda u: u.downloaded_mb, **_MB),
+    _usage("uploaded", lambda u: u.uploaded_mb, **_MB),
+)
+
+INSTALL_TYPE_SENSOR = SensorEntityDescription(
+    key="install_type",
+    translation_key="install_type",
+    device_class=SensorDeviceClass.ENUM,
+    options=list(INSTALL_TYPES.values()),
+    entity_category=EntityCategory.DIAGNOSTIC,
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -95,7 +214,13 @@ async def async_setup_entry(
 ) -> None:
     """Add the sensors for the monitoring types that are switched on."""
     data = entry.runtime_data
-    entities: list[SensorEntity] = []
+    entities: list[SensorEntity] = [
+        ResultSensor(data.coordinator, CONNECTION_TYPE_SENSOR),
+        InstallTypeSensor(data.coordinator, INSTALL_TYPE_SENSOR),
+        *(UsageSensor(data.coordinator, d) for d in USAGE_SENSORS),
+    ]
+    if data.speed_test:
+        entities.extend(SpeedTestSensor(data.speed_test, d) for d in SPEED_TEST_SENSORS)
     if data.enable_gateway:
         entities.extend(HopSensor(data.coordinator, d) for d in HOP_SENSORS)
     if data.enable_dns:
@@ -103,7 +228,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class ResultSensor(InternetHealthEntity, SensorEntity):
+class ResultSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity):
     """A sensor read from the whole poll result."""
 
     entity_description: ResultSensorEntityDescription
@@ -115,7 +240,7 @@ class ResultSensor(InternetHealthEntity, SensorEntity):
 
     @override
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> StateType:
         """Return the measurement."""
         return self.entity_description.value_fn(self.coordinator.data)
 
@@ -126,7 +251,73 @@ class ResultSensor(InternetHealthEntity, SensorEntity):
         return self.entity_description.attrs_fn(self.coordinator.data)
 
 
-class HopSensor(InternetHealthEntity, SensorEntity):
+class SpeedTestSensor(InternetHealthEntity[SpeedTestCoordinator], SensorEntity):
+    """One field of the latest speed test; unknown until a test has run."""
+
+    entity_description: SpeedTestSensorEntityDescription
+
+    def __init__(self, coordinator: SpeedTestCoordinator, description: SpeedTestSensorEntityDescription) -> None:
+        """Attach the description."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @override
+    @property
+    def native_value(self) -> float | None:
+        """Return the field, or None before the first test."""
+        result = self.coordinator.data
+        return self.entity_description.value_fn(result) if result else None
+
+    @override
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Which backend and server measured it, and when."""
+        result = self.coordinator.data
+        if not result:
+            return {}
+        tested_at = dt_util.utc_from_timestamp(result.started_at).isoformat()
+        return {"backend": result.backend, "server": result.server, "tested_at": tested_at}
+
+
+class UsageSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity):
+    """A running total; stays available when a poll fails, since the total is still known."""
+
+    entity_description: UsageSensorEntityDescription
+
+    def __init__(self, coordinator: InternetHealthCoordinator, description: UsageSensorEntityDescription) -> None:
+        """Attach the description."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @override
+    @property
+    def available(self) -> bool:
+        """Totals are known even when the latest poll failed."""
+        return True
+
+    @override
+    @property
+    def native_value(self) -> float:
+        """Return the total."""
+        return self.entity_description.value_fn(self.coordinator.usage.totals)
+
+
+class InstallTypeSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity):
+    """How Home Assistant is installed, as HA itself reports it."""
+
+    def __init__(self, coordinator: InternetHealthCoordinator, description: SensorEntityDescription) -> None:
+        """Attach the description."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @override
+    @property
+    def native_value(self) -> str | None:
+        """Return the installation type, or None if HA does not know it."""
+        return INSTALL_TYPES.get(self.coordinator.config_entry.runtime_data.installation_type)
+
+
+class HopSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity):
     """One measurement for one hop; attributes describe the hop."""
 
     entity_description: HopSensorEntityDescription

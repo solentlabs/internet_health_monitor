@@ -18,11 +18,20 @@ ignoreWords:
   - tuln # ss flags
   - tulpn # ss flags
   - ttls # list of TTLs in a test fake
+  - uest # regex fragment cfReq(?:uest)? in backends/cloudflare.py
+  - ttfb # time to first byte, in Cloudflare's source quoted in REFERENCES.md R5
+  - ation # regex fragment Dur(?:ation)? in backends/cloudflare.py
 
 words:
   # Home Assistant
   - automations
   - autouse
+  - conftest # pytest fixtures file
+  - clientsession # async_get_clientsession
+  - pytestmark
+  - caplog # pytest fixture
+  - capsys # pytest fixture
+  - timedelta
   - HACS
   - haos
   - hass
@@ -34,6 +43,10 @@ words:
   - websession
 
   # Network and DNS
+  - aiohttp
+  - traceroutes
+  - Gbit
+  - urandom
   - ancount
   - arin
   - Bufferbloat
@@ -76,6 +89,10 @@ words:
   - wlan
 
   # Speed test providers, projects and their authors
+  - measurementlab
+  - Clouvider # LibreSpeed server sponsor (REFERENCES.md R20)
+  - maaslalani # author of the fast Go client (REFERENCES.md R19)
+  - nkgilley # author of the fastdotcom package (REFERENCES.md R19)
   - cloudflarepycli
   - fastcom
   - fastdotcom

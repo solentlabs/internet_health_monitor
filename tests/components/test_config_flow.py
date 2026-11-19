@@ -16,6 +16,9 @@ from custom_components.internet_health_monitor.const import (
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
+    CONF_SPEED_TEST_BACKEND,
+    CONF_SPEED_TEST_DAILY_LIMIT,
+    CONF_SPEED_TEST_DATA_LIMIT,
     DOMAIN,
     NAME,
 )
@@ -28,6 +31,9 @@ USER_INPUT: dict[str, Any] = {
     CONF_DNS_SERVER: "cloudflare",
     CONF_PING_COUNT: 5,
     CONF_HOP_OWNERSHIP: True,
+    CONF_SPEED_TEST_BACKEND: "cloudflare",
+    CONF_SPEED_TEST_DATA_LIMIT: 500,
+    CONF_SPEED_TEST_DAILY_LIMIT: 2,
 }
 
 # stored options -> form defaults for (dns server, ping count, hop ownership)
@@ -120,3 +126,42 @@ async def test_reconfigure_updates_and_reloads(hass: HomeAssistant, setup_entry:
     assert result["reason"] == "reconfigure_successful"
     assert dict(entry.options) == USER_INPUT
     assert entry.runtime_data.diagnostics.config.ping_count == 5
+
+
+# ┌──────────────────────────┬────────┬──────────────────────────┐
+# │ field                    │ value  │ valid                    │
+# ├──────────────────────────┼────────┼──────────────────────────┤
+# │ data limit               │ 100    │ yes (minimum)            │
+# │ data limit               │ 10000  │ yes (maximum)            │
+# │ data limit               │ 99     │ no                       │
+# │ tests per day            │ 40     │ yes (M-Lab interactive)  │
+# │ tests per day            │ 41     │ no                       │
+# │ tests per day            │ 0      │ no                       │
+# └──────────────────────────┴────────┴──────────────────────────┘
+# fmt: off
+LIMIT_CASES: list[tuple[str, int, bool]] = [
+    (CONF_SPEED_TEST_DATA_LIMIT,  100,   True),
+    (CONF_SPEED_TEST_DATA_LIMIT,  10000, True),
+    (CONF_SPEED_TEST_DATA_LIMIT,  99,    False),
+    (CONF_SPEED_TEST_DAILY_LIMIT, 40,    True),
+    (CONF_SPEED_TEST_DAILY_LIMIT, 41,    False),
+    (CONF_SPEED_TEST_DAILY_LIMIT, 0,     False),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("field", "value", "valid"), LIMIT_CASES)
+def test_speed_test_limit_ranges(field: str, value: int, valid: bool) -> None:
+    """Speed test limits accept their ranges from Core's timing.py and are stored as ints."""
+    schema = build_schema({})
+    data = {**DEFAULTS, field: float(value)}
+    if valid:
+        assert schema(data)[field] == value
+    else:
+        with pytest.raises(Exception):  # noqa: B017 - probatio raises its own Invalid subclasses
+            schema(data)
+
+
+def test_speed_tests_default_off() -> None:
+    """A new entry runs no speed tests."""
+    assert DEFAULTS[CONF_SPEED_TEST_BACKEND] == "none"

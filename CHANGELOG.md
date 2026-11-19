@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Usage totals** (diagnostic sensors, off by default): pings sent,
+  traceroutes run, DNS queries sent, speed tests run, and the MB speed
+  tests downloaded and uploaded (failed tests included), counted since
+  install.
+- **Speed tests (optional, off by default)** with Cloudflare, M-Lab NDT7
+  or LibreSpeed: download, upload, latency at rest and under load each
+  way, and the data used. Run from the Run speed test button or an
+  automation; a data limit per test and a daily test limit bound the
+  cost. Each option says what the service sees; M-Lab asks for your
+  consent first because it publishes results with your IP address.
+  Fast.com is not offered: Netflix's terms forbid automated access.
+  Also `--speed-test` on the command line.
+- **Connection type and Install type sensors** (diagnostic): Ethernet or
+  Wi-Fi from the default route's interface, and how Home Assistant is
+  installed, as HA reports it.
+- **Dashboard card.** Pick **Internet Health** in Add card and set it up
+  in a form: reachability, each hop's latency, and latency, jitter and
+  packet loss graphs. The `generate_dashboard_card` action returns the
+  same card as YAML.
 - **Reconfigure** in the integration's menu, alongside Configure.
 - **Repair issue when `traceroute` is missing**, saying how to install it;
   it clears itself once installed.
@@ -32,6 +51,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Security hardening.** Probes refuse any target that is not an IP
+  address, so no outside text can become a `ping` or `traceroute`
+  option; speed tests use only `https`/`wss` URLs that a provider
+  supplies.
+- **Core no longer guesses the HA install type** from marker files; the
+  `ha_install_type` field is gone from its host environment output. The
+  integration reads HA's own value instead.
+- **Entities follow your options.** Turning gateway or DNS monitoring off
+  now removes those entities instead of leaving them "no longer
+  provided"; turning it back on restores them with the same ids.
 - **Shorter entity ids.** The device is now "Internet Health", so new
   installs get ids like `sensor.internet_health_hop_2_latency_isp`. Rename
   the device for your own prefix (README.md § Renaming, ADR-010); existing

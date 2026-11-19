@@ -13,6 +13,7 @@ Part of the **Solent Networks Suite** - tools for comprehensive home network vis
 - **DNS latency** - One uncached lookup per poll at the DNS server you choose
 - **Reachability** - Gateway reachable and internet reachable binary sensors
 - **Zero configuration** - Gateway, hops and DNS server are detected automatically
+- **Dashboard card** - Pick Internet Health in Add card; set it up in a form, no YAML
 
 ### What Makes This Different
 
@@ -53,6 +54,12 @@ During setup, and later under Configure, you can set:
 | DNS server | Auto-detect | Server to time; auto-detect uses the one this host is configured with |
 | Pings per target | 3 | Pings sent to each target per poll (1 to 10) |
 | Look up who runs each hop | off | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
+| Speed test service | Off | Cloudflare, M-Lab NDT7 or LibreSpeed. See [Speed Testing](#speed-testing) |
+| Data limit per test | 1000 MB | Most data one test may use, both directions together (100 to 10000) |
+| Tests per day | 4 | Most tests in any 24 hours, from the button or automations (1 to 40) |
+
+Turning a kind of monitoring off removes its entities; turning it back
+on recreates them with the same ids, and their history returns.
 
 ### Polling
 
@@ -105,7 +112,7 @@ attributes naming the network that runs that hop, for example
 
 ### Sensors
 
-Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS:
+Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS and two about the host:
 
 | Sensor | Unit | Description |
 |--------|------|-------------|
@@ -113,10 +120,32 @@ Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS:
 | Hop N jitter | ms | Average change between consecutive ping round-trip times in this poll, as speed test sites measure it |
 | Hop N packet loss | % | Share of this poll's pings to the hop with no reply |
 | DNS latency | ms | Time for one uncached lookup at the DNS server |
+| Connection type | | Ethernet, Wi-Fi, Bridge or Virtual Ethernet, from the name of the interface the default route uses (attribute `interface`). Diagnostic |
+| Install type | | How Home Assistant is installed, as HA reports it: Home Assistant OS, Supervised, Container, Core or Third-party container. Diagnostic |
+| Speed test download, upload | Mbit/s | Test data received or sent per second in the latest test. With a speed test service only |
+| Speed test idle latency | ms | Median round trip before the test loads the line |
+| Speed test download latency, upload latency | ms | Median round trip while that direction is loaded |
+| Speed test data used | MB | Data the latest test used, both directions |
 
 Hop sensors carry attributes: `hop_ip`, `reachable`, `packets_sent`,
 `packets_received`, `hostname` (when the hop has one) and, with hop
-ownership on, `asn` and `as_name`. All sensors keep long-term statistics.
+ownership on, `asn` and `as_name`. Speed test sensors carry `backend`,
+`server` and `tested_at`. The measurement sensors keep long-term statistics.
+
+### Usage Totals
+
+What IHM has sent since it was installed, so you can see what monitoring
+costs your network. Diagnostic sensors, disabled by default; enable the
+ones you want. They count up across restarts and reset only when the
+integration is removed.
+
+| Sensor | Unit | Counts |
+|--------|------|--------|
+| Pings sent | | Every ping to the gateway and hops |
+| Traceroutes run | | Each hop detection (first poll, and after a cache reset) |
+| DNS queries sent | | Latency probes, reverse lookups of hops, and hop ownership queries |
+| Speed tests run | | Every speed test started, failed ones included |
+| Speed test data downloaded, uploaded | MB | Data moved by every speed test, including data a failed test moved before it stopped |
 
 ### Binary Sensors
 
@@ -131,23 +160,54 @@ ownership on, `asn` and `as_name`. All sensors keep long-term statistics.
 |--------|-------------|
 | Refresh diagnostics | Poll now instead of waiting for the next poll |
 | Reset network cache | Forget the detected gateway, hops and hostnames and detect them again. Disabled by default; enable it when troubleshooting |
+| Run speed test | Run one speed test now. With a speed test service only |
 
-## Speed Testing (Planned)
+## Speed Testing
 
-Optional, and off until you turn it on. You choose which service runs
-the test; every backend that supports it also reports bufferbloat
-(latency while the line is loaded).
+Optional, and off until you choose a service under Configure. Each
+test measures download, upload, latency at rest and latency while each
+direction is loaded (the difference is bufferbloat), plus the data the
+test used.
 
-| Backend | Bufferbloat reading | Your results made public? | Limits |
-|---------|---------------------|---------------------------|--------|
-| Cloudflare | Yes, per direction | No (anonymized) | Modest default schedule |
-| M-Lab NDT7 | Approximate, best for download | **Yes, including your IP address** | About 4 tests a day |
-| Fast.com | To be confirmed | No (aggregates only) | Modest default schedule |
-| LibreSpeed | No (idle ping only) | No | Modest default schedule |
+| Service | Loaded latency | Who sees your public IP address |
+|---------|----------------|----------------------------------|
+| Cloudflare | Per direction | Cloudflare (kept anonymized) |
+| M-Lab NDT7 | Download good, upload approximate | **M-Lab publishes it with every result, permanently**; you confirm this before first use |
+| LibreSpeed | Per direction | The volunteer server you are matched with |
 
-Ookla is not offered: its license is personal, non-commercial use only.
-IHM is not affiliated with any of these providers. Full comparison:
-[docs/SPEED_TEST_BACKENDS.md](docs/SPEED_TEST_BACKENDS.md).
+Every speed test shows the service your public IP address. Each
+option's description says so before you turn it on. IHM keeps to each
+provider's terms, which is why Fast.com and Ookla are not offered.
+IHM is not affiliated with any of these providers. Details, methods and
+the reasons: [docs/SPEED_TEST_BACKENDS.md](docs/SPEED_TEST_BACKENDS.md).
+
+**Running tests.** Tests never run on their own. Press **Run speed
+test**, or schedule one with an automation. This example tests once a
+night at a random time, which keeps homes from testing all at once:
+
+```yaml
+alias: Nightly speed test
+triggers:
+  - trigger: time
+    at: "02:00:00"
+actions:
+  - delay:
+      minutes: "{{ range(0, 120) | random }}"
+  - action: button.press
+    target:
+      entity_id: button.internet_health_run_speed_test
+```
+
+**Limits.** *Data limit per test* (default 1000 MB) stops each
+direction at half, so a fast line cannot eat a data cap. *Tests per day*
+(default 4, up to 40) counts every run in any 24 hours. With M-Lab, a
+run started by an automation counts toward at most 4 a day and waits a
+random time of up to an hour before starting, as M-Lab asks; a run you
+start yourself goes at once.
+
+A failed test makes the speed test sensors unavailable and the button
+shows why; nothing reads 0 because a test failed. The last result
+survives a restart.
 
 ## Network Path Visualization
 
@@ -156,6 +216,36 @@ IHM is not affiliated with any of these providers. Full comparison:
            1.2ms      │         15ms       │          25ms      │        35ms
                       └── Packet Loss ─────┴── Jitter ──────────┘
 ```
+
+## Dashboard Card
+
+IHM ships its own card. Edit a dashboard, choose **Add card**, and pick
+**Internet Health**. If it is missing right after installing, refresh
+the browser: it learns of the card when the page loads.
+
+| Option | Default | Shows |
+|--------|---------|-------|
+| Status | on | Gateway and internet reachable, each hop's and DNS latency, Refresh diagnostics |
+| Latency graph | on | Hop and DNS latency history |
+| Jitter graph | on | Hop jitter history |
+| Packet loss graph | on | Hop packet loss history |
+| Speed test | on | Each speed test reading, Run speed test, and a throughput graph. Shown only with a speed test service |
+| Graph hours | 24 | Hours each graph shows (1 to 168) |
+
+Each measurement has its own row or line; there is no combined score
+([ADR-004](docs/ARCHITECTURE_DECISIONS.md#adr-004-no-composite-health-sensors)).
+Disabled entities, and those of monitoring you turned off, are left out.
+Graph titles are in English. If the card fails to load, monitoring is
+unaffected. Design: [docs/DASHBOARD_CARD.md](docs/DASHBOARD_CARD.md).
+
+### Generate Dashboard Card Action
+
+`internet_health_monitor.generate_dashboard_card` returns the same card
+as YAML, for pasting into a dashboard's code editor. It takes the
+options above (`include_status`, `include_latency`, `include_jitter`,
+`include_packet_loss`, `include_speed_test`, `graph_hours`) and responds with `yaml`. Run it
+from Developer tools > Actions with **Return response** on. It fails
+with a message when IHM is not set up or every part is off.
 
 ## Dashboard Examples
 
@@ -233,10 +323,19 @@ entities:
 - **Jitter needs two replies.** It compares consecutive pings within a poll,
   so with Pings per target set to 1 it is unknown.
 - **Fixed 60-second polling** (see [Polling](#polling)).
+- **IPv4 only.** IHM measures the IPv4 path. On a dual-stack connection,
+  IPv6 traffic may take a different route that IHM does not see.
+- **The default route only.** On a host with several network
+  connections, IHM measures the one the host's internet traffic uses.
+  To watch a specific host, use HA's Ping integration.
 - **Hop ownership** finds no owner for private or shared ISP addresses
   (`10.x`, `100.64.x`), which many ISPs use on their first routers, and looks
   up IPv4 hops only.
+- **Connection type in a container** is the container's own interface
+  unless it uses host networking (HA OS does), so Docker's default bridge
+  reads Ethernet even on a Wi-Fi host. Windows hosts report it unknown.
 
+## Troubleshooting
 
 ### Setup fails: "Required system tools are missing"
 

@@ -34,6 +34,8 @@ Core      (packages/internet_health_monitor_core/, module
            solentlabs.internet_health_monitor_core, on PyPI as
            solentlabs-internet-health-monitor-core)
     network_diagnostics.py: polling, caching, jitter, loss, DNS, hostnames
+    speed_test.py: one speed test interface and result (ADR-003)
+        backends/: _http.py (shared engine), cloudflare.py, librespeed.py, ndt7.py
     timing.py: every interval, timeout and limit (ADR-007)
         │ calls Platform: gateway, system DNS, ping, trace, host environment
         ▼
@@ -60,12 +62,14 @@ scheduling. It contains no measurement logic.
 | File | Role |
 |------|------|
 | `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`; reloads when options change. |
-| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007), and the typed config entry and runtime data. |
+| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test only when the button is pressed, enforces the data and daily limits and M-Lab's automated-client rules, and stores run times and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
 | `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
-| `config_flow.py` | Setup and options from one `build_schema`: gateway and DNS monitoring, DNS server, pings per target (1 to 10), hop ownership. One entry per HA. |
-| `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency. All `state_class: measurement`. |
+| `config_flow.py` | Setup and options from one `build_schema`: gateway and DNS monitoring, DNS server, pings per target (1 to 10), hop ownership, speed test service and limits; an M-Lab consent step. One entry per HA. |
+| `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency and, with a service chosen, six speed test readings, all `state_class: measurement`. Diagnostic enums: Connection type (Core's host environment) and Install type (HA's own `system_info`). |
 | `binary_sensor.py` | `gateway_reachable` (gateway ping answered), `internet_reachable` (DNS query succeeded). |
-| `button.py` | Refresh diagnostics; Reset network cache (disabled by default). A press whose poll fails raises a translated error. |
+| `button.py` | Refresh diagnostics; Reset network cache (disabled by default); Run speed test (with a service chosen; a press with no user counts as automated). A failed press raises a translated error. |
+| `dashboard.py`, `services.py`, `card/` | Dashboard card: one layout builder behind the `generate_dashboard_card` action and the bundled Lovelace card; additive, so a card failure never stops monitoring ([DASHBOARD_CARD.md](DASHBOARD_CARD.md)). Registered once in `async_setup`. |
+| `usage.py` | `UsageTracker`: running totals of pings, traceroutes, DNS queries and speed test runs and data. Adds Core's per-instance `NetworkDiagnostics.counts` to totals stored in HA storage (`internet_health_monitor.usage`), written at most every 5 minutes and on unload. |
 | `diagnostics.py` | HA diagnostics download: options, poll state, the core's result and detection state. |
 | `strings.json`, `translations/`, `icons.json` | Every form label, entity name, error message and icon; no names or icons in code. |
 | `quality_scale.yaml` | Self-assessment against HA's quality scale; README.md § Quality Scale renders it. |
@@ -79,7 +83,7 @@ scheduling. It contains no measurement logic.
    (`traceroute -n -q 1 -w 2 -m 3 <target>`).
 3. **Once, after hops are known:** look up each hop's hostname by
    reverse DNS and detect the host environment (container, connection
-   type, install type).
+   type).
 4. **Every poll, in parallel:** ping the gateway, ping each hop, query
    DNS. The DNS query is one UDP message Core builds itself (RFC 1035,
    [REFERENCES.md § R14](REFERENCES.md#r14-dns-message-format)), sent to the
@@ -119,33 +123,33 @@ sends only:
 |-------------|--------------|------|
 | The host's configured DNS resolver | Each hop IP, as a reverse DNS query | Once after hops are detected, and after a cache reset |
 | Team Cymru, through the DNS server under test | Each public hop IP, as an `origin.asn.cymru.com` query, then its ASN | Only with Hop ownership on (off by default); same timing as reverse DNS |
+| Cloudflare (speed.cloudflare.com) | Test data both ways; it sees the public IP address. Nothing is posted to its results endpoint | Each speed test, with Cloudflare chosen |
+| M-Lab (Locate API, then an M-Lab server) | Client name and version; test data both ways. **M-Lab publishes the result with the public IP address** | Each speed test, with M-Lab chosen and consent given |
+| LibreSpeed (librespeed.org server list, then volunteer servers) | One small request to each listed server to choose one; test data both ways with that one. No telemetry | Each speed test, with LibreSpeed chosen |
 
-Nothing else goes to an outside service; any that is added is opt-in and listed here (ADR-006). Speed test backends, when built and
-enabled, are the only addition (ADR-003).
+Nothing else goes to an outside service; any that is added is opt-in and listed here (ADR-006). Every speed test request carries the User-Agent `internet-health-monitor/<version>`.
 
-## Planned Components
+## Security
 
-Not built yet; designs are fixed by the ADRs named.
+Reviewed 2026-11-19 (ROADMAP Phase 5); `packages/internet_health_monitor_core/tests/test_security.py` holds each guarantee.
 
-**Speed test backends** (ADR-003). Optional, off by default.
-
-```
-HA layer: schedule, run-now button, speed test sensors
-        │
-        ▼   (in Core)
-bandwidth.py ── one interface: run a test, return download,
-        │            upload, idle and loaded latency per direction
-        ▼
-backends/  ndt7.py (first) · cloudflare.py · fastcom.py · librespeed.py
-```
-
-A backend is one module implementing that interface. Adding a provider
-touches nothing outside its module and its registration. Comparison:
-[SPEED_TEST_BACKENDS.md](SPEED_TEST_BACKENDS.md).
-
-**Dashboard card** (ROADMAP Phase 2). A bundled Lovelace card in the
-Add card list, following Cable Modem Monitor's card pattern. Additive:
-if it fails to load, monitoring is unaffected.
+- **No shell, no option injection.** Linux probes run `ip`, `ping` and
+  `traceroute` with `create_subprocess_exec` (an argument list, never a
+  shell). The only outside value in those arguments is the target, and
+  `ping` and `trace` refuse anything that does not parse as an IP
+  address, so text from tool output, `/etc/resolv.conf`, stored options
+  or `--dns-server` can never become an option. The parsers keep only
+  addresses as well. Windows calls the IP Helper API directly; no
+  command line exists.
+- **Provider-supplied URLs need TLS.** LibreSpeed's server list and
+  M-Lab's Locate reply name the hosts a test loads. IHM uses only
+  `https://` and `wss://` URLs from them, with certificate checks, so a
+  tampered list cannot aim test traffic at a device on the LAN.
+- **Nothing secret is held.** IHM stores no credentials. The public IP
+  address is never read or stored; diagnostics hold options, detected
+  hops and the last results.
+- **The card renders no HTML from data.** Messages are set with
+  `textContent`; the layout is built by HA's own card helpers.
 
 ## Neighbors
 

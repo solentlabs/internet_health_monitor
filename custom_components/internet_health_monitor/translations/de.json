@@ -9,14 +9,20 @@
           "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
-          "hop_ownership": "Betreiber jedes Hops ermitteln"
+          "hop_ownership": "Betreiber jedes Hops ermitteln",
+          "speed_test_backend": "Speedtest-Dienst",
+          "speed_test_data_limit_mb": "Datenlimit pro Test",
+          "speed_test_daily_limit": "Tests pro Tag"
         },
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
           "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
-          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
+          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
+          "speed_test_backend": "Standardmäßig aus. Tests laufen nur, wenn du „Speedtest ausführen“ drückst oder eine Automation es tut. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden.",
+          "speed_test_data_limit_mb": "Höchstens so viele Daten darf ein Test verbrauchen, beide Richtungen zusammen (100 bis 10000 MB); jede Richtung stoppt bei der Hälfte. Auf einer schnellen Leitung ergibt ein niedrigeres Limit einen kürzeren, ungenaueren Test.",
+          "speed_test_daily_limit": "Höchstens so viele Tests in 24 Stunden, per Taste oder Automation (1 bis 40). M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen."
         }
       },
       "reconfigure": {
@@ -26,20 +32,36 @@
           "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
-          "hop_ownership": "Betreiber jedes Hops ermitteln"
+          "hop_ownership": "Betreiber jedes Hops ermitteln",
+          "speed_test_backend": "Speedtest-Dienst",
+          "speed_test_data_limit_mb": "Datenlimit pro Test",
+          "speed_test_daily_limit": "Tests pro Tag"
         },
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
           "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
-          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
+          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
+          "speed_test_backend": "Standardmäßig aus. Tests laufen nur, wenn du „Speedtest ausführen“ drückst oder eine Automation es tut. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden.",
+          "speed_test_data_limit_mb": "Höchstens so viele Daten darf ein Test verbrauchen, beide Richtungen zusammen (100 bis 10000 MB); jede Richtung stoppt bei der Hälfte. Auf einer schnellen Leitung ergibt ein niedrigeres Limit einen kürzeren, ungenaueren Test.",
+          "speed_test_daily_limit": "Höchstens so viele Tests in 24 Stunden, per Taste oder Automation (1 bis 40). M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen."
+        }
+      },
+      "mlab_consent": {
+        "title": "M-Lab veröffentlicht deine Ergebnisse",
+        "description": "M-Lab veröffentlicht jedes Testergebnis samt deiner öffentlichen IP-Adresse, Datum und Uhrzeit und bewahrt es unbegrenzt auf (measurementlab.net/privacy). Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst.",
+        "data": {
+          "mlab_consent": "Ich stimme zu, dass M-Lab meine Ergebnisse veröffentlicht"
         }
       }
     },
     "abort": {
       "already_configured": "Internet Health Monitor ist bereits konfiguriert",
       "reconfigure_successful": "Die Einstellungen wurden aktualisiert."
+    },
+    "error": {
+      "mlab_consent_required": "Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst."
     }
   },
   "options": {
@@ -51,16 +73,32 @@
           "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
-          "hop_ownership": "Betreiber jedes Hops ermitteln"
+          "hop_ownership": "Betreiber jedes Hops ermitteln",
+          "speed_test_backend": "Speedtest-Dienst",
+          "speed_test_data_limit_mb": "Datenlimit pro Test",
+          "speed_test_daily_limit": "Tests pro Tag"
         },
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
           "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
-          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
+          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
+          "speed_test_backend": "Standardmäßig aus. Tests laufen nur, wenn du „Speedtest ausführen“ drückst oder eine Automation es tut. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden.",
+          "speed_test_data_limit_mb": "Höchstens so viele Daten darf ein Test verbrauchen, beide Richtungen zusammen (100 bis 10000 MB); jede Richtung stoppt bei der Hälfte. Auf einer schnellen Leitung ergibt ein niedrigeres Limit einen kürzeren, ungenaueren Test.",
+          "speed_test_daily_limit": "Höchstens so viele Tests in 24 Stunden, per Taste oder Automation (1 bis 40). M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen."
+        }
+      },
+      "mlab_consent": {
+        "title": "M-Lab veröffentlicht deine Ergebnisse",
+        "description": "M-Lab veröffentlicht jedes Testergebnis samt deiner öffentlichen IP-Adresse, Datum und Uhrzeit und bewahrt es unbegrenzt auf (measurementlab.net/privacy). Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst.",
+        "data": {
+          "mlab_consent": "Ich stimme zu, dass M-Lab meine Ergebnisse veröffentlicht"
         }
       }
+    },
+    "error": {
+      "mlab_consent_required": "Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst."
     }
   },
   "selector": {
@@ -71,6 +109,14 @@
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
         "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "speed_test_backend": {
+      "options": {
+        "none": "Aus",
+        "cloudflare": "Cloudflare",
+        "mlab": "M-Lab NDT7 (veröffentlicht deine IP-Adresse)",
+        "librespeed": "LibreSpeed (Server von Freiwilligen)"
       }
     }
   },
@@ -105,6 +151,132 @@
       },
       "dns_latency": {
         "name": "DNS-Latenz"
+      },
+      "connection_type": {
+        "name": "Verbindungsart",
+        "state": {
+          "ethernet": "Ethernet",
+          "wifi": "WLAN",
+          "bridge": "Bridge",
+          "veth": "Virtuelles Ethernet"
+        },
+        "state_attributes": {
+          "interface": {
+            "name": "Schnittstelle"
+          }
+        }
+      },
+      "install_type": {
+        "name": "Installationsart",
+        "state": {
+          "os": "Home Assistant OS",
+          "supervised": "Supervised",
+          "container": "Container",
+          "core": "Core",
+          "third_party_container": "Container eines Drittanbieters"
+        }
+      },
+      "speed_test_download": {
+        "name": "Speedtest Download",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Getestet am"
+          }
+        }
+      },
+      "speed_test_upload": {
+        "name": "Speedtest Upload",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Getestet am"
+          }
+        }
+      },
+      "speed_test_idle_latency": {
+        "name": "Speedtest Latenz im Leerlauf",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Getestet am"
+          }
+        }
+      },
+      "speed_test_download_latency": {
+        "name": "Speedtest Latenz beim Download",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Getestet am"
+          }
+        }
+      },
+      "speed_test_upload_latency": {
+        "name": "Speedtest Latenz beim Upload",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Getestet am"
+          }
+        }
+      },
+      "speed_test_data_used": {
+        "name": "Speedtest Datenverbrauch",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Getestet am"
+          }
+        }
+      },
+      "usage_pings": {
+        "name": "Gesendete Pings"
+      },
+      "usage_traceroutes": {
+        "name": "Ausgeführte Traceroutes"
+      },
+      "usage_dns_queries": {
+        "name": "Gesendete DNS-Anfragen"
+      },
+      "usage_speed_tests": {
+        "name": "Ausgeführte Speedtests"
+      },
+      "usage_downloaded": {
+        "name": "Speedtest-Daten heruntergeladen"
+      },
+      "usage_uploaded": {
+        "name": "Speedtest-Daten hochgeladen"
       }
     },
     "binary_sensor": {
@@ -121,6 +293,9 @@
       },
       "reset_cache": {
         "name": "Netzwerk-Cache zurücksetzen"
+      },
+      "run_speed_test": {
+        "name": "Speedtest ausführen"
       }
     }
   },
@@ -136,12 +311,59 @@
     },
     "missing_tools": {
       "message": "Auf diesem Host fehlen benötigte Systemprogramme: {tools}. Installieren Sie sie und laden Sie die Integration neu."
+    },
+    "not_set_up": {
+      "message": "Internet Health Monitor ist nicht eingerichtet."
+    },
+    "nothing_to_show": {
+      "message": "Die Karte hat nichts anzuzeigen: Alle Teile sind aus oder ihre Entitäten deaktiviert."
+    },
+    "speed_test_failed": {
+      "message": "Speedtest fehlgeschlagen: {error}"
+    },
+    "daily_limit_reached": {
+      "message": "Speedtest-Limit erreicht: {limit} Tests in den letzten 24 Stunden. Erhöhe „Tests pro Tag“ in den Optionen oder versuche es später."
+    },
+    "mlab_automated_limit": {
+      "message": "M-Lab erlaubt höchstens {limit} automatische Tests pro Tag, und {limit} liefen in den letzten 24 Stunden. Ein Test, den eine Person im Dashboard startet, ist davon nicht betroffen."
     }
   },
   "issues": {
     "traceroute_missing": {
       "title": "traceroute ist nicht installiert",
       "description": "Internet Health Monitor benötigt `traceroute`, um Hop 2 und 3 zu finden; diese Sensoren bleiben daher unbekannt. Installieren Sie es auf dem Home-Assistant-Host (`apt install traceroute` oder `apk add traceroute`) und laden Sie die Integration neu. Gateway- und DNS-Überwachung funktionieren weiter."
+    }
+  },
+  "services": {
+    "generate_dashboard_card": {
+      "name": "Dashboard-Karte erzeugen",
+      "description": "Gibt das YAML für eine Dashboard-Karte mit Erreichbarkeit, Latenz, Jitter und Paketverlust zurück. Die Karte „Internet Health“ unter „Karte hinzufügen“ zeigt dasselbe ohne YAML.",
+      "fields": {
+        "include_status": {
+          "name": "Status",
+          "description": "Erreichbarkeit, Latenz jedes Hops und von DNS sowie „Diagnose aktualisieren“."
+        },
+        "include_latency": {
+          "name": "Latenzdiagramm",
+          "description": "Verlauf der Hop- und DNS-Latenz."
+        },
+        "include_jitter": {
+          "name": "Jitterdiagramm",
+          "description": "Verlauf des Hop-Jitters."
+        },
+        "include_packet_loss": {
+          "name": "Paketverlustdiagramm",
+          "description": "Verlauf des Hop-Paketverlusts."
+        },
+        "include_speed_test": {
+          "name": "Speedtest",
+          "description": "Jeder Speedtest-Wert, „Speedtest ausführen“ und ein Download- und Upload-Diagramm. Nur sichtbar, wenn ein Speedtest-Dienst gewählt ist."
+        },
+        "graph_hours": {
+          "name": "Stunden im Diagramm",
+          "description": "Stunden, die jedes Diagramm zeigt (1 bis 168)."
+        }
+      }
     }
   }
 }

@@ -194,27 +194,19 @@ async def test_host_environment() -> None:
     with (
         patch.object(linux, "_run", AsyncMock(return_value=(0, "default via 192.168.1.1 dev wlan0", ""))),
         patch.object(linux, "_detect_container", return_value=None),
-        patch.object(linux, "_detect_ha_install", return_value="core"),
     ):
         env = await LinuxPlatform().host_environment()
-    assert (env.connection_type, env.interface_name, env.container_type, env.ha_install_type) == (
-        "wifi",
-        "wlan0",
-        None,
-        "core",
-    )
+    assert (env.connection_type, env.interface_name, env.container_type) == ("wifi", "wlan0", None)
 
 
-# Marker files present -> (container type, HA install type)
+# Marker files present -> container type
 # fmt: off
 ENVIRONMENT_CASES = [
-    ("native core",  set(),                       "",                    "",               (None, "core")),
-    ("docker",       {"/.dockerenv"},             "",                    "",               ("docker", "container")),
-    ("docker cgroup", set(),                      "0::/docker/abc",      "",               ("docker", "core")),
-    ("podman",       {"/run/.containerenv"},      "",                    "",               ("podman", "container")),
-    ("lxc",          set(),                       "",                    "container=lxc",  ("lxc", "core")),
-    ("ha os",        {"/etc/hassio"},             "",                    "",               (None, "haos")),
-    ("supervised",   {"/usr/sbin/hassio-supervisor"}, "",                "",               (None, "supervised")),
+    ("native",        set(),                  "",               "",              None),
+    ("docker",        {"/.dockerenv"},        "",               "",              "docker"),
+    ("docker cgroup", set(),                  "0::/docker/abc", "",              "docker"),
+    ("podman",        {"/run/.containerenv"}, "",               "",              "podman"),
+    ("lxc",           set(),                  "",               "container=lxc", "lxc"),
 ]
 # fmt: on
 
@@ -222,15 +214,15 @@ ENVIRONMENT_CASES = [
 @pytest.mark.parametrize(
     ("description", "files", "cgroup", "environ", "expected"), ENVIRONMENT_CASES, ids=[c[0] for c in ENVIRONMENT_CASES]
 )
-def test_detect_environment(description: str, files: set[str], cgroup: str, environ: str, expected: tuple) -> None:
-    """Container and install type come from marker files and /proc."""
+def test_detect_environment(description: str, files: set[str], cgroup: str, environ: str, expected: str | None) -> None:
+    """Container type comes from marker files and /proc."""
     texts = {"/proc/1/cgroup": cgroup, "/proc/1/environ": environ}
     with (
         patch.object(linux.os.path, "exists", side_effect=lambda p: p in files),
         patch.object(linux, "_read_text", side_effect=lambda p: texts.get(p)),
         patch.dict(linux.os.environ, {}, clear=True),
     ):
-        assert (linux._detect_container(), linux._detect_ha_install()) == expected
+        assert linux._detect_container() == expected
 
 
 async def test_run_returns_exit_code_and_output() -> None:

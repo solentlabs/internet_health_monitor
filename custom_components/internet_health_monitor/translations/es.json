@@ -9,14 +9,20 @@
           "enable_dns_monitoring": "Supervisar DNS",
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
-          "hop_ownership": "Averiguar quién opera cada salto"
+          "hop_ownership": "Averiguar quién opera cada salto",
+          "speed_test_backend": "Servicio de prueba de velocidad",
+          "speed_test_data_limit_mb": "Límite de datos por prueba",
+          "speed_test_daily_limit": "Pruebas por día"
         },
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
           "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
-          "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían."
+          "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
+          "speed_test_backend": "Desactivado por defecto. Las pruebas solo se ejecutan al pulsar Ejecutar prueba de velocidad o desde una automatización. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno.",
+          "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
+          "speed_test_daily_limit": "Máximo de pruebas en 24 horas, con el botón o automatizaciones (1 a 40). M-Lab pide que las pruebas automáticas no pasen de 4."
         }
       },
       "reconfigure": {
@@ -26,20 +32,36 @@
           "enable_dns_monitoring": "Supervisar DNS",
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
-          "hop_ownership": "Averiguar quién opera cada salto"
+          "hop_ownership": "Averiguar quién opera cada salto",
+          "speed_test_backend": "Servicio de prueba de velocidad",
+          "speed_test_data_limit_mb": "Límite de datos por prueba",
+          "speed_test_daily_limit": "Pruebas por día"
         },
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
           "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
-          "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían."
+          "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
+          "speed_test_backend": "Desactivado por defecto. Las pruebas solo se ejecutan al pulsar Ejecutar prueba de velocidad o desde una automatización. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno.",
+          "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
+          "speed_test_daily_limit": "Máximo de pruebas en 24 horas, con el botón o automatizaciones (1 a 40). M-Lab pide que las pruebas automáticas no pasen de 4."
+        }
+      },
+      "mlab_consent": {
+        "title": "M-Lab publica tus resultados",
+        "description": "M-Lab publica cada resultado, incluida tu dirección IP pública, la fecha y la hora, y lo conserva indefinidamente (measurementlab.net/privacy). Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
+        "data": {
+          "mlab_consent": "Acepto que M-Lab publique mis resultados"
         }
       }
     },
     "abort": {
       "already_configured": "Internet Health Monitor ya está configurado",
       "reconfigure_successful": "Se actualizó la configuración."
+    },
+    "error": {
+      "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio."
     }
   },
   "options": {
@@ -51,16 +73,32 @@
           "enable_dns_monitoring": "Supervisar DNS",
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
-          "hop_ownership": "Averiguar quién opera cada salto"
+          "hop_ownership": "Averiguar quién opera cada salto",
+          "speed_test_backend": "Servicio de prueba de velocidad",
+          "speed_test_data_limit_mb": "Límite de datos por prueba",
+          "speed_test_daily_limit": "Pruebas por día"
         },
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
           "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
-          "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían."
+          "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
+          "speed_test_backend": "Desactivado por defecto. Las pruebas solo se ejecutan al pulsar Ejecutar prueba de velocidad o desde una automatización. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno.",
+          "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
+          "speed_test_daily_limit": "Máximo de pruebas en 24 horas, con el botón o automatizaciones (1 a 40). M-Lab pide que las pruebas automáticas no pasen de 4."
+        }
+      },
+      "mlab_consent": {
+        "title": "M-Lab publica tus resultados",
+        "description": "M-Lab publica cada resultado, incluida tu dirección IP pública, la fecha y la hora, y lo conserva indefinidamente (measurementlab.net/privacy). Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
+        "data": {
+          "mlab_consent": "Acepto que M-Lab publique mis resultados"
         }
       }
+    },
+    "error": {
+      "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio."
     }
   },
   "selector": {
@@ -71,6 +109,14 @@
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
         "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "speed_test_backend": {
+      "options": {
+        "none": "Desactivado",
+        "cloudflare": "Cloudflare",
+        "mlab": "M-Lab NDT7 (publica tu dirección IP)",
+        "librespeed": "LibreSpeed (servidores de voluntarios)"
       }
     }
   },
@@ -105,6 +151,132 @@
       },
       "dns_latency": {
         "name": "Latencia DNS"
+      },
+      "connection_type": {
+        "name": "Tipo de conexión",
+        "state": {
+          "ethernet": "Ethernet",
+          "wifi": "Wi-Fi",
+          "bridge": "Puente",
+          "veth": "Ethernet virtual"
+        },
+        "state_attributes": {
+          "interface": {
+            "name": "Interfaz"
+          }
+        }
+      },
+      "install_type": {
+        "name": "Tipo de instalación",
+        "state": {
+          "os": "Home Assistant OS",
+          "supervised": "Supervisada",
+          "container": "Contenedor",
+          "core": "Core",
+          "third_party_container": "Contenedor de terceros"
+        }
+      },
+      "speed_test_download": {
+        "name": "Prueba de velocidad: descarga",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_upload": {
+        "name": "Prueba de velocidad: subida",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_idle_latency": {
+        "name": "Prueba de velocidad: latencia en reposo",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_download_latency": {
+        "name": "Prueba de velocidad: latencia en descarga",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_upload_latency": {
+        "name": "Prueba de velocidad: latencia en subida",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_data_used": {
+        "name": "Prueba de velocidad: datos usados",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "usage_pings": {
+        "name": "Pings enviados"
+      },
+      "usage_traceroutes": {
+        "name": "Traceroutes ejecutados"
+      },
+      "usage_dns_queries": {
+        "name": "Consultas DNS enviadas"
+      },
+      "usage_speed_tests": {
+        "name": "Pruebas de velocidad ejecutadas"
+      },
+      "usage_downloaded": {
+        "name": "Datos descargados en pruebas de velocidad"
+      },
+      "usage_uploaded": {
+        "name": "Datos subidos en pruebas de velocidad"
       }
     },
     "binary_sensor": {
@@ -121,6 +293,9 @@
       },
       "reset_cache": {
         "name": "Restablecer caché de red"
+      },
+      "run_speed_test": {
+        "name": "Ejecutar prueba de velocidad"
       }
     }
   },
@@ -136,12 +311,59 @@
     },
     "missing_tools": {
       "message": "Faltan herramientas del sistema necesarias en este equipo: {tools}. Instálalas y vuelve a cargar la integración."
+    },
+    "not_set_up": {
+      "message": "Internet Health Monitor no está configurado."
+    },
+    "nothing_to_show": {
+      "message": "La tarjeta no tiene nada que mostrar: todas las partes están desactivadas o sus entidades deshabilitadas."
+    },
+    "speed_test_failed": {
+      "message": "La prueba de velocidad falló: {error}"
+    },
+    "daily_limit_reached": {
+      "message": "Límite de pruebas alcanzado: {limit} pruebas en las últimas 24 horas. Aumenta Pruebas por día en las opciones o inténtalo más tarde."
+    },
+    "mlab_automated_limit": {
+      "message": "M-Lab permite como máximo {limit} pruebas automáticas al día, y ya se hicieron {limit} en las últimas 24 horas. Una prueba que inicia una persona desde el panel no tiene este límite."
     }
   },
   "issues": {
     "traceroute_missing": {
       "title": "traceroute no está instalado",
       "description": "Internet Health Monitor necesita `traceroute` para encontrar los saltos 2 y 3, por lo que esos sensores siguen desconocidos. Instálalo en el equipo de Home Assistant (`apt install traceroute` o `apk add traceroute`) y vuelve a cargar la integración. La supervisión de la puerta de enlace y del DNS sigue funcionando."
+    }
+  },
+  "services": {
+    "generate_dashboard_card": {
+      "name": "Generar tarjeta de panel",
+      "description": "Devuelve el YAML de una tarjeta de panel con accesibilidad, latencia, jitter y pérdida de paquetes. La tarjeta Internet Health en Añadir tarjeta muestra lo mismo sin YAML.",
+      "fields": {
+        "include_status": {
+          "name": "Estado",
+          "description": "Accesibilidad, latencia de cada salto y de DNS, y Actualizar diagnóstico."
+        },
+        "include_latency": {
+          "name": "Gráfico de latencia",
+          "description": "Historial de latencia de saltos y DNS."
+        },
+        "include_jitter": {
+          "name": "Gráfico de jitter",
+          "description": "Historial del jitter de los saltos."
+        },
+        "include_packet_loss": {
+          "name": "Gráfico de pérdida de paquetes",
+          "description": "Historial de pérdida de paquetes de los saltos."
+        },
+        "include_speed_test": {
+          "name": "Prueba de velocidad",
+          "description": "Cada lectura de la prueba de velocidad, Ejecutar prueba de velocidad y un gráfico de descarga y subida. Solo se muestra si hay un servicio de prueba elegido."
+        },
+        "graph_hours": {
+          "name": "Horas del gráfico",
+          "description": "Horas que muestra cada gráfico (1 a 168)."
+        }
+      }
     }
   }
 }

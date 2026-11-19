@@ -1,0 +1,123 @@
+# Dashboard Card
+
+The Internet Health card: a Lovelace card IHM ships, so a user adds it
+from **Add card**, sets it up in a form, and writes no YAML. It follows
+Cable Modem Monitor's card pattern, reusing the design, not the code
+([ARCHITECTURE_DECISIONS.md § ADR-002](ARCHITECTURE_DECISIONS.md#adr-002-ihm-stays-a-standalone-integration)).
+
+**Rules:**
+
+- **Python decides, the card renders.** One layout builder serves both
+  the card and the `generate_dashboard_card` action.
+- **Additive.** No card failure, and no missing frontend, stops
+  monitoring or setup.
+- **Each measurement shown separately** (ADR-004): entity rows and
+  graphs, no score.
+- **The card's options are a public contract.** Dashboards store them.
+
+## Files
+
+```text
+custom_components/internet_health_monitor/
+├── dashboard.py      # options schema and build_card_config(hass, options)
+├── services.py       # generate_dashboard_card action
+├── services.yaml
+└── card/
+    ├── __init__.py   # async_register_card(hass): the only entry point
+    ├── commands.py   # websocket command
+    └── frontend/internet-health-card.js   # card and form, no build step
+```
+
+`card/` imports `dashboard.py`; nothing imports `card/`. `async_setup`
+calls `async_register_card` once. Removing `card/` and that call removes
+the card.
+
+## Options
+
+Same names and defaults in the action, the card's form and the card's
+YAML. One schema in `dashboard.py` validates all three.
+
+| Option | Default | Shows |
+|--------|---------|-------|
+| `include_status` | true | Entities card: gateway and internet reachable, each hop's and DNS latency, Refresh diagnostics |
+| `include_latency` | true | History graph: hop and DNS latency |
+| `include_jitter` | true | History graph: hop jitter |
+| `include_packet_loss` | true | History graph: hop packet loss |
+| `include_speed_test` | true | Entities card: each speed test reading and Run speed test; history graph: download and upload. Shown only when a speed test service is chosen |
+| `graph_hours` | 24 | Hours each graph shows, 1 to 168 |
+
+Renaming or removing an option breaks saved dashboards: the card must
+map the old key, and CHANGELOG.md records it.
+
+## Layout
+
+`build_card_config` returns one `vertical-stack` holding the parts
+switched on. Entity ids come from the entity registry by unique id, so a
+renamed device or entity still resolves (ADR-010). Entities that were
+not created (gateway or DNS monitoring off) or that the user disabled
+are left out, and a part with no entities is left out.
+
+Errors, raised as translated `ServiceValidationError`:
+
+| Key | When |
+|-----|------|
+| `not_set_up` | No IHM entry exists |
+| `nothing_to_show` | Every part is off or has no entities |
+
+A failed poll is not an error: the layout comes from the registry, and
+the entities show their own unavailable state.
+
+Card titles ("Latency", "Jitter", "Packet loss", "Speed test", "Throughput") are English: Lovelace
+config holds plain text, and the frontend has no translation hook for a
+custom integration's card. Entity rows use the entities' translated
+names.
+
+## Action
+
+`internet_health_monitor.generate_dashboard_card` takes the options and
+returns `{"yaml": <card>}` (response only), for users who paste YAML
+into a dashboard instead of using the card. Registered in `async_setup`.
+
+## Card
+
+- **Backend.** One read-only websocket command,
+  `internet_health_monitor/card_config`, with optional `options`
+  validated by the shared schema. It returns `{"card": <dict>}`, or the
+  error code `card_unavailable` with the builder's message.
+- **Registration.** `async_register_card` registers the command, serves
+  `card/frontend/` at `/internet_health_monitor/card`, and loads
+  `internet-health-card.js?v=<version>` with `add_extra_js_url` (storage
+  and YAML dashboards alike; re-added each start, since HA keeps it in
+  memory). Serving and loading are skipped when `frontend` or `http` is
+  not loaded. `manifest.json` lists `frontend`, `http` and
+  `websocket_api` as `after_dependencies`, so a headless HA still loads
+  IHM. Any exception is logged as a warning and never reaches
+  `async_setup`.
+- **Definition.** The module defines its element and fills
+  `window.customCards` before any `await`: HA waits only two seconds
+  for an undefined `custom:` element. It re-checks the element registry
+  every 100 ms for 15 s, because the frontend can swap in a scoped
+  registry after the module runs (seen by Cable Modem Monitor).
+- **Rendering.** Fetches `card_config`, builds the stack with
+  `loadCardHelpers().createCardElement`, passes `hass` on every update.
+  Re-fetches when its config changes. Loading and errors show as a
+  message inside `ha-card`; after a failure it retries no sooner than
+  30 s. Nothing throws except `setConfig` on an invalid value.
+- **Form.** `getConfigForm` lists every option with its default; HA
+  renders it. `getStubConfig` returns `{}`, so defaults are the schema's.
+
+## Verification
+
+In the suite (`tests/components/test_dashboard.py`):
+
+- The layout for each option and monitoring combination, disabled
+  entities left out, both errors.
+- The action's YAML is the builder's dict.
+- The websocket command: result, error, invalid options.
+- Registration with and without frontend and http; a registration error
+  does not stop setup.
+- The form's fields and defaults match the schema.
+
+By hand on the local HA (no JS test tooling, and the module holds no
+layout): the card appears in Add card, the form saves and redraws, and
+the card renders after a cold restart without a browser reload.

@@ -66,10 +66,34 @@ Site shut down [V].
 ## R5. Cloudflare speed test
 
 - https://github.com/cloudflare/speedtest, MIT [V].
-- No terms found for speed.cloudflare.com. Cloudflare Website Terms
-  (https://www.cloudflare.com/website-terms/) bar uses that "overburden,
-  disrupt or impair" its servers [V]; whether that covers scheduled
-  automated speed tests is [U]. No permission was sought or obtained.
+- Endpoints, from `src/config/defaultConfig.ts` and
+  `src/engines/BandwidthEngine/BandwidthEngine.ts`, read 2026-11-19 [V]:
+  `https://speed.cloudflare.com/__down?bytes=N` (GET) and `__up` (POST);
+  no required headers.
+- Latency: `bytes=0` requests; "ping = ttfb - baseServerTime -
+  serverTimeDelta", server time from the `server-timing` header
+  (`cfRequestDuration;dur=`, else the sum of `cfSpeed*;dur=` entries);
+  median (`latencyPercentile: 0.5`). Loaded latency: one such request
+  every `loadedLatencyThrottle: 400` ms during each direction [V].
+- Results: README, "measurement results are collected by Cloudflare on
+  completion"; the library posts them to `__results` unless
+  `logAimApiUrl` is `null` [V]. IHM never posts.
+- A real `bytes=0` request on 2026-11-19 returned `server-timing:
+  cfSpeedEdge;dur=4, cfSpeedWorker;dur=18`, the summed form IHM reads [V].
+- speed.cloudflare.com's privacy text says Cloudflare truncates the IP
+  address it receives to /24 (IPv4) or /48 (IPv6) [U: read through a
+  summarizer].
+- No terms specific to speed.cloudflare.com. Cloudflare Website and
+  Online Services Terms (https://www.cloudflare.com/website-terms/,
+  effective 2025-08-01), read with curl 2026-11-19 [V*]: they cover
+  websites "that Cloudflare operates and that link to these Terms";
+  § 7 bars use that "could damage, disable, overburden, disrupt or
+  impair any Cloudflare servers or APIs", exceeding "limitations on the
+  Websites or Online Services, including on any API calls", and use
+  "that violates any Cloudflare documentation"; § 8 bars automated bots
+  only "for developing, training, fine-tuning, or otherwise contributing
+  to or improving a machine learning model or artificial intelligence
+  (AI) system". No permission was sought or obtained.
 
 ## R6. crusader
 
@@ -149,6 +173,38 @@ publishes a permission basis for automated third-party clients.
   `RTT` and `MinRTT` (https://github.com/m-lab/ndt-server/blob/main/spec/ndt7-protocol.md) [V].
   Using them as idle and download loaded latency, and their upload
   reliability, is [U].
+
+- Locate API v2 (https://www.measurementlab.net/develop/locate-v2/) and
+  `api/v2/api.go` (github.com/m-lab/locate), read 2026-11-19 [V]:
+  `https://locate.measurementlab.net/v2/nearest/ndt/ndt7` returns
+  `results[]` with `machine`, `location` and `urls`, e.g. key
+  `wss:///ndt/v7/download` with an `access_token`, and
+  `wss:///ndt/v7/upload` (confirmed by a real test from the developer's
+  connection, 2026-11-19) [V].
+  `client_name` and `client_version` are recommended query parameters
+  (ndt7-js README) [V].
+- Protocol (`spec/ndt7-protocol.md`, github.com/m-lab/ndt-server,
+  Apache-2.0), read 2026-11-19 [V]: subprotocol
+  `net.measurementlab.ndt.v7`; "The client SHOULD also include a
+  meaningful, non-generic User-Agent string"; binary messages "SHOULD
+  initially be sending binary messages containing 1 << 13 bytes",
+  doubling "when it is smaller than 1/16 of the queued bytes"; "The
+  expected duration of a test is _up to_ ten seconds"; a client "MAY
+  close" after thirteen; `MinRTT` and `RTT` are "measured in
+  microseconds"; `AppInfo.NumBytes` counts application bytes; Locate
+  `204` is "the no-capacity signal".
+- AUP (https://www.measurementlab.net/aup/), read with curl 2026-11-19
+  [V*]: "Interactive users must not run more than 40 tests per day.
+  Automated software or hardware clients should not run more than 4
+  tests per day, and test times should be randomized"; "Automated and
+  repeated testing requires user consent and care in implementation".
+- Developer guide (https://www.measurementlab.net/develop/), read with
+  curl 2026-11-19 [V*]: "Clients are required to provide informed consent
+  about collection of personal information"; "Clients that hit this rate
+  limit will be provided a 204 No Content response".
+- Privacy (https://www.measurementlab.net/privacy/), read with curl
+  2026-11-19 [V*]: "All experiment data is retained indefinitely and
+  published publicly".
 
 **M-Lab MSAK** (https://github.com/m-lab/msak): Apache-2.0, adds a UDP
 `latency1` test [V]. Whether third-party use is permitted and whether
@@ -278,7 +334,11 @@ Defaults of comparable tools, read from their source 2026-11-19 [V]:
 | Tool | Interval | Probes per poll | Source |
 |------|----------|-----------------|--------|
 | HA Ping integration | 30 s | 5 pings | `homeassistant/components/ping/coordinator.py`, `const.py` (home-assistant/core, dev) |
-| HA Speedtest.net integration | 60 s | one test | `homeassistant/components/speedtestdotnet/const.py` |
+| HA Speedtest.net integration | 60 min | one speed test | `speedtestdotnet/const.py` `DEFAULT_SCAN_INTERVAL = 60`, used as `timedelta(minutes=...)` in `coordinator.py` (HA 2026.10.4) |
+| HA Fast.com integration | 1 h | one speed test | `fastdotcom/const.py` `DEFAULT_INTERVAL = 1`, used as `timedelta(hours=...)` in `coordinator.py` (HA 2026.10.4) |
+
+Neither speed test integration offers an interval option; both mark
+`appropriate-polling` done in their `quality_scale.yaml` (HA 2026.10.4) [V].
 | Uptime Kuma | 60 s | one check | `src/pages/EditMonitor.vue` (louislam/uptime-kuma, master) |
 | SmokePing | 300 s | 20 pings | `etc/config.dist.in` `step`, `pings` (oetiker/SmokePing, master) |
 
@@ -317,6 +377,55 @@ HA core strict typing settings: `mypy.ini`
   (https://github.com/cloudflare/speedtest, MIT), read 2026-11-19 [V]:
   `getJitter` "Computes jitter (ms) as the mean absolute difference between
   consecutive latency samples. Returns `null` if fewer than 2 samples".
+
+## R19. Fast.com
+
+- No published API or terms of use: fast.com's page links only a
+  privacy statement (http://help.netflix.com/legal/fastprivacy, updated
+  2021-03-16), which covers "IP address" and "connection information
+  such as speed and latency measurements" [V].
+- Netflix Terms of Use (https://help.netflix.com/legal/termsofuse),
+  read with curl 2026-11-19 [V*]: users may not "use any robot, spider,
+  scraper or other automated means to access the Netflix service", and
+  "Netflix service" means "the service provided by Netflix for
+  discovering and accessing Netflix content. This includes all
+  personalization, features and functionalities, recommendations and
+  reviews, our websites, applications and user interfaces". On that
+  reading the ban covers fast.com, so IHM does not offer it (ADR-003).
+- Client method, from open-source clients, read 2026-11-19 [V]:
+  maaslalani/fast `maas.go` finds the script with `app-[a-z0-9]+\.js`,
+  the token with `token:"([^"]+)"`, then calls
+  `https://api.fast.com/netflix/speedtest/v2` with `https`, `token` and
+  `urlCount`; the reply has `targets[].url` and `location`. Latency is a
+  GET with `Range: bytes=0-0`; upload is a POST to a target URL.
+  Fast.com's own method is [U]: Netflix's engineering post could not be
+  read.
+- FAQ (https://fast.com, read 2026-11-19 [V]): "FAST.com performs a
+  series of downloads from and uploads to Netflix servers" and reports
+  two latencies, unloaded and loaded.
+- `fastdotcom` 0.0.7 (PyPI, MIT, nkgilley/fast.com), the library HA
+  core's Fast.com integration uses, read 2026-11-19 [V]: blocking
+  `urllib`/`requests` with threads; returns `0` when the token cannot
+  be fetched; sets no User-Agent; latency by ICMP via `icmplib`.
+
+## R20. LibreSpeed
+
+- Server list `https://librespeed.org/backend-servers/servers.php`
+  (librespeed/speedtest-cli `speedtest/speedtest.go`), entries with
+  `name`, `server`, `dlURL`, `ulURL`, `pingURL`, read 2026-11-19 [V].
+- Backend (librespeed/speedtest, LGPL-3.0): `garbage.php?ckSize=N` sends
+  N chunks of 1048576 bytes; `empty.php` takes uploads and pings; the
+  official worker adds `r=` random values and uses
+  `garbagePhp_chunkSize: 100` [V].
+- Telemetry: `telemetry_level: 0, // 0=disabled` in the library;
+  librespeed.org's own page has it enabled [V]. IHM sends none.
+- No terms, acceptable-use policy or rate limit published for the public
+  servers [V: none found on librespeed.org or either README].
+- Upload body limits vary by server: on 2026-11-19 a listed server
+  (Clouvider, New York) accepted 1 and 4 MB bodies and refused 8 MB with
+  `413 Request Entity Too Large` [V]. nginx's default
+  `client_max_body_size` is 1m [U: not read this pass]; IHM posts
+  1,000,000-byte bodies to LibreSpeed servers.
 
 ## Open Verification Items
 

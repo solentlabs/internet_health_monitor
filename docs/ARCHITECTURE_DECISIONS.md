@@ -12,11 +12,12 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [003](#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3) | Speed testing with user-selected backends (ROADMAP Phase 3) | Accepted 2026-11-18 |
 | [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
-| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
+| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19; rule 4 amended 2026-11-19 |
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
 | [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
-| [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Open |
+| [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Accepted 2026-11-19 |
 | [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
+| [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19 |
 
 ---
 
@@ -108,7 +109,7 @@ REFERENCES.md):
 
 ## ADR-003: Speed testing with user-selected backends (ROADMAP Phase 3)
 
-**Status:** Accepted 2026-11-18 (backend list pending research)
+**Status:** Accepted 2026-11-18; built 2026-11-19 with four backends (amendments below)
 
 **Question:** Keep ROADMAP Phase 3, given hass-speedtest-ookla (R8)
 already ships throughput, loaded latency and a bloat grade?
@@ -146,7 +147,41 @@ already ships throughput, loaded latency and a bloat grade?
   --accept-gdpr` (R8), and its EULA is "personal, non-commercial use".
 - Client libraries must have a license compatible with distribution
   (R5: cloudflarepycli is GPL-3.0 and not used).
-- Tests never run without explicit user configuration (ROADMAP Tier 3).
+- Tests never run without explicit user configuration: off by default, and only from the button or an automation.
+
+**Amendments (2026-11-19, developer's decisions):**
+- **Reuse, patch, or write our own; ours must be better.** A library
+  that fits IHM's rules is reused; one with gaps is patched upstream or
+  replaced by our own code, which must beat every alternative on
+  measurable terms. No Python client met the rules: `fastdotcom`, which
+  HA core uses, blocks, returns 0 on failure and sets no User-Agent
+  (R19); there is no Python NDT7 client (R9); `cloudflarepycli` is
+  GPL-3.0 (R5). So IHM's Core has its own async clients, one engine for
+  the HTTP backends, in `speed_test.py` and `backends/`.
+- **Follow each provider's terms as closely as possible.** Keeping to
+  the letter of every provider's published terms is part of what IHM
+  offers users, not only a risk control. Where terms are silent, IHM
+  uses the provider the way its own published client does, identifies
+  itself, and stays modest.
+- **Fast.com is not offered.** Netflix's Terms of Use forbid "any
+  robot, spider, scraper or other automated means to access the Netflix
+  service", and define that service to include "our websites" (R19).
+  Fast.com publishes no API, so every client reads a token from
+  fast.com's page: automated access to a Netflix website. A Fast.com
+  backend was built and removed for this reason. Written permission from
+  Netflix would reopen it; it would be one module behind the same
+  interface.
+- **No built-in schedule.** HA's `appropriate-polling` rule (R16) bars a
+  user-set interval, so tests run only from the Run speed test button or
+  an automation that presses it. Two settings bound the cost: a data
+  limit per test (default 1000 MB) and tests per day (default 4, max 40;
+  M-Lab's automated and interactive limits, R9), counting every run.
+  With M-Lab, a press no person made (automation, script) counts toward
+  at most 4 a day and starts after a random wait of up to an hour, as
+  its AUP asks automated clients to randomize (R9).
+- **A failed test is visible:** the sensors go unavailable and the
+  button raises the reason; nothing reads 0. Each result reports the
+  data it used.
 
 **Permission:** The original rule required a recorded permission basis
 for every backend. Other HA integrations call these endpoints with no
@@ -161,7 +196,7 @@ them. Asking Cloudflare in writing remains open to the developer.
 **Status:** Accepted 2026-11-18
 
 **Question:** Keep the planned 0-100 `connection_quality` sensor and the
-`connection_healthy` composite binary sensor (ROADMAP Tier 1)?
+`connection_healthy` composite binary sensor (then planned in the ROADMAP)?
 
 **Decision:** Drop both. Neither was implemented.
 
@@ -223,7 +258,7 @@ Adding it is one module implementing `Platform`, one branch in
 
 ## ADR-006: Outside services only by user choice
 
-**Status:** Accepted 2026-11-19
+**Status:** Accepted 2026-11-19; rule 4 amended 2026-11-19 (speed tests)
 
 **Context:** Hop enrichment sent each public hop IP to ip-api.com over
 plain HTTP and the gateway's MAC address to api.macvendors.com, always
@@ -239,7 +274,11 @@ all of these hold:
 3. **Listed.** `docs/ARCHITECTURE.md § Data Leaving the Host` has a row
    for it.
 4. **Minimal.** It sends only what it needs; never the user's own
-   address or device identifiers.
+   address or device identifiers. One exception, amended 2026-11-19: a
+   speed test is a connection from the user's network, so the provider
+   always sees the user's public IP address. The option's description
+   says so, and says which provider publishes it (M-Lab, which also
+   requires the user's confirmation before its first use).
 5. **Cited.** The provider's terms are in REFERENCES.md, and IHM keeps
    within them.
 
@@ -278,7 +317,7 @@ the interval and users do not get a field for it, in setup or options
 
 **Decision:** IHM polls every 60 seconds.
 - **Comparable tools** use 30 to 60 s for "is it working now" monitoring:
-  HA Ping 30 s, HA Speedtest.net 60 s, Uptime Kuma 60 s. SmokePing's 300 s
+  HA Ping 30 s, Uptime Kuma 60 s. SmokePing's 300 s
   suits long-term graphs, too slow for live sensors (R16).
 - **60 over 30:** half the probes and database writes; an outage shows
   within a minute either way. Jitter is measured within each poll
@@ -331,7 +370,7 @@ directly, as HA core does (R17).
 
 ## ADR-009: Jitter is consecutive delay variation
 
-**Status:** Open. Recommendation: accept.
+**Status:** Accepted 2026-11-19
 
 **Context:** IHM reported jitter as the standard deviation of each poll's
 mean latency over the last 30 polls. That is not a standard definition: it
@@ -376,3 +415,25 @@ rename the entity ids to match (README.md § Renaming).
   example names an id a new install does not create.
 - The integration's own title stays "Internet Health Monitor"; only the
   device and entity names use the short form.
+
+---
+
+## ADR-011: Roadmap features not built
+
+**Status:** Accepted 2026-11-19
+
+**Context:** The ROADMAP listed five "Future Considerations (Post-v1.0)".
+The project does not defer work: each is built or cut with a reason.
+
+**Decision:** None is built.
+
+| Feature | Reason |
+|---------|--------|
+| IPv6 path | IHM detects and measures the IPv4 path: gateway, traceroute and DNS. Building IPv6 touches every probe on both platforms and doubles the hop sensors. Stated in README.md § Known Limitations |
+| Custom hop targets | HA's own Ping integration pings any host the user adds, with latency, jitter and packet loss sensors (`homeassistant/components/ping/sensor.py`, HA 2026.10.4). IHM watches the path to the internet, not chosen hosts |
+| Interface selection on multi-interface hosts | IHM follows the default route, the path the host's own internet traffic takes. Measuring another interface would report a path HA does not use |
+| SNMP router counters | Reading the router is a different job from measuring the path, and needs a credential; IHM stores none. HA's SNMP integration exposes router counters as entities to combine with IHM's (as ADR-002 does with Cable Modem Monitor) |
+| Solent Aggregator hook | ADR-002: combining happens in HA over entities, and any telemetry is a separate opt-in consumer. IHM owes an aggregator only its stable entity ids and units (ADR-001, ADR-002) |
+
+**Constraint:** Building any of these needs a use case in USE_CASES.md
+and a new decision here.

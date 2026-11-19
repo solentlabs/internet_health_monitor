@@ -6,11 +6,11 @@
 rules:
   # Bronze
   action-setup:
-    status: exempt
-    comment: The integration registers no actions of its own.
+    status: done
+    comment: "generate_dashboard_card is registered in async_setup (services.py async_setup_services), so it exists before any entry loads; it raises a translated ServiceValidationError when no entry exists (tests/components/test_dashboard.py)."
   appropriate-polling:
     status: done
-    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route."
+    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route. Speed tests never poll: update_interval None, run only by the Run speed test button (README.md Speed Testing shows the automation)."
   brands:
     status: done
     comment: brand/icon.png, icon.svg, logo.png and dark variants in the integration directory.
@@ -27,8 +27,8 @@ rules:
     status: todo
     comment: "Core is MIT with .github/workflows/publish.yml (trusted publishing, version check against manifest.json), but not yet on PyPI: first publish is ROADMAP Path to Release stage 3."
   docs-actions:
-    status: exempt
-    comment: The integration adds no actions of its own.
+    status: done
+    comment: README.md Generate Dashboard Card Action; fields and descriptions in services.yaml, strings.json and all translations.
   docs-conditions:
     status: exempt
     comment: The integration provides no conditions.
@@ -69,7 +69,7 @@ rules:
   # Silver
   action-exceptions:
     status: done
-    comment: Buttons raise HomeAssistantError (translation refresh_failed) when the poll they trigger fails (button.py _PollButton._poll).
+    comment: Buttons raise HomeAssistantError (refresh_failed, speed_test_failed) when the poll or test they trigger fails, and ServiceValidationError (daily_limit_reached, mlab_automated_limit) when a speed test is refused (button.py, coordinator.py); generate_dashboard_card raises ServiceValidationError (not_set_up, nothing_to_show; dashboard.py).
   config-entry-unloading:
     status: done
     comment: async_unload_entry unloads platforms and pops hass.data; update listener uses entry.async_on_unload (__init__.py).
@@ -137,13 +137,13 @@ rules:
     comment: One static device per config entry, tied to the entry's lifecycle.
   entity-category:
     status: done
-    comment: Both buttons are DIAGNOSTIC (button.py); sensors and binary sensors are primary.
+    comment: Refresh and reset buttons, Connection type, Install type and the usage totals are DIAGNOSTIC (button.py, sensor.py); measurements, binary sensors and Run speed test are primary.
   entity-device-class:
     status: done
-    comment: Latency and jitter DURATION (sensor.py), reachability CONNECTIVITY (binary_sensor.py); packet loss % has no fitting class.
+    comment: Latency and jitter DURATION, Connection type and Install type ENUM (sensor.py), reachability CONNECTIVITY (binary_sensor.py); packet loss % has no fitting class.
   entity-disabled-by-default:
     status: done
-    comment: Reset network cache is disabled by default (button.py RESET_CACHE).
+    comment: Reset network cache (button.py RESET_CACHE) and the six usage totals (sensor.py USAGE_SENSORS) are disabled by default.
   entity-translations:
     status: done
     comment: Every entity has a translation_key and no hard-coded name; names in strings.json and all six translations.
@@ -166,10 +166,10 @@ rules:
   # Platinum
   async-dependency:
     status: done
-    comment: Core is asyncio; probes via asyncio.create_subprocess_exec (platforms/linux.py _run), DNS via create_datagram_endpoint (dns_probe.py).
+    comment: Core is asyncio; probes via asyncio.create_subprocess_exec (platforms/linux.py _run), DNS via create_datagram_endpoint (dns_probe.py), speed tests via aiohttp (speed_test.py, backends/).
   inject-websession:
-    status: exempt
-    comment: Core makes no HTTP requests (subprocess probes and UDP DNS).
+    status: done
+    comment: Core's speed tests take the session as an argument (speed_test.run_speed_test); the integration passes HA's shared one from async_get_clientsession (coordinator.py SpeedTestCoordinator).
   strict-typing:
     status: done
     comment: "HA core's mypy settings (pyproject.toml [tool.mypy], from HA mypy.ini) pass with no errors on the minimum and newest HA (make type-check, CI); Core ships py.typed; typed InternetHealthConfigEntry used throughout; @override on every override."

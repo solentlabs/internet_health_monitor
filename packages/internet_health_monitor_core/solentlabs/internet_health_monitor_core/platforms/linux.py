@@ -9,7 +9,7 @@ import re
 import shutil
 
 from ..timing import PING_PROCESS_GRACE_S, TRACE_PROBE_TIMEOUT_S
-from .base import HostEnvironment
+from .base import ConnectionType, HostEnvironment, is_ip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,7 +23,6 @@ OPTIONAL_TOOLS = ("traceroute",)
 # BusyBox "round-trip min/avg/max = a/b/c ms". Same shapes as HA core's
 # ping matchers (docs/REFERENCES.md § R10).
 _PING_SUMMARY_RE = re.compile(r"min/avg/max\S* = (\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)")
-_IPV4_RE = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
 _WIFI_PREFIXES = ("wlan", "wlp", "wifi", "wl")
 _ETHERNET_PREFIXES = ("eth", "enp", "eno", "ens")
@@ -49,7 +48,7 @@ def parse_traceroute_hops(output: str, max_hops: int) -> dict[int, str]:
         ip = parts[1]
         if ip == "*":
             _LOGGER.debug("Hop %d timed out", hop_num)
-        elif _IPV4_RE.match(ip) or ":" in ip:
+        elif is_ip(ip):
             hops[hop_num] = ip
             _LOGGER.debug("Detected hop %d: %s", hop_num, ip)
     return hops
@@ -59,7 +58,7 @@ def parse_default_route(output: str) -> tuple[str | None, str | None]:
     """Return (gateway, interface) from `ip route show default` output."""
     # "default via 192.168.1.1 dev eth0 proto dhcp ..."
     parts = output.split()
-    gateway = parts[2] if len(parts) >= 3 and parts[:2] == ["default", "via"] else None
+    gateway = parts[2] if len(parts) >= 3 and parts[:2] == ["default", "via"] and is_ip(parts[2]) else None
     interface = None
     for i, part in enumerate(parts[:-1]):
         if part == "dev":
@@ -72,12 +71,12 @@ def parse_resolv_conf(content: str) -> str | None:
     """Return the first nameserver address in resolv.conf content."""
     for line in content.splitlines():
         parts = line.split()
-        if len(parts) >= 2 and parts[0] == "nameserver" and (_IPV4_RE.match(parts[1]) or ":" in parts[1]):
+        if len(parts) >= 2 and parts[0] == "nameserver" and is_ip(parts[1]):
             return parts[1]
     return None
 
 
-def classify_interface(interface: str | None) -> str:
+def classify_interface(interface: str | None) -> ConnectionType:
     """Return the connection type an interface name indicates."""
     if not interface:
         return "unknown"
@@ -130,17 +129,6 @@ def _detect_container() -> str | None:
     return None
 
 
-def _detect_ha_install() -> str:
-    """Return the Home Assistant installation type."""
-    if os.path.exists("/etc/hassio") or os.path.exists("/run/hassio"):
-        return "haos"
-    if os.path.exists("/usr/sbin/hassio-supervisor") or os.environ.get("SUPERVISOR_TOKEN"):
-        return "supervised"
-    if os.path.exists("/.dockerenv") or os.path.exists("/run/.containerenv"):
-        return "container"
-    return "core"
-
-
 class LinuxPlatform:
     """Probes for Linux, including HA OS and containers (iputils or BusyBox)."""
 
@@ -177,6 +165,9 @@ class LinuxPlatform:
 
     async def ping(self, host: str, timeout_s: int) -> tuple[bool, float | None]:
         """Ping once; latency is ping's own round-trip time (R10), not process wall-clock."""
+        if not is_ip(host):  # never let text become a ping option
+            _LOGGER.warning("Not pinging %r: not an IP address", host)
+            return False, None
         try:
             code, out, _ = await _run(
                 "ping", "-c", "1", "-W", str(timeout_s), host, timeout=timeout_s + PING_PROCESS_GRACE_S
@@ -193,6 +184,9 @@ class LinuxPlatform:
 
     async def trace(self, target: str, max_hops: int) -> dict[int, str]:
         """Run `traceroute -n -q 1 -w <probe timeout> -m <max_hops>`."""
+        if not is_ip(target):  # never let text become a traceroute option
+            _LOGGER.warning("Not tracing %r: not an IP address", target)
+            return {}
         try:
             _, out, _ = await _run(
                 "traceroute",
@@ -216,7 +210,7 @@ class LinuxPlatform:
         return parse_traceroute_hops(out, max_hops)
 
     async def host_environment(self) -> HostEnvironment:
-        """Detect container, connection type and HA install type."""
+        """Detect connection type and container."""
         loop = asyncio.get_running_loop()
         interface = None
         try:
@@ -229,5 +223,4 @@ class LinuxPlatform:
             connection_type=classify_interface(interface),
             interface_name=interface,
             container_type=await loop.run_in_executor(None, _detect_container),
-            ha_install_type=await loop.run_in_executor(None, _detect_ha_install),
         )

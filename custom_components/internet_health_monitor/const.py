@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Defaults and limits come from Core (timing.py), so the integration and the CLI agree.
 from solentlabs.internet_health_monitor_core.network_diagnostics import DEFAULT_DNS_SERVER
+from solentlabs.internet_health_monitor_core.speed_test import BACKEND_NAMES
 from solentlabs.internet_health_monitor_core.timing import DEFAULT_PING_COUNT, PING_COUNT_MAX, PING_COUNT_MIN
 
 __all__ = ["DEFAULT_DNS_SERVER", "DEFAULT_PING_COUNT", "PING_COUNT_MAX", "PING_COUNT_MIN"]
@@ -23,6 +24,14 @@ CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
+CONF_SPEED_TEST_BACKEND = "speed_test_backend"  # opt-in; docs/SPEED_TEST_BACKENDS.md (ADR-003, ADR-006)
+CONF_SPEED_TEST_DATA_LIMIT = "speed_test_data_limit_mb"
+CONF_SPEED_TEST_DAILY_LIMIT = "speed_test_daily_limit"
+CONF_MLAB_CONSENT = "mlab_consent"  # M-Lab publishes results with the user's IP; asked before first use
+
+SPEED_TEST_OFF = "none"
+# Off first; keys are translation keys (selector.speed_test_backend).
+SPEED_TEST_CHOICES: list[str] = [SPEED_TEST_OFF, *BACKEND_NAMES]
 
 # DNS server choice -> the server Core times. Keys are translation keys
 # (selector.dns_server; hassfest allows only [a-z0-9-_]), so no addresses.

@@ -10,7 +10,21 @@
       "hop_1_packet_loss": { "default": "mdi:network-off" },
       "hop_2_packet_loss": { "default": "mdi:network-off" },
       "hop_3_packet_loss": { "default": "mdi:network-off" },
-      "dns_latency": { "default": "mdi:dns" }
+      "dns_latency": { "default": "mdi:dns" },
+      "connection_type": { "default": "mdi:ethernet", "state": { "wifi": "mdi:wifi" } },
+      "install_type": { "default": "mdi:home-assistant" },
+      "speed_test_download": { "default": "mdi:download-network" },
+      "speed_test_upload": { "default": "mdi:upload-network" },
+      "speed_test_idle_latency": { "default": "mdi:timer-outline" },
+      "speed_test_download_latency": { "default": "mdi:timer-arrow-down-outline" },
+      "speed_test_upload_latency": { "default": "mdi:timer-arrow-up-outline" },
+      "speed_test_data_used": { "default": "mdi:database-arrow-down-outline" },
+      "usage_pings": { "default": "mdi:counter" },
+      "usage_traceroutes": { "default": "mdi:counter" },
+      "usage_dns_queries": { "default": "mdi:counter" },
+      "usage_speed_tests": { "default": "mdi:counter" },
+      "usage_downloaded": { "default": "mdi:download-circle-outline" },
+      "usage_uploaded": { "default": "mdi:upload-circle-outline" }
     },
     "binary_sensor": {
       "gateway_reachable": { "default": "mdi:lan-check", "state": { "off": "mdi:lan-disconnect" } },
@@ -18,7 +32,11 @@
     },
     "button": {
       "refresh_diagnostics": { "default": "mdi:refresh" },
-      "reset_cache": { "default": "mdi:cached" }
+      "reset_cache": { "default": "mdi:cached" },
+      "run_speed_test": { "default": "mdi:speedometer" }
     }
+  },
+  "services": {
+    "generate_dashboard_card": { "service": "mdi:view-dashboard" }
   }
 }

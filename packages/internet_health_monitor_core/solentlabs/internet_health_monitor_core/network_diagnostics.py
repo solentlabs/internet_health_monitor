@@ -22,8 +22,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import dns_probe
-from .hop_owner import HopOwner, lookup_owner
+from .hop_owner import HopOwner, lookup_owner, origin_query_name
 from .platforms import HostEnvironment, Platform, get_platform
+from .platforms.base import is_ip
 from .timing import (
     DEFAULT_DNS_TIMEOUT,
     DEFAULT_PING_COUNT,
@@ -83,6 +84,19 @@ def format_ms(value: float | None) -> str:
 def is_private_ip(ip: str) -> bool:
     """Check if an IP address is in a private range."""
     return ip.startswith(PRIVATE_IP_PREFIXES)
+
+
+@dataclass
+class ProbeCounts:
+    """What this instance has sent since it was created: the network cost of monitoring."""
+
+    pings: int = 0
+    traceroutes: int = 0
+    dns_queries: int = 0  # latency probes, reverse lookups and hop ownership queries
+
+    def to_dict(self) -> dict[str, int]:
+        """Plain data for JSON output and diagnostics."""
+        return {"pings": self.pings, "traceroutes": self.traceroutes, "dns_queries": self.dns_queries}
 
 
 @dataclass
@@ -278,6 +292,9 @@ class NetworkDiagnostics:
         # Trace target - resolved lazily based on DNS server
         self._trace_target: str | None = None
 
+        # Everything sent since this instance was created (hosts keep their own running totals)
+        self.counts = ProbeCounts()
+
     @property
     def platform(self) -> Platform:
         """The OS probes in use."""
@@ -301,6 +318,9 @@ class NetworkDiagnostics:
                 "Could not detect system DNS, falling back to %s",
                 FALLBACK_DNS_SERVER,
             )
+            return FALLBACK_DNS_SERVER
+        if not is_ip(self.config.dns_server):  # it also becomes a traceroute target
+            _LOGGER.warning("DNS server %r is not an IP address; using %s", self.config.dns_server, FALLBACK_DNS_SERVER)
             return FALLBACK_DNS_SERVER
         return self.config.dns_server
 
@@ -356,6 +376,7 @@ class NetworkDiagnostics:
         # Run checks in parallel
         gateway_task = self._check_gateway()
         hops_task = self._check_all_hops() if self._hop_ips else self._empty_hops()
+        self.counts.dns_queries += 1
         dns_task = self._check_dns()
 
         results = await asyncio.gather(gateway_task, hops_task, dns_task, return_exceptions=True)
@@ -450,6 +471,7 @@ class NetworkDiagnostics:
     async def _detect_hops(self) -> dict[int, str]:
         """Trace hops 1 to NUM_HOPS toward the trace target; a failure is cached until reset."""
         trace_target = self._trace_target or DEFAULT_TRACE_TARGET
+        self.counts.traceroutes += 1
         hops = await self._platform.trace(trace_target, NUM_HOPS)
         if hops:
             _LOGGER.info(
@@ -589,6 +611,7 @@ class NetworkDiagnostics:
 
     async def _single_ping(self, host: str) -> tuple[bool, float | None]:
         """Ping once; return (reply received, round-trip ms or None if not reported)."""
+        self.counts.pings += 1
         return await self._platform.ping(host, self.config.ping_timeout)
 
     async def _check_dns(self) -> dict[str, Any]:
@@ -650,6 +673,7 @@ class NetworkDiagnostics:
     async def _collect_hostnames(self) -> None:
         """Look up reverse DNS names for all detected hops, in parallel."""
         hop_nums = list(self._hop_ips)
+        self.counts.dns_queries += len(hop_nums)
         results = await asyncio.gather(
             *(self._reverse_dns_lookup(self._hop_ips[n]) for n in hop_nums),
             return_exceptions=True,
@@ -671,6 +695,9 @@ class NetworkDiagnostics:
             return_exceptions=True,
         )
         for hop_num, result in zip(hop_nums, results, strict=True):
+            # A public address costs one query, plus one for the AS name once an owner is found.
+            if origin_query_name(self._hop_ips[hop_num]) is not None:
+                self.counts.dns_queries += 1 + isinstance(result, HopOwner)
             if isinstance(result, BaseException):
                 _LOGGER.debug("Owner lookup failed for hop %d: %s", hop_num, result)
             elif result:
@@ -710,14 +737,13 @@ class NetworkDiagnostics:
             return None
 
     async def _detect_host_environment(self) -> HostEnvironment:
-        """Detect the host environment (connection type, container, install type)."""
+        """Detect the host environment (connection type, container)."""
         env = await self._platform.host_environment()
         _LOGGER.info(
-            "Host environment: connection=%s, interface=%s, container=%s, ha=%s",
+            "Host environment: connection=%s, interface=%s, container=%s",
             env.connection_type,
             env.interface_name,
             env.container_type or "native",
-            env.ha_install_type or "unknown",
         )
         return env
 

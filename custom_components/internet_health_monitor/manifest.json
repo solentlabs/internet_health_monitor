@@ -1,6 +1,11 @@
 {
   "domain": "internet_health_monitor",
   "name": "Internet Health Monitor",
+  "after_dependencies": [
+    "frontend",
+    "http",
+    "websocket_api"
+  ],
   "codeowners": [
     "@solentlabs",
     "@kwschulz"

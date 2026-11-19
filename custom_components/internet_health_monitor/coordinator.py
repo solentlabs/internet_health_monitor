@@ -3,18 +3,36 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+import random
+from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import override
+from typing import Any, override
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsResult
-from solentlabs.internet_health_monitor_core.timing import POLL_INTERVAL_S
+from solentlabs.internet_health_monitor_core.speed_test import (
+    BackendName,
+    SpeedTestError,
+    SpeedTestResult,
+    run_speed_test,
+)
+from solentlabs.internet_health_monitor_core.timing import (
+    POLL_INTERVAL_S,
+    SPEED_TEST_DAILY_WINDOW_S,
+    SPEED_TEST_MLAB_AUTOMATED_DAILY,
+    SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S,
+)
 
 from .const import DOMAIN
+from .usage import UsageTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +50,12 @@ class InternetHealthRuntimeData:
     diagnostics: NetworkDiagnostics
     enable_gateway: bool
     enable_dns: bool
+    # HA's own installation type, read once at setup (sensor.py INSTALL_TYPES).
+    installation_type: str
+    # Present only when the user chose a speed test backend (and, for M-Lab, consented).
+    speed_test: SpeedTestCoordinator | None = None
+    # Unique ids of the entities this setup created; setup removes any others (README.md § Configuration).
+    unique_ids: set[str] = field(default_factory=set)
 
 
 type InternetHealthConfigEntry = ConfigEntry[InternetHealthRuntimeData]
@@ -42,19 +66,153 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
 
     config_entry: InternetHealthConfigEntry
 
-    def __init__(self, hass: HomeAssistant, entry: InternetHealthConfigEntry, diagnostics: NetworkDiagnostics) -> None:
-        """Poll the given diagnostics every SCAN_INTERVAL."""
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: InternetHealthConfigEntry,
+        diagnostics: NetworkDiagnostics,
+        usage: UsageTracker,
+    ) -> None:
+        """Poll the given diagnostics every SCAN_INTERVAL, adding what each poll sends to *usage*."""
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=SCAN_INTERVAL)
         self.diagnostics = diagnostics
+        self.usage = usage
 
     @override
     async def _async_update_data(self) -> NetworkDiagnosticsResult:
         """Run one poll; a failure marks entities unavailable until the next success."""
         try:
             return await self.diagnostics.run_diagnostics()
-        except Exception as err:
+        except Exception as err:  # a failed poll still sent its probes; finally counts them
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
+            ) from err
+        finally:
+            self.usage.add_probes(self.diagnostics.counts)
+
+
+STORAGE_KEY = f"{DOMAIN}.speed_test"
+STORAGE_VERSION = 1  # __init__.async_remove_entry opens the same store to delete it
+
+
+class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
+    """Runs a speed test only when asked (button or automation); never on a timer (ADR-003, ADR-007)."""
+
+    config_entry: InternetHealthConfigEntry
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: InternetHealthConfigEntry,
+        backend: BackendName,
+        data_limit_mb: int,
+        daily_limit: int,
+        usage: UsageTracker,
+    ) -> None:
+        """Hold the user's backend and limits; the run history and last result load from storage."""
+        super().__init__(hass, _LOGGER, config_entry=entry, name=f"{DOMAIN} speed test", update_interval=None)
+        self.backend: BackendName = backend
+        self.data_limit_mb = data_limit_mb
+        self.daily_limit = daily_limit
+        self.usage = usage
+        self.data = None
+        self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self._runs: list[dict[str, Any]] = []  # {"at": epoch seconds, "automated": no person started it}
+        self._failure = ""  # Core's reason for the last failed test
+        self._pending: list[CALLBACK_TYPE] = []  # automated M-Lab runs waiting to start
+        entry.async_on_unload(self._cancel_pending)
+
+    async def async_load(self) -> None:
+        """Restore run times (for the daily limit) and the last result, so a restart shows it."""
+        stored = await self._store.async_load() or {}
+        self._runs = list(stored.get("runs", []))
+        if last := stored.get("last"):
+            self.data = SpeedTestResult(**last)
+
+    async def _async_save(self) -> None:
+        """Store run times and the last result."""
+        await self._store.async_save({"runs": self._runs, "last": self.data.to_dict() if self.data else None})
+
+    def _cancel_pending(self) -> None:
+        """Cancel automated runs still waiting (the entry is unloading)."""
+        for cancel in self._pending:
+            cancel()
+        self._pending.clear()
+
+    def _check_limits(self, now: float, automated: bool) -> None:
+        """Refuse a run past Tests per day, or, for M-Lab, past its automated limit (R9)."""
+        self._runs = [run for run in self._runs if now - run["at"] < SPEED_TEST_DAILY_WINDOW_S]
+        if len(self._runs) >= self.daily_limit:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="daily_limit_reached",
+                translation_placeholders={"limit": str(self.daily_limit)},
+            )
+        automated_runs = sum(1 for run in self._runs if run["automated"])
+        if self.backend == "mlab" and automated and automated_runs >= SPEED_TEST_MLAB_AUTOMATED_DAILY:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="mlab_automated_limit",
+                translation_placeholders={"limit": str(SPEED_TEST_MLAB_AUTOMATED_DAILY)},
+            )
+
+    async def async_run(self, *, automated: bool) -> None:
+        """Run one test; *automated* means no person started it (an automation or script).
+
+        M-Lab asks automated clients to randomize test times (R9): such a run is
+        scheduled after a random wait and this returns at once. Every other run
+        happens now and raises a translated error if it fails.
+        """
+        now = dt_util.utcnow().timestamp()
+        self._check_limits(now, automated)
+        # A run counts when accepted: a failed or waiting run still uses the allowance.
+        self._runs.append({"at": now, "automated": automated})
+        self.usage.add_speed_test_run()
+        if self.backend == "mlab" and automated:
+            await self._async_save()
+            delay = random.uniform(
+                0, SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S
+            )  # noqa: S311  # spreading load, not security
+            job = HassJob(self._async_run_waiting, cancel_on_shutdown=True)
+            self._pending.append(async_call_later(self.hass, delay, job))
+            return
+        await self._async_test()
+        if not self.last_update_success:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="speed_test_failed",
+                translation_placeholders={"error": self._failure},
+            )
+
+    async def _async_test(self) -> None:
+        """Run the test, store the history and result, and add its data to the usage totals."""
+        await self.async_refresh()
+        await self._async_save()
+        if self.last_update_success and self.data:
+            self.usage.add_speed_test_data(self.data.downloaded_mb, self.data.uploaded_mb)
+        # Usage sensors belong to the poll coordinator; show the new totals now.
+        self.config_entry.runtime_data.coordinator.async_update_listeners()
+
+    async def _async_run_waiting(self, _now: Any) -> None:
+        """Start an automated run whose random wait is over; a failure shows on the sensors."""
+        self._pending = self._pending[1:]
+        await self._async_test()
+
+    @override
+    async def _async_update_data(self) -> SpeedTestResult | None:
+        """Run the test with HA's shared web session (inject-websession)."""
+        try:
+            return await run_speed_test(
+                self.backend, async_get_clientsession(self.hass), data_limit_mb=self.data_limit_mb
+            )
+        except SpeedTestError as err:
+            # The data a failed test moved still counts against the user's cap.
+            self.usage.add_speed_test_data(err.downloaded_mb, err.uploaded_mb)
+            self._failure = str(err)
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="speed_test_failed",
+                translation_placeholders={"error": self._failure},
             ) from err

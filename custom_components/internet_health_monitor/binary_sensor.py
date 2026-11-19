@@ -59,7 +59,7 @@ async def async_setup_entry(
     async_add_entities(ReachabilitySensor(data.coordinator, d) for d in BINARY_SENSORS if d.enabled_fn(data))
 
 
-class ReachabilitySensor(InternetHealthEntity, BinarySensorEntity):
+class ReachabilitySensor(InternetHealthEntity[InternetHealthCoordinator], BinarySensorEntity):
     """On when the target answered in the latest poll."""
 
     entity_description: ReachabilityEntityDescription
