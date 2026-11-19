@@ -201,6 +201,20 @@ them.
   core through a native helper, or measure HTTP timing only. Neither is
   planned.
 
+**Platforms (decided 2026-11-19):** Linux and Windows. Only the probes
+differ by OS (gateway, system DNS, ping, trace, host environment); they
+sit behind one `Platform` interface in `core/platforms/`, and
+`get_platform()` picks the module. Linux runs `ip`, `ping` and
+`traceroute`. Windows calls the IP Helper API directly (R13), so it
+parses no text and works in any display language, without admin rights.
+Windows reports round-trip times in whole milliseconds (R13); a
+sub-millisecond gateway reads 0 or 1 ms there. Any other OS raises
+`UnsupportedPlatformError`.
+
+macOS is not built: no demand yet and no Mac to capture test data on.
+Adding it is one module implementing `Platform`, one branch in
+`get_platform()`, and tests from captured macOS output.
+
 ---
 
 ## ADR-006: No third-party lookups

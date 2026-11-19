@@ -304,6 +304,7 @@ sensor.internet_health_download_speed:
 - [x] Binary sensors (gateway reachable, internet reachable)
 - [x] Solent Labs branding in device info and integration icon
 - [x] Core as a portable package with a command line (ADR-005)
+- [x] Core on Linux and Windows behind one platform interface (ADR-005)
 - [ ] Bundled dashboard card, following CMM's pattern (pattern reuse, no
       code dependency: ARCHITECTURE_DECISIONS.md ADR-002). Reference:
       CMM `custom_components/cable_modem_monitor/docs/DASHBOARD_CARD_SPEC.md`

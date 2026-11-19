@@ -196,6 +196,38 @@ RFC 2606 (https://www.rfc-editor.org/rfc/rfc2606): `example.com`,
 `example.net` and `example.org` are reserved for examples [V]. Used for
 test fixtures (`CLAUDE.md § Code`).
 
+## R13. Windows IP Helper API
+
+Microsoft Learn, checked 2026-11-19:
+- `IcmpSendEcho`
+  (https://learn.microsoft.com/en-us/windows/win32/api/icmpapi/nf-icmpapi-icmpsendecho):
+  exported from Iphlpapi.dll; "a synchronous function"; the reply buffer
+  must hold one `ICMP_ECHO_REPLY` "plus RequestSize bytes of data" and "8
+  more bytes" [V].
+- `ICMP_ECHO_REPLY`
+  (https://learn.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-icmp_echo_reply):
+  `RoundTripTime` is a ULONG, "The round trip time, in milliseconds", so
+  Windows readings are whole milliseconds [V]. Status codes: IP_SUCCESS 0,
+  IP_REQ_TIMED_OUT 11010, IP_TTL_EXPIRED_TRANSIT 11013 [V].
+- `IP_OPTION_INFORMATION`
+  (https://learn.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_option_information):
+  `Ttl` is carried in the IPv4 header [V].
+- `GetBestRoute` and `MIB_IPFORWARDROW`
+  (https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getbestroute,
+  https://learn.microsoft.com/en-us/windows/win32/api/ipmib/ns-ipmib-mib_ipforwardrow):
+  `dwForwardNextHop` is the next system en route, in network byte order [V].
+- `GetNetworkParams` and `FIXED_INFO`
+  (https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getnetworkparams,
+  https://learn.microsoft.com/en-us/windows/win32/api/iptypes/ns-iptypes-fixed_info_w2ksp1):
+  `DnsServerList` is a linked list of `IP_ADDR_STRING` [V].
+
+Not stated by Microsoft, confirmed by a local run on 64-bit Windows,
+Python 3.12, no admin rights (2026-11-19): the native `ICMP_ECHO_REPLY`
+layout parses correctly; on TTL expiry `Address` is the router that
+answered; no elevation is needed [V, local run]. `MAX_HOSTNAME_LEN` and
+`MAX_DOMAIN_NAME_LEN` of 128 come from the Windows SDK headers [U]; the
+local run read the DNS server list correctly with them.
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

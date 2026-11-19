@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Windows support for Core.** The measurement engine runs on Windows as
+  well as Linux, through Windows' own network functions, so it works in any
+  display language without admin rights. Windows round-trip times are whole
+  milliseconds.
 - **Command line.** `internet-health-monitor` runs one poll and prints the
   result as JSON; `--interval` keeps polling, one JSON line per poll.
 - **Integration icon.** A sonar ping: a green home node and three arcs for

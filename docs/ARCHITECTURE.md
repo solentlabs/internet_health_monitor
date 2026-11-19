@@ -33,16 +33,20 @@ HA layer  (custom_components/internet_health_monitor/*.py)    CLI (cli.py)
 Core      (packages/internet_health_monitor_core/, module
            solentlabs.internet_health_monitor_core, on PyPI as
            solentlabs-internet-health-monitor-core)
-    network_diagnostics.py: detection, probes, jitter, hop hostnames
-        │ subprocesses (ip, ping, traceroute, dig) and sockets
+    network_diagnostics.py: polling, caching, jitter, loss, DNS, hostnames
+        │ calls Platform: gateway, system DNS, ping, trace, host environment
+        ▼
+    platforms/  get_platform() picks: linux.py (ip, ping, traceroute)
+                                      windows.py (IP Helper API)
         ▼
 The network
 ```
 
 `manifest.json` pins the Core version, and HA installs it from PyPI. In
 development, `requirements-dev.txt` and the test container
-(`scripts/dev/ha-entrypoint.sh`) install the local copy instead. The
-probes use Linux commands, so Core runs on Linux only today.
+(`scripts/dev/ha-entrypoint.sh`) install the local copy instead. Core
+runs on Linux and Windows (ADR-005); Windows round-trip times are whole
+milliseconds (REFERENCES.md § R13).
 
 **Core** has no `homeassistant` import. `NetworkDiagnostics` takes a
 `NetworkDiagnosticsConfig` and returns a `NetworkDiagnosticsResult`

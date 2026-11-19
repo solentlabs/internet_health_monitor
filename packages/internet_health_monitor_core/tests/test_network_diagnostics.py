@@ -13,76 +13,8 @@ from solentlabs.internet_health_monitor_core.network_diagnostics import (
     NetworkDiagnostics,
     NetworkDiagnosticsConfig,
     NetworkDiagnosticsResult,
-    _detect_system_dns_sync,
     format_ms,
-    parse_ping_rtt_ms,
-    parse_traceroute_hops,
 )
-
-# Ping output -> round-trip time (ms) reported by ping itself.
-# Summary formats follow HA core's ping matchers (REFERENCES.md § R10).
-# fmt: off
-PING_RTT_CASES = [
-    # (description, output, expected_ms)
-    (
-        "iputils summary",
-        "PING 192.168.1.1 (192.168.1.1) 56(84) bytes of data.\n"
-        "64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.512 ms\n\n"
-        "--- 192.168.1.1 ping statistics ---\n"
-        "1 packets transmitted, 1 received, 0% packet loss, time 0ms\n"
-        "rtt min/avg/max/mdev = 0.512/0.512/0.512/0.000 ms\n",
-        0.512,
-    ),
-    (
-        "busybox summary",
-        "PING 192.168.1.1 (192.168.1.1): 56 data bytes\n"
-        "64 bytes from 192.168.1.1: seq=0 ttl=64 time=12.345 ms\n\n"
-        "--- 192.168.1.1 ping statistics ---\n"
-        "1 packets transmitted, 1 packets received, 0% packet loss\n"
-        "round-trip min/avg/max = 12.345/12.345/12.345 ms\n",
-        12.345,
-    ),
-    (
-        "avg is used, not min or max",
-        "rtt min/avg/max/mdev = 1.000/2.500/4.000/1.000 ms\n",
-        2.5,
-    ),
-    (
-        "no reply, no summary",
-        "1 packets transmitted, 0 received, 100% packet loss, time 0ms\n",
-        None,
-    ),
-    ("empty output", "", None),
-]
-# fmt: on
-
-
-# traceroute -n output -> {hop number: IP}, hops 1-3 only.
-# fmt: off
-TRACEROUTE_CASES = [
-    # (description, output, expected)
-    (
-        "three hops",
-        "traceroute to 8.8.8.8 (8.8.8.8), 3 hops max, 46 byte packets\n"
-        " 1  192.168.1.1  0.512 ms\n 2  10.0.0.1  8.1 ms\n 3  198.51.100.1  12.0 ms\n",
-        {1: "192.168.1.1", 2: "10.0.0.1", 3: "198.51.100.1"},
-    ),
-    (
-        "timeouts skipped",
-        " 1  172.19.0.1  0.007 ms\n 2  *\n 3  *\n",
-        {1: "172.19.0.1"},
-    ),
-    (
-        "hops past 3 ignored",
-        " 1  192.168.1.1  1 ms\n 4  1.2.3.4  20 ms\n",
-        {1: "192.168.1.1"},
-    ),
-    ("IPv6 hop", " 1  fe80::1  0.5 ms\n", {1: "fe80::1"}),
-    ("non-IP token skipped", " 1  gateway.lan  0.5 ms\n", {}),
-    ("empty output", "", {}),
-]
-# fmt: on
-
 
 # Log value -> text. A missing measurement shows as "n/a", never 0.0ms.
 # fmt: off
@@ -112,51 +44,6 @@ HOSTNAME_CASES = [
     ("lookup raises", {"192.168.1.1": OSError("boom"), "198.51.100.1": None}, {}),
 ]
 # fmt: on
-
-
-@pytest.mark.parametrize(
-    ("description", "output", "expected"),
-    TRACEROUTE_CASES,
-    ids=[c[0] for c in TRACEROUTE_CASES],
-)
-def test_parse_traceroute_hops(description: str, output: str, expected: dict[int, str]) -> None:
-    """Hop IPs come from numeric traceroute lines, hops 1-3, timeouts skipped."""
-    assert parse_traceroute_hops(output) == expected
-
-
-@pytest.mark.parametrize(
-    ("description", "output", "expected"),
-    PING_RTT_CASES,
-    ids=[c[0] for c in PING_RTT_CASES],
-)
-def test_parse_ping_rtt_ms(description: str, output: str, expected: float | None) -> None:
-    """Round-trip time comes from ping's own summary line."""
-    assert parse_ping_rtt_ms(output) == expected
-
-
-class TestDetectSystemDNS:
-    """Tests for DNS detection."""
-
-    def test_detect_dns_from_resolv_conf(self, tmp_path):
-        """Test detecting DNS from resolv.conf."""
-        resolv_conf = tmp_path / "resolv.conf"
-        resolv_conf.write_text("nameserver 8.8.8.8\nnameserver 8.8.4.4\n")
-
-        with patch(
-            "solentlabs.internet_health_monitor_core.network_diagnostics.RESOLV_CONF_PATH",
-            str(resolv_conf),
-        ):
-            result = _detect_system_dns_sync()
-            assert result == "8.8.8.8"
-
-    def test_detect_dns_no_file(self, tmp_path):
-        """Test DNS detection when file doesn't exist."""
-        with patch(
-            "solentlabs.internet_health_monitor_core.network_diagnostics.RESOLV_CONF_PATH",
-            str(tmp_path / "nonexistent"),
-        ):
-            result = _detect_system_dns_sync()
-            assert result is None
 
 
 class TestNetworkDiagnosticsConfig:
@@ -421,67 +308,6 @@ class TestNetworkDiagnosticsAsync:
     """Async tests for NetworkDiagnostics."""
 
     @pytest.mark.asyncio
-    async def test_detect_gateway(self):
-        """Test gateway detection with mocked subprocess."""
-        diag = NetworkDiagnostics()
-
-        mock_process = AsyncMock()
-        mock_process.returncode = 0
-        mock_process.communicate.return_value = (
-            b"default via 192.168.1.1 dev eth0",
-            b"",
-        )
-
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
-            gateway = await diag._detect_gateway()
-            assert gateway == "192.168.1.1"
-
-    @pytest.mark.asyncio
-    async def test_detect_gateway_failure(self):
-        """Test gateway detection when command fails."""
-        diag = NetworkDiagnostics()
-
-        mock_process = AsyncMock()
-        mock_process.returncode = 1
-        mock_process.communicate.return_value = (b"", b"error")
-
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
-            gateway = await diag._detect_gateway()
-            assert gateway is None
-            assert diag._gateway_detection_failed is True
-
-    @pytest.mark.asyncio
-    async def test_single_ping_success(self):
-        """Test successful ping."""
-        diag = NetworkDiagnostics()
-
-        mock_process = AsyncMock()
-        mock_process.returncode = 0
-        mock_process.communicate.return_value = (
-            b"rtt min/avg/max/mdev = 3.210/3.210/3.210/0.000 ms\n",
-            b"",
-        )
-
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
-            success, latency = await diag._single_ping("192.168.1.1")
-            assert success is True
-            assert latency == 3.21
-
-    @pytest.mark.asyncio
-    async def test_single_ping_reply_without_rtt(self):
-        """A reply whose RTT can't be parsed counts as received, with no latency."""
-        diag = NetworkDiagnostics()
-
-        mock_process = AsyncMock()
-        mock_process.returncode = 0
-        mock_process.communicate.return_value = (b"unrecognised output\n", b"")
-
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
-            success, latency = await diag._single_ping("192.168.1.1")
-            assert success is True
-            assert latency is None
-
-    @pytest.mark.asyncio
     async def test_check_gateway_counts_reply_without_rtt(self):
         """Packet loss counts replies even when their RTT can't be parsed."""
         diag = NetworkDiagnostics(ping_count=2)
@@ -502,20 +328,6 @@ class TestNetworkDiagnosticsAsync:
         assert hop.packets_received == 2
         assert hop.packet_loss_percent == 0
         assert hop.latency_ms == 6.0
-
-    @pytest.mark.asyncio
-    async def test_single_ping_failure(self):
-        """Test failed ping."""
-        diag = NetworkDiagnostics()
-
-        mock_process = AsyncMock()
-        mock_process.returncode = 1
-        mock_process.communicate.return_value = (b"", b"")
-
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
-            success, latency = await diag._single_ping("192.168.1.1")
-            assert success is False
-            assert latency is None
 
     @pytest.mark.asyncio
     async def test_check_gateway_no_ip(self):
@@ -540,10 +352,7 @@ class TestNetworkDiagnosticsAsync:
         """Test DNS resolution with auto detection."""
         diag = NetworkDiagnostics(dns_server="auto")
 
-        with patch(
-            "solentlabs.internet_health_monitor_core.network_diagnostics.detect_system_dns",
-            return_value="1.1.1.1",
-        ):
+        with patch.object(diag._platform, "system_dns", AsyncMock(return_value="1.1.1.1")):
             dns = await diag._resolve_dns_server()
             assert dns == "1.1.1.1"
 
@@ -626,3 +435,153 @@ class TestHostEnvironment:
         data = env.to_dict()
         assert data["connection_type"] == "wifi"
         assert data["interface_name"] == "wlan0"
+
+
+class FakePlatform:
+    """Scripted OS probes for whole-poll tests."""
+
+    name = "fake"
+
+    def __init__(
+        self,
+        gateway: str | None = "192.168.1.1",
+        hops: dict[int, str] | None = None,
+        rtt: dict[str, float | None] | None = None,
+        dns: str | None = "192.168.1.1",
+    ) -> None:
+        """Script the answers; hosts missing from rtt do not reply."""
+        self.gateway = gateway
+        self.hops = {1: "192.168.1.1", 2: "10.0.0.1", 3: "198.51.100.1"} if hops is None else hops
+        self.rtt = {"192.168.1.1": 1.0, "10.0.0.1": 8.0, "198.51.100.1": 12.0} if rtt is None else rtt
+        self.dns = dns
+        self.trace_calls = 0
+
+    async def default_gateway(self) -> str | None:
+        """Return the scripted gateway."""
+        return self.gateway
+
+    async def system_dns(self) -> str | None:
+        """Return the scripted DNS server."""
+        return self.dns
+
+    async def ping(self, host: str, timeout_s: int) -> tuple[bool, float | None]:
+        """Reply with the scripted RTT, or not at all."""
+        return (True, self.rtt[host]) if host in self.rtt else (False, None)
+
+    async def trace(self, target: str, max_hops: int) -> dict[int, str]:
+        """Return the scripted hops."""
+        self.trace_calls += 1
+        return self.hops
+
+    async def host_environment(self) -> HostEnvironment:
+        """Return a fixed environment."""
+        return HostEnvironment(connection_type="ethernet", interface_name="eth0")
+
+
+# Scripted platform -> what one poll reports
+# fmt: off
+POLL_CASES = [
+    # (description, platform kwargs, gateway reachable, hop latencies, gateway loss %)
+    ("all answer",        {},                                        True,  [1.0, 8.0, 12.0], 0.0),
+    ("hop 3 silent",      {"rtt": {"192.168.1.1": 1.0, "10.0.0.1": 8.0}},
+                                                                     True,  [1.0, 8.0, None], 0.0),
+    ("gateway down",      {"rtt": {}},                               False, [None, None, None], 100.0),
+    ("only hop 1 traced", {"hops": {1: "192.168.1.1"}},              True,  [1.0, None, None], 0.0),
+    ("no gateway",        {"gateway": None},                         False, [], None),
+]
+# fmt: on
+
+
+def _diag(**kwargs: object) -> NetworkDiagnostics:
+    """NetworkDiagnostics on a fake platform, with DNS timing stubbed out."""
+    diag = NetworkDiagnostics(ping_count=2, platform=FakePlatform(**kwargs))  # type: ignore[arg-type]
+    diag._check_dns = AsyncMock(return_value={"success": True, "latency_ms": 20.0})  # type: ignore[method-assign]
+    diag._reverse_dns_lookup = AsyncMock(return_value=None)  # type: ignore[method-assign]
+    return diag
+
+
+@pytest.mark.parametrize(
+    ("description", "kwargs", "reachable", "hop_latencies", "loss"), POLL_CASES, ids=[c[0] for c in POLL_CASES]
+)
+async def test_poll(
+    description: str, kwargs: dict, reachable: bool, hop_latencies: list[float | None], loss: float | None
+) -> None:
+    """One poll reports each target's own measurement; missing ones are None."""
+    result = await _diag(**kwargs).run_diagnostics()
+
+    assert result.gateway_reachable is reachable
+    assert [h.latency_ms for h in result.hops] == hop_latencies
+    assert result.packet_loss_percent == loss
+    assert result.dns_latency_ms == 20.0
+    assert result.host_environment is not None
+    assert result.host_environment.interface_name == "eth0"
+
+
+async def test_detection_is_cached_until_reset() -> None:
+    """Hops are traced once, then again only after a cache reset."""
+    diag = _diag()
+    platform = diag._platform
+    await diag.run_diagnostics()
+    await diag.run_diagnostics()
+    assert platform.trace_calls == 1  # type: ignore[attr-defined]
+
+    diag.reset_all()
+    await diag.run_diagnostics()
+    assert platform.trace_calls == 2  # type: ignore[attr-defined]
+
+
+async def test_jitter_builds_across_polls() -> None:
+    """Jitter needs history: none after one poll, a value after several."""
+    diag = _diag()
+    first = await diag.run_diagnostics()
+    assert first.gateway_jitter_ms is None
+    for _ in range(3):
+        result = await diag.run_diagnostics()
+    assert result.gateway_jitter_ms == 0.0
+
+
+async def test_auto_dns_falls_back_when_undetected() -> None:
+    """With no system DNS found, the fallback server is used and traced toward."""
+    diag = _diag(dns=None)
+    result = await diag.run_diagnostics()
+    assert result.dns_server == "1.1.1.1"
+    assert result.trace_target == "1.1.1.1"
+
+
+# dig output -> DNS check result. dig missing falls back to the resolver.
+# fmt: off
+DIG_CASES = [
+    ("query time",   0, ";; Query time: 23 msec\n", {"success": True, "latency_ms": 23.0}),
+    ("unparseable",  0, "garbage\n",                {"success": False, "latency_ms": None, "dig_available": True}),
+    ("dig failed",   9, "",                         {"success": False, "latency_ms": None, "dig_available": True}),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "code", "stdout", "expected"), DIG_CASES, ids=[c[0] for c in DIG_CASES])
+async def test_check_dns_with_dig(description: str, code: int, stdout: str, expected: dict) -> None:
+    """dig's own query time is the DNS latency."""
+    proc = AsyncMock(returncode=code)
+    proc.communicate.return_value = (stdout.encode(), b"")
+    diag = NetworkDiagnostics(dns_server="1.1.1.1", platform=FakePlatform())  # type: ignore[arg-type]
+    diag._dns_server = "1.1.1.1"
+    with patch("asyncio.create_subprocess_exec", return_value=proc):
+        assert await diag._check_dns_with_dig() == expected
+
+
+async def test_check_dns_without_dig_uses_resolver() -> None:
+    """Without dig, DNS is timed through the system resolver."""
+    diag = NetworkDiagnostics(platform=FakePlatform())  # type: ignore[arg-type]
+    with (
+        patch("asyncio.create_subprocess_exec", side_effect=FileNotFoundError),
+        patch("socket.getaddrinfo", return_value=[]),
+    ):
+        result = await diag._check_dns()
+    assert result["success"] is True
+
+
+async def test_check_dns_resolver_failure() -> None:
+    """A resolver error is a failed DNS check."""
+    diag = NetworkDiagnostics(platform=FakePlatform())  # type: ignore[arg-type]
+    with patch("socket.getaddrinfo", side_effect=socket.gaierror("no")):
+        assert await diag._check_dns_with_socket() == {"success": False, "latency_ms": None}

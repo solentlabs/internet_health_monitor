@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
-import re
 import socket
 import statistics
 import time
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
+
+from .platforms import HostEnvironment, Platform, get_platform
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,7 +36,6 @@ DEFAULT_TRACE_TARGET = "8.8.8.8"  # Default traceroute target
 DEFAULT_DNS_TIMEOUT = 5
 DEFAULT_HISTORY_SIZE = 30  # Keep last 30 results for jitter calculation
 NUM_HOPS = 3  # Fixed: always trace 3 hops (gateway, ISP, backbone)
-RESOLV_CONF_PATH = "/etc/resolv.conf"
 
 # Private IP ranges (RFC 1918 + link-local)
 PRIVATE_IP_PREFIXES = (
@@ -63,41 +62,6 @@ PRIVATE_IP_PREFIXES = (
 )
 
 
-# ping's summary line: iputils "rtt min/avg/max/mdev = a/b/c/d ms",
-# BusyBox "round-trip min/avg/max = a/b/c ms". Same shapes as HA core's
-# ping matchers (docs/REFERENCES.md § R10).
-_PING_SUMMARY_RE = re.compile(r"min/avg/max\S* = (\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)")
-
-
-def parse_ping_rtt_ms(output: str) -> float | None:
-    """Return the average round-trip time ping reported, or None if absent."""
-    match = _PING_SUMMARY_RE.search(output)
-    return float(match.group(2)) if match else None
-
-
-_IPV4_RE = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
-
-
-def parse_traceroute_hops(output: str) -> dict[int, str]:
-    """Return {hop number: IP} for hops 1 to NUM_HOPS in `traceroute -n` output."""
-    # Lines look like " 1  192.168.1.1  1.234 ms", or " 2  *" on a timeout.
-    hops: dict[int, str] = {}
-    for line in output.splitlines():
-        parts = line.split()
-        if len(parts) < 2 or not parts[0].isdigit():
-            continue
-        hop_num = int(parts[0])
-        if hop_num > NUM_HOPS:
-            break
-        ip = parts[1]
-        if ip == "*":
-            _LOGGER.debug("Hop %d timed out", hop_num)
-        elif _IPV4_RE.match(ip) or ":" in ip:
-            hops[hop_num] = ip
-            _LOGGER.debug("Detected hop %d: %s", hop_num, ip)
-    return hops
-
-
 def format_ms(value: float | None) -> str:
     """Format a latency for logs; a missing measurement reads n/a, not 0.0ms."""
     return "n/a" if value is None else f"{value:.1f}ms"
@@ -106,30 +70,6 @@ def format_ms(value: float | None) -> str:
 def is_private_ip(ip: str) -> bool:
     """Check if an IP address is in a private range."""
     return ip.startswith(PRIVATE_IP_PREFIXES)
-
-
-@dataclass
-class HostEnvironment:
-    """Information about the host environment."""
-
-    # Network connection
-    connection_type: str = "unknown"  # wifi, ethernet, unknown
-    interface_name: str | None = None
-
-    # Container/virtualization
-    container_type: str | None = None  # docker, podman, lxc, None (native)
-
-    # Home Assistant installation type
-    ha_install_type: str | None = None  # haos, container, core, supervised
-
-    def to_dict(self) -> dict:
-        """Convert to dictionary."""
-        return {
-            "connection_type": self.connection_type,
-            "interface_name": self.interface_name,
-            "container_type": self.container_type,
-            "ha_install_type": self.ha_install_type,
-        }
 
 
 @dataclass
@@ -171,60 +111,6 @@ class HopInfo:
             "typical_location": self.typical_location,
         }
         return result
-
-
-def _detect_system_dns_sync() -> str | None:
-    """Detect the system's configured DNS server from /etc/resolv.conf.
-
-    This is a synchronous function that performs blocking I/O.
-    Use detect_system_dns() for async contexts.
-
-    Returns:
-        First nameserver IP found, or None if detection fails.
-    """
-    try:
-        if not os.path.exists(RESOLV_CONF_PATH):
-            _LOGGER.debug("resolv.conf not found at %s", RESOLV_CONF_PATH)
-            return None
-
-        with open(RESOLV_CONF_PATH) as f:
-            content = f.read()
-
-        # Parse nameserver lines
-        # Format: nameserver <IP>
-        for line in content.splitlines():
-            line = line.strip()
-            if line.startswith("nameserver"):
-                parts = line.split()
-                if len(parts) >= 2:
-                    ip = parts[1]
-                    # Validate it looks like an IP (basic check)
-                    if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
-                        _LOGGER.debug("Detected system DNS: %s", ip)
-                        return ip
-                    # Also accept IPv6
-                    if ":" in ip:
-                        _LOGGER.debug("Detected system DNS (IPv6): %s", ip)
-                        return ip
-
-        _LOGGER.debug("No nameserver found in resolv.conf")
-        return None
-
-    except OSError as e:
-        _LOGGER.debug("Error reading resolv.conf: %s", e)
-        return None
-
-
-async def detect_system_dns() -> str | None:
-    """Detect the system's configured DNS server from /etc/resolv.conf.
-
-    Async wrapper that runs blocking I/O in an executor.
-
-    Returns:
-        First nameserver IP found, or None if detection fails.
-    """
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _detect_system_dns_sync)
 
 
 @dataclass
@@ -331,6 +217,7 @@ class NetworkDiagnostics:
         config: NetworkDiagnosticsConfig | None = None,
         dns_server: str | None = None,
         ping_count: int | None = None,
+        platform: Platform | None = None,
     ):
         """Initialize network diagnostics.
 
@@ -338,8 +225,10 @@ class NetworkDiagnostics:
             config: Configuration options. Uses defaults if not provided.
             dns_server: Override DNS server (alternative to config).
             ping_count: Override ping count (alternative to config).
+            platform: OS probes; defaults to the running OS (platforms.get_platform).
         """
         self.config = config or NetworkDiagnosticsConfig()
+        self._platform = platform or get_platform()
 
         # Allow simple overrides without full config
         if dns_server is not None:
@@ -387,7 +276,7 @@ class NetworkDiagnostics:
             DNS server IP to use for testing.
         """
         if self.config.dns_server == "auto":
-            detected = await detect_system_dns()
+            detected = await self._platform.system_dns()
             if detected:
                 _LOGGER.info("Using system DNS server: %s", detected)
                 return detected
@@ -535,120 +424,27 @@ class NetworkDiagnostics:
         return []
 
     async def _detect_gateway(self) -> str | None:
-        """Detect the default gateway IP address.
-
-        Uses `ip route` on Linux to find the default gateway.
-
-        Returns:
-            Gateway IP address or None if detection fails.
-        """
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "ip",
-                "route",
-                "show",
-                "default",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, _ = await proc.communicate()
-
-            if proc.returncode != 0:
-                _LOGGER.debug("ip route command failed with code %d", proc.returncode)
-                self._gateway_detection_failed = True
-                return None
-
-            output = stdout.decode().strip()
-            # Parse: "default via 192.168.1.1 dev eth0 ..."
-            parts = output.split()
-            if len(parts) >= 3 and parts[0] == "default" and parts[1] == "via":
-                gateway = parts[2]
-                _LOGGER.debug("Detected gateway: %s", gateway)
-                return gateway
-
-            _LOGGER.debug("Could not parse gateway from: %s", output)
+        """Detect the default gateway; a failure is cached until the next reset."""
+        gateway = await self._platform.default_gateway()
+        if not gateway:
             self._gateway_detection_failed = True
-            return None
-
-        except Exception as e:
-            _LOGGER.debug("Gateway detection error: %s", e)
-            self._gateway_detection_failed = True
-            return None
+        return gateway
 
     async def _detect_hops(self) -> dict[int, str]:
-        """Detect network hops using traceroute.
-
-        Always traces 3 hops (gateway, ISP, backbone) using the smart trace target.
-
-        Returns:
-            Dict mapping hop_number -> IP address.
-        """
-        hops: dict[int, str] = {}
+        """Trace hops 1 to NUM_HOPS toward the trace target; a failure is cached until reset."""
         trace_target = self._trace_target or DEFAULT_TRACE_TARGET
-
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "traceroute",
-                "-n",  # Numeric output (no DNS resolution for speed)
-                "-q",
-                "1",  # Only 1 query per hop (faster)
-                "-w",
-                "2",  # 2 second timeout per probe
-                "-m",
-                str(NUM_HOPS),  # Fixed 3 hops
+        hops = await self._platform.trace(trace_target, NUM_HOPS)
+        if hops:
+            _LOGGER.info(
+                "Detected %d hops to %s: %s",
+                len(hops),
                 trace_target,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                ", ".join(f"hop{k}={v}" for k, v in sorted(hops.items())),
             )
-
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    proc.communicate(),
-                    timeout=NUM_HOPS * 3 + 5,  # ~3s per hop + buffer
-                )
-            except TimeoutError:
-                _LOGGER.debug("Traceroute timed out")
-                proc.kill()
-                self._hop_detection_failed = True
-                return hops
-
-            if proc.returncode is not None and proc.returncode != 0:
-                if b"not found" in stderr or b"No such file" in stderr:
-                    _LOGGER.debug("traceroute command not available")
-                    self._hop_detection_failed = True
-                    return hops
-                _LOGGER.debug("traceroute returned code %d", proc.returncode)
-
-            output = stdout.decode().strip()
-            _LOGGER.debug(
-                "Traceroute to %s: %s",
-                trace_target,
-                " | ".join(line.strip() for line in output.splitlines()),
-            )
-
-            hops = parse_traceroute_hops(output)
-
-            if hops:
-                _LOGGER.info(
-                    "Detected %d hops to %s: %s",
-                    len(hops),
-                    trace_target,
-                    ", ".join(f"hop{k}={v}" for k, v in sorted(hops.items())),
-                )
-            else:
-                _LOGGER.warning("No hops detected in traceroute output")
-                self._hop_detection_failed = True
-
-            return hops
-
-        except FileNotFoundError:
-            _LOGGER.debug("traceroute command not found")
+        else:
+            _LOGGER.warning("No hops detected toward %s", trace_target)
             self._hop_detection_failed = True
-            return hops
-        except Exception as e:
-            _LOGGER.debug("Hop detection error: %s", e)
-            self._hop_detection_failed = True
-            return hops
+        return hops
 
     async def _check_all_hops(self) -> list[HopInfo]:
         """Ping all detected hops and collect latency info.
@@ -787,42 +583,8 @@ class NetworkDiagnostics:
         }
 
     async def _single_ping(self, host: str) -> tuple[bool, float | None]:
-        """Perform a single ICMP ping.
-
-        Latency is the round-trip time ping itself reports (RFC 2681,
-        docs/REFERENCES.md § R10), not the wall-clock time of the process,
-        which would add process start-up to every reading.
-
-        Args:
-            host: Target IP address or hostname.
-
-        Returns:
-            Tuple of (reply received, round-trip ms or None if not reported).
-        """
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "ping",
-                "-c",
-                "1",
-                "-W",
-                str(self.config.ping_timeout),
-                host,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, _ = await proc.communicate()
-
-            if proc.returncode != 0:
-                return False, None
-
-            latency_ms = parse_ping_rtt_ms(stdout.decode(errors="replace"))
-            if latency_ms is None:
-                _LOGGER.debug("Ping reply from %s had no round-trip time in its output", host)
-            return True, latency_ms
-
-        except Exception as e:
-            _LOGGER.debug("Ping error for %s: %s", host, e)
-            return False, None
+        """Ping once; return (reply received, round-trip ms or None if not reported)."""
+        return await self._platform.ping(host, self.config.ping_timeout)
 
     async def _check_dns(self) -> dict:
         """Check DNS resolution timing.
@@ -1057,29 +819,9 @@ class NetworkDiagnostics:
             _LOGGER.debug("Reverse DNS timeout for %s", ip)
             return None
 
-    # =========================================================================
-    # Host Environment Detection
-    # =========================================================================
-
     async def _detect_host_environment(self) -> HostEnvironment:
-        """Detect the host environment (connection type, container, etc.).
-
-        Returns:
-            HostEnvironment with detected information.
-        """
-        env = HostEnvironment()
-
-        # Detect container type
-        env.container_type = await self._detect_container_type()
-
-        # Detect connection type and interface
-        conn_type, interface = await self._detect_connection_type()
-        env.connection_type = conn_type
-        env.interface_name = interface
-
-        # Detect HA installation type
-        env.ha_install_type = await self._detect_ha_install_type()
-
+        """Detect the host environment (connection type, container, install type)."""
+        env = await self._platform.host_environment()
         _LOGGER.info(
             "Host environment: connection=%s, interface=%s, container=%s, ha=%s",
             env.connection_type,
@@ -1087,125 +829,7 @@ class NetworkDiagnostics:
             env.container_type or "native",
             env.ha_install_type or "unknown",
         )
-
         return env
-
-    async def _detect_container_type(self) -> str | None:
-        """Detect if running in a container and what type.
-
-        Returns:
-            Container type ("docker", "podman", "lxc") or None if native.
-        """
-        loop = asyncio.get_event_loop()
-
-        def check() -> str | None:
-            # Check for Docker
-            if os.path.exists("/.dockerenv"):
-                return "docker"
-
-            # Check cgroup for docker/podman
-            try:
-                with open("/proc/1/cgroup") as f:
-                    content = f.read()
-                    if "docker" in content:
-                        return "docker"
-                    if "podman" in content:
-                        return "podman"
-            except OSError:
-                pass
-
-            # Check for Podman
-            if os.path.exists("/run/.containerenv"):
-                return "podman"
-
-            # Check for LXC
-            try:
-                with open("/proc/1/environ", "rb") as f:
-                    environ = f.read()
-                    if b"container=lxc" in environ:
-                        return "lxc"
-            except OSError:
-                pass
-
-            return None
-
-        return await loop.run_in_executor(None, check)
-
-    async def _detect_connection_type(self) -> tuple[str, str | None]:
-        """Detect the network connection type (wifi/ethernet).
-
-        Returns:
-            Tuple of (connection_type, interface_name).
-        """
-        try:
-            # Get the default route interface
-            proc = await asyncio.create_subprocess_exec(
-                "ip",
-                "route",
-                "show",
-                "default",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5.0)
-            output = stdout.decode().strip()
-
-            # Parse: "default via 192.168.1.1 dev eth0 ..."
-            interface = None
-            parts = output.split()
-            for i, part in enumerate(parts):
-                if part == "dev" and i + 1 < len(parts):
-                    interface = parts[i + 1]
-                    break
-
-            if not interface:
-                return "unknown", None
-
-            # Determine connection type from interface name
-            if any(interface.startswith(prefix) for prefix in ("wlan", "wlp", "wifi", "wl")):
-                return "wifi", interface
-            elif any(interface.startswith(prefix) for prefix in ("eth", "enp", "eno", "ens")):
-                return "ethernet", interface
-            elif interface.startswith("docker") or interface.startswith("br-"):
-                return "bridge", interface
-            elif interface.startswith("veth"):
-                return "veth", interface
-            else:
-                return "unknown", interface
-
-        except Exception as e:
-            _LOGGER.debug("Connection type detection error: %s", e)
-            return "unknown", None
-
-    async def _detect_ha_install_type(self) -> str | None:
-        """Detect the Home Assistant installation type.
-
-        Returns:
-            Installation type ("haos", "container", "core", "supervised") or None.
-        """
-        loop = asyncio.get_event_loop()
-
-        def check() -> str:
-            # Check for HAOS
-            if os.path.exists("/etc/hassio") or os.path.exists("/run/hassio"):
-                return "haos"
-
-            # Check for Supervised
-            if os.path.exists("/usr/sbin/hassio-supervisor"):
-                return "supervised"
-
-            # Check environment variables
-            if os.environ.get("SUPERVISOR_TOKEN"):
-                return "supervised"
-
-            # If we're in a container and have HA installed, likely container install
-            if os.path.exists("/.dockerenv") or os.path.exists("/run/.containerenv"):
-                return "container"
-
-            # Default to core if nothing else matches
-            return "core"
-
-        return await loop.run_in_executor(None, check)
 
 
 # Convenience function for simple usage

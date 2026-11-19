@@ -47,6 +47,11 @@ jobs:
       - name: Run tests
         run: pytest --cov-report=xml
 
+      - name: Coverage gates (70% HA layer, 90% Core, as make test)
+        run: |
+          coverage report --include="custom_components/*" --fail-under=70
+          coverage report --include="*/solentlabs/internet_health_monitor_core/*" --fail-under=90
+
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
