@@ -20,6 +20,7 @@ from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
+    CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
     CONF_SCAN_INTERVAL,
     DEFAULT_DNS_SERVER,
@@ -380,3 +381,27 @@ class TestMonitoringConfig:
         stored_config = mock_hass.data[DOMAIN][entry.entry_id]["config"]
         assert stored_config["enable_gateway"] is False
         assert stored_config["enable_dns"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("options", "expected"), [({}, False), ({CONF_HOP_OWNERSHIP: True}, True)])
+async def test_setup_passes_hop_ownership(options: dict, expected: bool) -> None:
+    """The stored choice reaches the core config; off when never set."""
+    hass = Mock()
+    hass.data = {}
+    hass.config_entries = Mock()
+    hass.config_entries.async_forward_entry_setups = AsyncMock()
+    entry = Mock(spec=ConfigEntry)
+    entry.entry_id = "test_entry_id"
+    entry.options = options
+    entry.add_update_listener = Mock(return_value=Mock())
+    entry.async_on_unload = Mock()
+
+    with (
+        patch("custom_components.internet_health_monitor.NetworkDiagnostics") as diag_class,
+        patch("custom_components.internet_health_monitor.DataUpdateCoordinator") as coordinator_class,
+    ):
+        coordinator_class.return_value = AsyncMock()
+        await async_setup_entry(hass, entry)
+
+    assert diag_class.call_args.kwargs["config"].hop_ownership is expected

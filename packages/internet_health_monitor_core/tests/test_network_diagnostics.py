@@ -569,3 +569,49 @@ async def test_check_dns(description: str, probe: dict, expected: dict) -> None:
     ) as query:
         assert await diag._check_dns() == expected
     assert query.await_args.args[0] == "1.1.1.1"
+
+
+# hop_ownership setting -> lookups made and owner fields on hop 3
+# fmt: off
+OWNERSHIP_CASES = [
+    ("off by default", False, 0, (None, None)),
+    ("on",             True,  3, (64500, "EXAMPLE-NET")),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    ("description", "enabled", "lookups", "hop3_owner"), OWNERSHIP_CASES, ids=[c[0] for c in OWNERSHIP_CASES]
+)
+async def test_hop_ownership_opt_in(
+    description: str, enabled: bool, lookups: int, hop3_owner: tuple[int | None, str | None]
+) -> None:
+    """Owners are looked up only when enabled, once per detection, via the DNS server under test."""
+    from solentlabs.internet_health_monitor_core.hop_owner import HopOwner
+
+    async def fake_lookup(ip: str, server: str, timeout_s: float) -> HopOwner | None:
+        assert server == "192.168.1.1"
+        return HopOwner(64500, "EXAMPLE-NET") if ip == "198.51.100.1" else None
+
+    diag = _diag()
+    diag.config.hop_ownership = enabled
+    with patch(
+        "solentlabs.internet_health_monitor_core.network_diagnostics.lookup_owner", side_effect=fake_lookup
+    ) as lookup:
+        await diag.run_diagnostics()
+        result = await diag.run_diagnostics()
+
+    assert lookup.call_count == lookups
+    hop3 = result.get_hop(3)
+    assert hop3 is not None
+    assert (hop3.asn, hop3.as_name) == hop3_owner
+    assert hop3.to_dict()["asn"] == hop3_owner[0]
+
+
+async def test_owner_lookup_error_leaves_hop_unowned() -> None:
+    """A failing lookup never breaks the poll."""
+    diag = _diag()
+    diag.config.hop_ownership = True
+    with patch("solentlabs.internet_health_monitor_core.network_diagnostics.lookup_owner", side_effect=OSError("down")):
+        result = await diag.run_diagnostics()
+    assert all(h.asn is None for h in result.hops)

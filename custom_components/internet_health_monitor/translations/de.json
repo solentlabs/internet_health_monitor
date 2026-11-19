@@ -9,7 +9,11 @@
           "enable_dns_monitoring": "DNS-Überwachung aktivieren",
           "scan_interval": "Abfrageintervall (Sekunden)",
           "dns_server": "DNS-Server",
-          "ping_count": "Anzahl der Pings"
+          "ping_count": "Anzahl der Pings",
+          "hop_ownership": "Betreiber jedes Hops ermitteln"
+        },
+        "data_description": {
+          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
         }
       }
     },
@@ -26,7 +30,11 @@
           "enable_dns_monitoring": "DNS-Überwachung aktivieren",
           "scan_interval": "Abfrageintervall (Sekunden)",
           "dns_server": "DNS-Server",
-          "ping_count": "Anzahl der Pings"
+          "ping_count": "Anzahl der Pings",
+          "hop_ownership": "Betreiber jedes Hops ermitteln"
+        },
+        "data_description": {
+          "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet."
         }
       }
     }

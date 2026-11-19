@@ -12,7 +12,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [003](#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3) | Speed testing with user-selected backends (ROADMAP Phase 3) | Accepted 2026-11-18 |
 | [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
-| [006](#adr-006-no-third-party-lookups) | No third-party lookups | Open |
+| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Open |
 
 ---
 
@@ -217,20 +217,46 @@ Adding it is one module implementing `Platform`, one branch in
 
 ---
 
-## ADR-006: No third-party lookups
+## ADR-006: Outside services only by user choice
 
 **Status:** Open. Recommendation: accept.
 
 **Context:** Hop enrichment sent each public hop IP to ip-api.com over
-plain HTTP and the gateway's MAC address to api.macvendors.com. Neither
-is a measurement, and both tell a third party about the user's network.
+plain HTTP and the gateway's MAC address to api.macvendors.com, always
+on and undisclosed. Neither is a measurement, and both told a third
+party about the user's network. Both were removed.
 
-**Decision:**
-- IHM sends nothing to a third party except the probes themselves and,
-  when enabled, the user-selected speed test backend (ADR-003).
-- Hop hostnames come from reverse DNS through the resolver the host
-  already uses. Nothing else enriches a hop.
+**Decision (rule, 2026-11-19):** IHM may use an outside service only if
+all of these hold:
+1. **Off by default.** The user turns it on; nothing is sent until then.
+2. **Transparent.** The option's own description names the service and
+   what is sent, before the user enables it. README.md documents its
+   benefits and limits.
+3. **Listed.** `docs/ARCHITECTURE.md § Data Leaving the Host` has a row
+   for it.
+4. **Minimal.** It sends only what it needs; never the user's own
+   address or device identifiers.
+5. **Cited.** The provider's terms are in REFERENCES.md, and IHM keeps
+   within them.
 
-**Constraints:** A feature that needs a new external lookup needs a new
-ADR. `docs/ARCHITECTURE.md § Data Leaving the Host` lists every
-destination.
+The probes themselves (ping, traceroute, the DNS query) and reverse DNS
+through the host's own resolver are not outside services under this
+rule. Current uses: speed test backends (ADR-003) and hop ownership
+(below).
+
+**Hop ownership** (decided 2026-11-19) is an opt-in option, off by
+  default: each public hop's network operator (ASN and name) from Team
+  Cymru's IP-to-ASN service over DNS (R15). The option's description
+  says what is sent before the user enables it: public hop addresses
+  (ISP routers, never the user's own address). Private and shared ISP
+  addresses (10/8, 100.64/10, ...) have no owner and are never sent.
+  Country is not used: Team Cymru says the service "should not be used
+  for IP geolocation" (R15). Chosen over a bundled IP-to-ASN database,
+  which would add several MB and age between releases. Limits, stated
+  to users in README.md § Hop Ownership: many home paths have no public
+  address in the first three hops, so the option often finds nothing;
+  a router at a handoff between networks can carry the other network's
+  address.
+
+**Constraints:** Every new outside service meets the rule above and is
+recorded here or in its own ADR.

@@ -24,6 +24,7 @@ internet-health-monitor --interval 60   # one JSON line per poll until stopped
 | `--dns-server` | `auto` | DNS server to time; `auto` reads `/etc/resolv.conf` |
 | `--ping-count` | 3 | Pings per target per poll (1 to 10) |
 | `--interval` | none | Seconds between polls (10 to 3600). Without it, one poll and exit |
+| `--hop-ownership` | off | Add each public hop's network operator; sends those hop addresses to Team Cymru |
 
 Jitter is the spread of latency across polls, so a single poll reports
 none; use `--interval` to get it.

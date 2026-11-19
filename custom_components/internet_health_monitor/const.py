@@ -13,6 +13,7 @@ CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
+CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
 
 # Defaults
 DEFAULT_SCAN_INTERVAL = 60  # seconds

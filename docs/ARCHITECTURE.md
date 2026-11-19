@@ -113,8 +113,9 @@ sends only:
 | Destination | What is sent | When |
 |-------------|--------------|------|
 | The host's configured DNS resolver | Each hop IP, as a reverse DNS query | Once after hops are detected, and after a cache reset |
+| Team Cymru, through the DNS server under test | Each public hop IP, as an `origin.asn.cymru.com` query, then its ASN | Only with Hop ownership on (off by default); same timing as reverse DNS |
 
-No third-party lookups (ADR-006). Speed test backends, when built and
+Nothing else goes to an outside service; any that is added is opt-in and listed here (ADR-006). Speed test backends, when built and
 enabled, are the only addition (ADR-003).
 
 ## Planned Components

@@ -9,7 +9,11 @@
           "enable_dns_monitoring": "Ativar monitoramento de DNS",
           "scan_interval": "Intervalo de varredura (segundos)",
           "dns_server": "Servidor DNS",
-          "ping_count": "Quantidade de pings"
+          "ping_count": "Quantidade de pings",
+          "hop_ownership": "Identificar quem opera cada salto"
+        },
+        "data_description": {
+          "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados."
         }
       }
     },
@@ -26,7 +30,11 @@
           "enable_dns_monitoring": "Ativar monitoramento de DNS",
           "scan_interval": "Intervalo de varredura (segundos)",
           "dns_server": "Servidor DNS",
-          "ping_count": "Quantidade de pings"
+          "ping_count": "Quantidade de pings",
+          "hop_ownership": "Identificar quem opera cada salto"
+        },
+        "data_description": {
+          "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados."
         }
       }
     }

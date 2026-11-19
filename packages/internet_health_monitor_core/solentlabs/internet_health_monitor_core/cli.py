@@ -50,13 +50,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="seconds between polls; without it, poll once and exit",
     )
+    parser.add_argument(
+        "--hop-ownership",
+        action="store_true",
+        help="look up each public hop's network operator (sends hop IPs to Team Cymru)",
+    )
     return parser
 
 
 async def run(args: argparse.Namespace, out: TextIO) -> None:
     """Poll once, or every interval seconds, writing each result as a JSON line."""
     diagnostics = NetworkDiagnostics(
-        config=NetworkDiagnosticsConfig(ping_count=args.ping_count, dns_server=args.dns_server)
+        config=NetworkDiagnosticsConfig(
+            ping_count=args.ping_count, dns_server=args.dns_server, hop_ownership=args.hop_ownership
+        )
     )
     while True:
         result = await diagnostics.run_diagnostics()

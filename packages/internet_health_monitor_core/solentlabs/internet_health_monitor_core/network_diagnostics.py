@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import dns_probe
+from .hop_owner import HopOwner, lookup_owner
 from .platforms import HostEnvironment, Platform, get_platform
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,6 +87,9 @@ class HopInfo:
     packets_sent: int = 0
     packets_received: int = 0
     hostname: str | None = None  # Reverse DNS name, if the hop has one
+    # Who announces the hop's address; only with hop_ownership on (hop_owner.py)
+    asn: int | None = None
+    as_name: str | None = None
 
     # Typical location based on hop number
     @property
@@ -109,6 +113,8 @@ class HopInfo:
             "packets_received": self.packets_received,
             "reachable": self.reachable,
             "hostname": self.hostname,
+            "asn": self.asn,
+            "as_name": self.as_name,
             "typical_location": self.typical_location,
         }
         return result
@@ -197,6 +203,8 @@ class NetworkDiagnosticsConfig:
     dns_server: str = DEFAULT_DNS_SERVER
     dns_timeout: int = DEFAULT_DNS_TIMEOUT
     history_size: int = DEFAULT_HISTORY_SIZE
+    # Opt-in: send public hop IPs to Team Cymru to learn their owner (ADR-006)
+    hop_ownership: bool = False
 
 
 class NetworkDiagnostics:
@@ -256,6 +264,7 @@ class NetworkDiagnostics:
         # Cached reverse DNS names (hop_number -> hostname)
         self._hop_hostnames: dict[int, str] = {}
         self._hostnames_collected = False
+        self._hop_owners: dict[int, HopOwner] = {}
 
         # Host environment info
         self._host_environment: HostEnvironment | None = None
@@ -477,6 +486,7 @@ class NetworkDiagnostics:
                         jitter_ms=None,
                         reachable=False,
                         hostname=self._hop_hostnames.get(hop_num),
+                        **self._owner_fields(hop_num),
                     )
                 )
             else:
@@ -543,6 +553,7 @@ class NetworkDiagnostics:
             packets_received=packets_received,
             reachable=packets_received > 0,
             hostname=self._hop_hostnames.get(hop_number),
+            **self._owner_fields(hop_number),
         )
 
     async def _check_gateway(self) -> dict:
@@ -642,8 +653,9 @@ class NetworkDiagnostics:
         self._hop_detection_failed = False
 
     def reset_hostnames(self) -> None:
-        """Clear cached hop hostnames and host environment so both are re-detected."""
+        """Clear cached hop hostnames, owners and host environment so all are re-detected."""
         self._hop_hostnames = {}
+        self._hop_owners = {}
         self._hostnames_collected = False
         self._host_environment = None
 
@@ -673,6 +685,27 @@ class NetworkDiagnostics:
                 _LOGGER.debug("Reverse DNS failed for hop %d: %s", hop_num, result)
             elif result:
                 self._hop_hostnames[hop_num] = result
+        if self.config.hop_ownership:
+            await self._collect_owners()
+
+    async def _collect_owners(self) -> None:
+        """Look up who announces each public hop, through the DNS server under test."""
+        server = self._dns_server or FALLBACK_DNS_SERVER
+        hop_nums = list(self._hop_ips)
+        results = await asyncio.gather(
+            *(lookup_owner(self._hop_ips[n], server, self.config.dns_timeout) for n in hop_nums),
+            return_exceptions=True,
+        )
+        for hop_num, result in zip(hop_nums, results, strict=True):
+            if isinstance(result, BaseException):
+                _LOGGER.debug("Owner lookup failed for hop %d: %s", hop_num, result)
+            elif result:
+                self._hop_owners[hop_num] = result
+
+    def _owner_fields(self, hop_number: int) -> dict[str, Any]:
+        """HopInfo fields for a hop's owner, empty when unknown."""
+        owner = self._hop_owners.get(hop_number)
+        return {"asn": owner.asn, "as_name": owner.name} if owner else {}
 
     async def _reverse_dns_lookup(self, ip: str) -> str | None:
         """Perform reverse DNS lookup for an IP address.

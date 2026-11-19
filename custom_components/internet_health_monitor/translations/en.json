@@ -9,7 +9,11 @@
           "enable_dns_monitoring": "Enable DNS monitoring",
           "scan_interval": "Scan interval (seconds)",
           "dns_server": "DNS server",
-          "ping_count": "Ping count"
+          "ping_count": "Ping count",
+          "hop_ownership": "Look up who runs each hop"
+        },
+        "data_description": {
+          "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent."
         }
       }
     },
@@ -26,7 +30,11 @@
           "enable_dns_monitoring": "Enable DNS monitoring",
           "scan_interval": "Scan interval (seconds)",
           "dns_server": "DNS server",
-          "ping_count": "Ping count"
+          "ping_count": "Ping count",
+          "hop_ownership": "Look up who runs each hop"
+        },
+        "data_description": {
+          "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent."
         }
       }
     }

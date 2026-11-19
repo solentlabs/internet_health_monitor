@@ -26,6 +26,7 @@ from .const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
+    CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
     CONF_SCAN_INTERVAL,
     DEFAULT_DNS_SERVER,
@@ -67,7 +68,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Create diagnostics config with options
     config = NetworkDiagnosticsConfig(
         ping_count=ping_count,
-        dns_server=dns_server if dns_server != "auto" else "auto",
+        dns_server=dns_server,
+        hop_ownership=options.get(CONF_HOP_OWNERSHIP, False),
     )
 
     # Create diagnostics instance

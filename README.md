@@ -43,13 +43,26 @@ During setup, you can configure:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Enable Gateway Monitoring | true | Monitor gateway latency, jitter, and packet loss |
-| Enable Multi-Hop Latency | true | Trace latency through network path |
-| Maximum Hops | 3 | Number of hops to trace (1-10) |
+| Enable Gateway Monitoring | true | Monitor latency, jitter, and packet loss for the gateway and hops 1 to 3 |
 | Enable DNS Monitoring | true | Monitor DNS resolution latency |
 | Scan Interval | 60s | How often to run diagnostics |
 | DNS Server | Auto | DNS server to test (auto-detects from system) |
 | Ping Count | 3 | Number of pings per check |
+| Look up who runs each hop | false | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
+
+### Hop Ownership
+
+Off by default. When on, each hop sensor gains `asn` and `as_name`
+attributes naming the network that runs that hop, for example
+`15169` / `GOOGLE - Google LLC, US`.
+
+| | |
+|---|---|
+| **What you get** | Whose network a hop belongs to: useful evidence when you report a problem to your ISP, and it works when a router has no hostname. |
+| **What is sent** | Each public hop address to Team Cymru's free IP-to-ASN service, as a DNS query through your DNS server. These are your ISP's routers, never your own address. Looked up once when hops are detected, not every poll. |
+| **What it often can't do** | Many ISPs use private (`10.x`) or shared (`100.64.x`) addresses on their first routers. Those have no owner, are never sent, and show no `asn`. On such a connection the option finds nothing in hops 1 to 3. |
+| **Accuracy** | A router where two networks meet may carry the other network's address, so it can be labelled with the neighbouring operator. |
+| **Not included** | Location. IP location data is unreliable for routers, and Team Cymru asks that the service not be used for it. Router hostnames often name the city anyway. |
 
 ## Sensors
 

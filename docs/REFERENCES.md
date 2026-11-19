@@ -237,6 +237,23 @@ length octet followed by that number of characters", QTYPE, QCLASS),
 § 3.2.2 TYPE A = 1, § 3.2.4 CLASS IN = 1, § 4.2.1 UDP usage [V]. Used by
 `dns_probe.py`.
 
+## R15. Team Cymru IP-to-ASN mapping
+
+https://www.team-cymru.com/ip-asn-mapping, read 2026-11-19 [V]:
+- DNS interface: "Reverse the octets and append the zone"
+  (`origin.asn.cymru.com`); TXT answer "ASN | prefix | CC | registry |
+  allocated"; "A prefix we do not hold returns NXDOMAIN". AS names from
+  `AS<n>.asn.cymru.com`, answer "ASN | CC | registry | allocated | name".
+- DNS is "Cacheable, low overhead, and the best fit for recurring
+  lookups". Cost: "Free, forever." No formal terms of use are published.
+- "this service should not be used for IP geolocation."
+- Bulk guidance: "Keep each bulk run to a few thousand addresses"; IPs
+  that "hammer" the whois server "are null routed". IHM sends at most
+  six queries per hop detection.
+
+Format confirmed by a live query for 8.8.8.8 (2026-11-19): ASN 15169,
+"GOOGLE - Google LLC, US" [V, local run].
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

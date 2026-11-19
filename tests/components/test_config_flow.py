@@ -15,6 +15,7 @@ from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
+    CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
     CONF_SCAN_INTERVAL,
     DEFAULT_DNS_SERVER,
@@ -334,3 +335,45 @@ class TestDNSServerValidation:
         """Test that auto-detect option exists."""
         assert "auto" in DNS_SERVERS
         assert DNS_SERVERS["auto"] == "Auto-detect"
+
+
+def _default(result: dict, key: str) -> object:
+    """Return the form default for key."""
+    marker = next(m for m in result["data_schema"].schema if m == key)
+    return marker.default()
+
+
+# Stored option -> options form default
+# fmt: off
+HOP_OWNERSHIP_DEFAULT_CASES = [
+    ("never set", {},                           False),
+    ("enabled",   {CONF_HOP_OWNERSHIP: True},   True),
+]
+# fmt: on
+
+
+@pytest.mark.asyncio
+async def test_hop_ownership_off_at_setup() -> None:
+    """Hop ownership is opt-in: the setup form defaults it to off."""
+    flow = ConfigFlow()
+    flow.hass = Mock()
+    with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
+        result = await flow.async_step_user(user_input=None)
+    assert _default(result, CONF_HOP_OWNERSHIP) is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("description", "options", "expected"),
+    HOP_OWNERSHIP_DEFAULT_CASES,
+    ids=[c[0] for c in HOP_OWNERSHIP_DEFAULT_CASES],
+)
+async def test_hop_ownership_options_default(
+    read_only_config_entry, description: str, options: dict, expected: bool
+) -> None:
+    """The options form shows the stored choice, off when never set."""
+    entry = Mock()
+    entry.options = options
+    read_only_config_entry.return_value = entry
+    result = await _options_flow(entry).async_step_init(user_input=None)
+    assert _default(result, CONF_HOP_OWNERSHIP) is expected

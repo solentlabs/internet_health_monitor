@@ -219,6 +219,16 @@ class TestHopLatencySensor:
         attrs = sensor.extra_state_attributes
         assert attrs["hostname"] == "isp-router.example.com"
         assert "isp" not in attrs
+        assert "asn" not in attrs  # only present when hop ownership found an owner
+
+    def test_hop_sensor_with_owner(self, mock_coordinator, mock_entry):
+        """With hop ownership on, the owner's ASN and name are attributes."""
+        hop = HopInfo(
+            hop_number=3, ip="198.51.100.1", latency_ms=12.0, reachable=True, asn=64500, as_name="EXAMPLE-NET"
+        )
+        mock_coordinator.data = make_result(hops=[hop])
+        attrs = HopLatencySensor(mock_coordinator, mock_entry, 3).extra_state_attributes
+        assert (attrs["asn"], attrs["as_name"]) == (64500, "EXAMPLE-NET")
 
 
 class TestHopJitterSensor:

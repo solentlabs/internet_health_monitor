@@ -180,6 +180,9 @@ class HopSensorBase(CoordinatorEntity[DataUpdateCoordinator[NetworkDiagnosticsRe
 
         if hop.hostname:
             attrs["hostname"] = hop.hostname
+        if hop.asn is not None:
+            attrs["asn"] = hop.asn
+            attrs["as_name"] = hop.as_name
 
         return attrs
 

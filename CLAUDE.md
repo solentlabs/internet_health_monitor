@@ -65,6 +65,9 @@ Hard constraints. When in doubt, the principle wins over convenience.
 - **Don't load what we may not load.** Speed test backends follow
   ADR-003's conditions. Never accept a licence or terms on the user's
   behalf.
+- **Outside services only by user choice.** Off by default, the option
+  says what it sends and to whom, and ARCHITECTURE.md lists it
+  (ADR-006).
 
 ### Code
 

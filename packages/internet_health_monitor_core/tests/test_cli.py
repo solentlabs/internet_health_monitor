@@ -12,13 +12,14 @@ import pytest
 from solentlabs.internet_health_monitor_core import cli
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnosticsResult
 
-# argv -> (dns_server, ping_count, interval)
+# argv -> (dns_server, ping_count, interval, hop_ownership)
 # fmt: off
 PARSE_CASES = [
-    ("defaults",      [],                                   ("auto", 3, None)),
-    ("dns server",    ["--dns-server", "1.1.1.1"],          ("1.1.1.1", 3, None)),
-    ("ping count",    ["--ping-count", "5"],                ("auto", 5, None)),
-    ("interval",      ["--interval", "60"],                 ("auto", 3, 60)),
+    ("defaults",      [],                                   ("auto", 3, None, False)),
+    ("dns server",    ["--dns-server", "1.1.1.1"],          ("1.1.1.1", 3, None, False)),
+    ("ping count",    ["--ping-count", "5"],                ("auto", 5, None, False)),
+    ("interval",      ["--interval", "60"],                 ("auto", 3, 60, False)),
+    ("hop ownership", ["--hop-ownership"],                  ("auto", 3, None, True)),
 ]
 
 # argv rejected by the parser
@@ -47,10 +48,10 @@ def _result() -> NetworkDiagnosticsResult:
 
 
 @pytest.mark.parametrize(("description", "argv", "expected"), PARSE_CASES, ids=[c[0] for c in PARSE_CASES])
-def test_parse(description: str, argv: list[str], expected: tuple[str, int, int | None]) -> None:
-    """Options map to the diagnostics config and poll interval."""
+def test_parse(description: str, argv: list[str], expected: tuple[str, int, int | None, bool]) -> None:
+    """Options map to the diagnostics config and poll interval; ownership is off unless asked."""
     args = cli.build_parser().parse_args(argv)
-    assert (args.dns_server, args.ping_count, args.interval) == expected
+    assert (args.dns_server, args.ping_count, args.interval, args.hop_ownership) == expected
 
 
 @pytest.mark.parametrize(("description", "argv"), REJECT_CASES, ids=[c[0] for c in REJECT_CASES])
@@ -63,7 +64,7 @@ def test_parse_rejects(description: str, argv: list[str]) -> None:
 async def test_single_poll_prints_one_json_line() -> None:
     """Without --interval, one poll runs and its result is one JSON line."""
     out = io.StringIO()
-    args = SimpleNamespace(dns_server="auto", ping_count=3, interval=None)
+    args = SimpleNamespace(dns_server="auto", ping_count=3, interval=None, hop_ownership=False)
     with patch.object(cli.NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())):
         await cli.run(args, out)
 
@@ -86,7 +87,7 @@ async def test_interval_polls_until_stopped() -> None:
             raise StopLoopError
 
     out = io.StringIO()
-    args = SimpleNamespace(dns_server="auto", ping_count=3, interval=60)
+    args = SimpleNamespace(dns_server="auto", ping_count=3, interval=60, hop_ownership=False)
     with (
         patch.object(cli.NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())),
         patch.object(cli.asyncio, "sleep", fake_sleep),

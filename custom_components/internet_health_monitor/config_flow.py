@@ -14,6 +14,7 @@ from .const import (
     CONF_DNS_SERVER,
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
+    CONF_HOP_OWNERSHIP,
     CONF_PING_COUNT,
     CONF_SCAN_INTERVAL,
     DEFAULT_DNS_SERVER,
@@ -54,6 +55,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(
                         CONF_ENABLE_GATEWAY_MONITORING,
+                        CONF_HOP_OWNERSHIP,
                         default=True,
                     ): bool,
                     vol.Required(
@@ -72,6 +74,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_PING_COUNT,
                         default=DEFAULT_PING_COUNT,
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
+                    vol.Required(CONF_HOP_OWNERSHIP, default=False): bool,
                 }
             ),
         )
@@ -104,6 +107,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_ENABLE_GATEWAY_MONITORING,
+                        CONF_HOP_OWNERSHIP,
                         default=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
                     ): bool,
                     vol.Required(
@@ -122,6 +126,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_PING_COUNT,
                         default=options.get(CONF_PING_COUNT, DEFAULT_PING_COUNT),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
+                    vol.Required(
+                        CONF_HOP_OWNERSHIP,
+                        default=options.get(CONF_HOP_OWNERSHIP, False),
+                    ): bool,
                 }
             ),
         )

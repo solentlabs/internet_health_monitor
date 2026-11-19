@@ -26,6 +26,8 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
                 "hop_number": hop.hop_number,
                 "ip": hop.ip,
                 "hostname": hop.hostname,
+                "asn": hop.asn,
+                "as_name": hop.as_name,
                 "latency_ms": hop.latency_ms,
                 "jitter_ms": hop.jitter_ms,
                 "reachable": hop.reachable,

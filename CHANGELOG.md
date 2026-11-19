@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Hop ownership (optional, off by default).** Hop sensors can show the
+  network operator (`asn`, `as_name`) of each public hop, looked up from
+  Team Cymru over DNS. The option says what is sent before you turn it on;
+  private and shared ISP addresses are never sent. Also `--hop-ownership`
+  on the command line.
+
 - **Windows support for Core.** The measurement engine runs on Windows as
   well as Linux, through Windows' own network functions, so it works in any
   display language without admin rights. Windows round-trip times are whole

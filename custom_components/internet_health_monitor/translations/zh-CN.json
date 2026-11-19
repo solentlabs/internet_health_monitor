@@ -9,7 +9,11 @@
           "enable_dns_monitoring": "启用 DNS 监控",
           "scan_interval": "扫描间隔（秒）",
           "dns_server": "DNS 服务器",
-          "ping_count": "Ping 次数"
+          "ping_count": "Ping 次数",
+          "hop_ownership": "查询每一跳的运营方"
+        },
+        "data_description": {
+          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
         }
       }
     },
@@ -26,7 +30,11 @@
           "enable_dns_monitoring": "启用 DNS 监控",
           "scan_interval": "扫描间隔（秒）",
           "dns_server": "DNS 服务器",
-          "ping_count": "Ping 次数"
+          "ping_count": "Ping 次数",
+          "hop_ownership": "查询每一跳的运营方"
+        },
+        "data_description": {
+          "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。"
         }
       }
     }
