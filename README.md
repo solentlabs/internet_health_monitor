@@ -86,7 +86,7 @@ attributes naming the network that runs that hop, for example
 | **What you get** | Whose network a hop belongs to: useful evidence when you report a problem to your ISP, and it works when a router has no hostname. |
 | **What is sent** | Each public hop address to Team Cymru's free IP-to-ASN service, as a DNS query through your DNS server. These are your ISP's routers, never your own address. Looked up once when hops are detected, not every poll. |
 | **What it often can't do** | Many ISPs use private (`10.x`) or shared (`100.64.x`) addresses on their first routers. Those have no owner, are never sent, and show no `asn`. On such a connection the option finds nothing in hops 1 to 3. |
-| **Accuracy** | A router where two networks meet may carry the other network's address, so it can be labelled with the neighbouring operator. |
+| **Accuracy** | A router where two networks meet may carry the other network's address, so it can be labelled with the neighboring operator. |
 | **Not included** | Location. IP location data is unreliable for routers, and Team Cymru asks that the service not be used for it. Router hostnames often name the city anyway. |
 
 ## Entities
@@ -128,12 +128,12 @@ the test; every backend that supports it also reports bufferbloat
 
 | Backend | Bufferbloat reading | Your results made public? | Limits |
 |---------|---------------------|---------------------------|--------|
-| Cloudflare | Yes, per direction | No (anonymised) | Modest default schedule |
+| Cloudflare | Yes, per direction | No (anonymized) | Modest default schedule |
 | M-Lab NDT7 | Approximate, best for download | **Yes, including your IP address** | About 4 tests a day |
 | Fast.com | To be confirmed | No (aggregates only) | Modest default schedule |
 | LibreSpeed | No (idle ping only) | No | Modest default schedule |
 
-Ookla is not offered: its licence is personal, non-commercial use only.
+Ookla is not offered: its license is personal, non-commercial use only.
 IHM is not affiliated with any of these providers. Full comparison:
 [docs/SPEED_TEST_BACKENDS.md](docs/SPEED_TEST_BACKENDS.md).
 

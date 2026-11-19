@@ -84,3 +84,12 @@ jobs:
 
       - name: Run Core tests
         run: pytest packages/internet_health_monitor_core/tests --no-cov -p no:cacheprovider
+
+  spell-check:
+    name: Spelling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run cspell (same command as make spell-check)
+        run: npx --yes cspell@10 --config cspell.config.yaml --gitignore --dot --no-progress "**/*.{py,md,yaml,yml,json,toml,sh,txt}"

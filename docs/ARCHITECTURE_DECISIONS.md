@@ -139,10 +139,10 @@ already ships throughput, loaded latency and a bloat grade?
     apply where they exist (R9: M-Lab, about 4 a day);
   - requests identify IHM honestly (User-Agent or client name);
   - the docs state IHM is not affiliated with the provider.
-- No backend accepts a licence or terms on the user's behalf. The Ookla
+- No backend accepts a license or terms on the user's behalf. The Ookla
   CLI is excluded: hass-speedtest-ookla runs it with `--accept-license
   --accept-gdpr` (R8), and its EULA is "personal, non-commercial use".
-- Client libraries must have a licence compatible with distribution
+- Client libraries must have a license compatible with distribution
   (R5: cloudflarepycli is GPL-3.0 and not used).
 - Tests never run without explicit user configuration (ROADMAP Tier 3).
 

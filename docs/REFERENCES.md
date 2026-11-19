@@ -134,7 +134,7 @@ publishes a permission basis for automated third-party clients.
 **M-Lab NDT7**
 - https://www.measurementlab.net/develop/: "M-Lab welcomes automated and
   repeated testing." Integrations should test "no more than 4 times per
-  day" at Poisson-randomised times; hard limit "40 tests per client per
+  day" at Poisson-randomized times; hard limit "40 tests per client per
   day" [V].
 - AUP https://www.measurementlab.net/aup/: "measurements must be actively
   initiated based on informed consent", with a link to M-Lab's privacy

@@ -40,4 +40,4 @@ result = await NetworkDiagnostics().run_diagnostics()
 print(result.to_dict())
 ```
 
-Licence: MIT.
+License: MIT.

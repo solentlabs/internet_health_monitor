@@ -12,11 +12,11 @@ Status: planning. No backend is built yet.
 
 | Backend | Status | Bufferbloat reading | Your results made public? | Limits |
 |---------|--------|---------------------|---------------------------|--------|
-| **Cloudflare** | Candidate | Yes, idle and loaded latency per direction | No: collected, anonymised | Modest default schedule |
+| **Cloudflare** | Candidate | Yes, idle and loaded latency per direction | No: collected, anonymized | Modest default schedule |
 | **M-Lab NDT7** | First to be built | Approximate: good for download, weak for upload *(unverified)* | **Yes**, including your IP address, permanently | About 4 tests a day; hard limit 40 |
 | **Fast.com** | Candidate | *(unverified)* | No: Netflix shares only aggregates | Modest default schedule; undocumented API may change |
 | **LibreSpeed** public servers | Candidate | No: idle ping and jitter only | No *(telemetry to librespeed.org on by default in its client)* | Modest default schedule; volunteer servers |
-| Ookla, built in | Not offered: personal, non-commercial licence, and IHM won't accept it for you | | | |
+| Ookla, built in | Not offered: personal, non-commercial license, and IHM won't accept it for you | | | |
 | Self-hosted server | Not offered: IHM never requires running a server | | | |
 
 Candidates may use public endpoints under the conditions in

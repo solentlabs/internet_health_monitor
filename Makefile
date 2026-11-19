@@ -1,4 +1,4 @@
-.PHONY: help setup-current test-current test-all test-windows coverage-gates test test-quick clean lint lint-fix type-check format format-check check setup
+.PHONY: help spell-check setup-current test-current test-all test-windows coverage-gates test test-quick clean lint lint-fix type-check format format-check check setup
 
 # Default target - show help
 help:
@@ -22,7 +22,8 @@ help:
 	@echo "  make type-check  - Run mypy type checker"
 	@echo "  make format      - Format code with black"
 	@echo "  make format-check - Check code formatting without modifying"
-	@echo "  make check       - Run all code quality checks (lint, format, type)"
+	@echo "  make spell-check - cspell over the repo (needs Node.js; same as CI)"
+	@echo "  make check       - Run all code quality checks (lint, format, type, spelling)"
 
 # Setup development environment
 setup:
@@ -98,5 +99,9 @@ format-check:
 	@.venv/bin/black --check .
 
 # Run all code quality checks
-check: lint format-check type-check
+# Spelling: cspell.config.yaml holds the project dictionary. Same command as CI.
+spell-check:
+	@npx --yes cspell@10 --config cspell.config.yaml --gitignore --dot --no-progress "**/*.{py,md,yaml,yml,json,toml,sh,txt}"
+
+check: lint format-check type-check spell-check
 	@echo "All code quality checks passed!"

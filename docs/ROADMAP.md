@@ -88,7 +88,8 @@ Monitor is the reference for how each is done.
 2. **GitHub.** Push to `solentlabs/internet-health-monitor` with CI.
 3. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
    version `manifest.json` pins (ADR-005). HA installs it from there.
-4. **Live HA.** Install on the developer's deployed HA from GitHub and
+4. **Live HA.** Update the deployed HA to at least IHM's minimum (ADR-008),
+   then install from GitHub and
    verify on a real network path (hops 2 and 3 cannot be seen from
    Docker Desktop: ARCHITECTURE.md).
 5. **Publish.** Release zip installs, then HACS submission.

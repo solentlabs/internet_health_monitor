@@ -147,7 +147,7 @@ touches nothing outside its module and its registration. Comparison:
 Add card list, following Cable Modem Monitor's card pattern. Additive:
 if it fails to load, monitoring is unaffected.
 
-## Neighbours
+## Neighbors
 
 No code dependency in either direction (ADR-002).
 

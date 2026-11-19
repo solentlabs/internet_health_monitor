@@ -66,7 +66,7 @@ class _FakeDnsServer(asyncio.DatagramProtocol):
             self.transport.sendto(_reply(struct.unpack("!H", data[:2])[0], self.rcode), addr)
 
 
-# Server behaviour -> measured? (NOERROR and NXDOMAIN both mean resolution finished)
+# Server behavior -> measured? (NOERROR and NXDOMAIN both mean resolution finished)
 # fmt: off
 EXCHANGE_CASES = [
     ("nxdomain answered", RCODE_NXDOMAIN, True),

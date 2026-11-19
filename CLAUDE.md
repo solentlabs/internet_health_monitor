@@ -19,11 +19,11 @@ Cable Modem Monitor (`docs/ARCHITECTURE_DECISIONS.md` § ADR-002).
 
 | Topic | Authoritative doc |
 | ----- | ----------------- |
-| Layers, data flow, data leaving the host, neighbours | `docs/ARCHITECTURE.md` |
+| Layers, data flow, data leaving the host, neighbors | `docs/ARCHITECTURE.md` |
 | Features, phases, non-goals | `docs/ROADMAP.md` |
 | Who uses this and why (drives tests) | `docs/USE_CASES.md` |
 | Decisions, open and settled | `docs/ARCHITECTURE_DECISIONS.md` |
-| Sources, licences, evidence labels | `docs/REFERENCES.md` |
+| Sources, licenses, evidence labels | `docs/REFERENCES.md` |
 | Speed test backends compared | `docs/SPEED_TEST_BACKENDS.md` |
 | User-facing overview | `README.md` |
 | Core package: command line, library use | `packages/internet_health_monitor_core/README.md` |
@@ -46,7 +46,7 @@ Hard constraints. When in doubt, the principle wins over convenience.
   (`FILE.md § Section`). Docs state the current contract only; git
   carries history.
 - **Every non-native claim carries a citation.** Thresholds, protocol
-  details, licence terms and provider policies cite a
+  details, license terms and provider policies cite a
   `docs/REFERENCES.md` entry with its [V]/[U]/[C] label. Recalled values
   are not sources.
 - **Write for brevity, then cut again.** No em-dashes, no marketing
@@ -63,7 +63,7 @@ Hard constraints. When in doubt, the principle wins over convenience.
   measured value or observed state. No composite scores, confidence
   scores or multi-signal voting (ADR-004).
 - **Don't load what we may not load.** Speed test backends follow
-  ADR-003's conditions. Never accept a licence or terms on the user's
+  ADR-003's conditions. Never accept a license or terms on the user's
   behalf.
 - **Outside services only by user choice.** Off by default, the option
   says what it sends and to whom, and ARCHITECTURE.md lists it

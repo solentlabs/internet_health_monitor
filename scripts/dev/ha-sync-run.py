@@ -3,10 +3,11 @@
 Start or restart the Home Assistant dev container.
 
 This script:
-1. If HA container is running -> restart it
-2. If HA container is not running -> start it
-3. Waits for HA to be ready
-4. Verifies the integration is mounted
+1. Makes sure the HA image meets IHM's minimum (hacs.json); pulls if not
+2. If the container is running on that image -> restart it
+3. Otherwise -> (re)create it
+4. Waits for HA to be ready
+5. Verifies the integration is mounted
 
 Usage:
     python scripts/dev/ha-sync-run.py           # info logging (default)
@@ -14,6 +15,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import platform
 import re
@@ -52,6 +54,9 @@ COMPOSE_FILE = "docker-compose.test.yml"
 HA_PORT = 8123
 # Must match docker-compose.test.yml; installs Core before HA starts.
 ENTRYPOINT = "/workspace/scripts/dev/ha-entrypoint.sh"
+
+# Image label carrying the Home Assistant version
+HA_VERSION_LABEL = "io.hass.version"
 
 # Other HA test containers that might be using the same port
 OTHER_HA_CONTAINERS = [
@@ -152,6 +157,78 @@ def has_current_entrypoint() -> bool:
         return result.returncode == 0 and result.stdout.strip() == ENTRYPOINT
     except subprocess.SubprocessError:
         return False
+
+
+def parse_version(version: str) -> tuple[int, ...]:
+    """'2026.10.4' -> (2026, 10, 4); a missing patch counts as 0."""
+    match = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
+    if not match:
+        raise ValueError(f"not a Home Assistant version: {version!r}")
+    return tuple(int(part or 0) for part in match.groups())
+
+
+def minimum_ha_version() -> str:
+    """IHM's minimum Home Assistant, from hacs.json (ADR-008)."""
+    return str(json.loads((get_project_dir() / "hacs.json").read_text(encoding="utf-8"))["homeassistant"])
+
+
+def compose_image() -> str:
+    """The HA image named in the compose file."""
+    text = (get_project_dir() / COMPOSE_FILE).read_text(encoding="utf-8")
+    match = re.search(r"^\s*image:\s*(\S+)", text, re.M)
+    if not match:
+        raise RuntimeError(f"no image: line in {COMPOSE_FILE}")
+    return match.group(1)
+
+
+def image_ha_version(image: str) -> str | None:
+    """HA version of the local image, from its label; None if the image is not pulled."""
+    result = subprocess.run(
+        ["docker", "image", "inspect", image, "--format", f'{{{{index .Config.Labels "{HA_VERSION_LABEL}"}}}}'],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    version = result.stdout.strip()
+    return version if result.returncode == 0 and version and version != "<no value>" else None
+
+
+def is_supported(version: str | None, minimum: str) -> bool:
+    """True when an image version is known and at least the minimum."""
+    return version is not None and parse_version(version) >= parse_version(minimum)
+
+
+def ensure_supported_image() -> bool:
+    """Pull the HA image when it is missing or older than IHM's minimum."""
+    image, minimum = compose_image(), minimum_ha_version()
+    version = image_ha_version(image)
+    if not is_supported(version, minimum):
+        print_info(f"Local image is HA {version or 'not pulled'}; IHM needs {minimum} or newer. Pulling {image}")
+        pull = subprocess.run(
+            docker_compose_cmd() + ["-f", str(get_project_dir() / COMPOSE_FILE), "pull"],
+            cwd=get_project_dir(),
+        )
+        if pull.returncode != 0:
+            print_error("Image pull failed (see output above)")
+            report_docker_engine()
+            return False
+        version = image_ha_version(image)
+    if not is_supported(version, minimum):
+        print_error(f"{image} is HA {version}, below IHM's minimum {minimum}")
+        return False
+    print_success(f"Home Assistant {version} (IHM minimum {minimum})")
+    return True
+
+
+def container_uses_image(image: str) -> bool:
+    """True when the container was created from the current local image."""
+    container = subprocess.run(
+        ["docker", "inspect", CONTAINER_NAME, "--format", "{{.Image}}"], capture_output=True, text=True, timeout=10
+    )
+    local = subprocess.run(
+        ["docker", "image", "inspect", image, "--format", "{{.Id}}"], capture_output=True, text=True, timeout=10
+    )
+    return container.returncode == 0 and local.returncode == 0 and container.stdout.strip() == local.stdout.strip()
 
 
 def container_exists() -> bool:
@@ -465,28 +542,35 @@ def main() -> int:
     mode_label = f" ({YELLOW}DEBUG{NC})" if args.debug else ""
     print_header(f"Start Home Assistant{mode_label}")
 
-    total_steps = 2
+    total_steps = 3
 
-    # Step 1: Start or restart container. A container from an older compose
-    # file is recreated, since a restart keeps its old entrypoint.
-    if is_container_running() and has_current_entrypoint():
-        print_step(1, total_steps, "Restarting Home Assistant...")
+    # Step 1: The image must meet IHM's minimum HA (hacs.json, ADR-008).
+    print_step(1, total_steps, "Checking Home Assistant version...")
+    if not ensure_supported_image():
+        print_error_header("UNSUPPORTED HOME ASSISTANT")
+        return 1
+
+    # Step 2: Restart only a container that matches the current compose file
+    # and image; anything older is recreated (a restart keeps both).
+    current = is_container_running() and has_current_entrypoint() and container_uses_image(compose_image())
+    if current:
+        print_step(2, total_steps, "Restarting Home Assistant...")
         ensure_dev_config(log_level)
         if not restart_container():
             print_error_header("RESTART FAILED")
             return 1
         print_success("Container restarted")
     else:
-        print_step(1, total_steps, "Starting Home Assistant...")
+        print_step(2, total_steps, "Starting Home Assistant...")
         ensure_dev_config(log_level)
         if not start_container():
             print_error_header("START FAILED")
             return 1
         print_success("Container started")
 
-    # Step 2: Wait for HA to be ready
+    # Step 3: Wait for HA to be ready
     print()
-    print_step(2, total_steps, "Waiting for Home Assistant...")
+    print_step(3, total_steps, "Waiting for Home Assistant...")
     print("   ", end="")
 
     if wait_for_http(HA_PORT, timeout=90):

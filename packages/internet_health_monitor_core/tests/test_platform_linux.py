@@ -108,7 +108,7 @@ INTERFACE_CASES = [
 # (exit code, stdout) from `ping -c 1` -> (replied, rtt)
 PING_CASES = [
     ("reply",            0, "rtt min/avg/max/mdev = 3.210/3.210/3.210/0.000 ms\n", (True, 3.21)),
-    ("reply without rtt", 0, "unrecognised output\n",                              (True, None)),
+    ("reply without rtt", 0, "unrecognized output\n",                              (True, None)),
     ("no reply",         1, "",                                                     (False, None)),
 ]
 # fmt: on

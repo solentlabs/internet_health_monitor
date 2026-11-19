@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   probatio, HA's validation library since 2026.9, and is strictly typed
   with HA core's own type-checking settings. Development and CI run on
   Python 3.14; Core's command line still supports Python 3.12.
+- **The dev start script keeps the test HA supported.** HA: Start pulls a
+  fresh image when the local one is older than IHM's minimum (read from
+  `hacs.json`), and recreates the container when its image changed.
+- **Spell checking.** `cspell.config.yaml` holds the project dictionary,
+  so VS Code's spell checker shows only real mistakes; `make spell-check`
+  and a CI job keep it at zero. Docs use US spelling throughout.
 - **One way to set up development:** `make setup` and `make setup-current`.
   The `scripts/setup.py`, `setup.sh` and `setup.ps1` scripts are gone: they
   duplicated it, and would have installed the wrong Home Assistant for the

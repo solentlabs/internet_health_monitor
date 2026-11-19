@@ -1,0 +1,138 @@
+version: "0.2"
+language: en
+
+ignorePaths:
+  - .git/**
+  - .venv/**
+  - .venv-current/**
+  - htmlcov/**
+  - test-ha-config/**
+  - "**/__pycache__/**"
+  # Localized UI strings: non-English by design
+  - "**/translations/*.json"
+
+# Fragments that are not words: struct formats, flags, example hostnames
+ignoreWords:
+  - atlnga # example backbone router hostname (ROADMAP.md)
+  - HHIH # struct format in dns_probe.py
+  - tuln # ss flags
+  - tulpn # ss flags
+  - ttls # list of TTLs in a test fake
+
+words:
+  # Home Assistant
+  - automations
+  - autouse
+  - HACS
+  - haos
+  - hass
+  - hassfest
+  - hassio
+  - homeassistant
+  - probatio
+  - reauthentication
+  - websession
+
+  # Network and DNS
+  - ancount
+  - arin
+  - Bufferbloat
+  - CGNAT
+  - datagram
+  - deprioritize
+  - dnsutils
+  - DOCSIS
+  - gaierror
+  - gethostbyaddr
+  - Hostnames
+  - IPFORWARDROW
+  - Iphlpapi
+  - IPPM
+  - Mbit
+  - Mbps
+  - mdev
+  - NOERROR
+  - ntoa
+  - NXDOMAIN
+  - QCLASS
+  - qdcount
+  - QTYPE
+  - RCODE
+  - rdata
+  - rdlength
+  - redetects
+  - RESOLV
+  - RRUL
+  - rtype
+  - servfail
+  - SNMP
+  - stddev
+  - TRACEROUTE
+  - veth
+  - whois
+  - wlan
+
+  # Speed test providers, projects and their authors
+  - cloudflarepycli
+  - fastcom
+  - fastdotcom
+  - Flent
+  - goresponsiveness
+  - goserver
+  - icmplib
+  - librespeed
+  - louislam
+  - lynxthecat
+  - macvendors
+  - mlab
+  - MSAK
+  - oetiker
+  - Ookla
+  - soulripper
+  - speedtestdotnet
+  - Wayback
+
+  # Project and people
+  - kwschulz
+  - solentlabs
+
+  # Python, packaging and dev tools
+  - addopts
+  - asyncio
+  - autopep
+  - cacheprovider
+  - charliermarsh
+  - checkmark
+  - containerenv
+  - ctypes
+  - dataclasses
+  - docstrings
+  - EOFCONFIG
+  - geolocation
+  - htmlcov
+  - isort
+  - LASTEXITCODE
+  - mccabe
+  - minversion
+  - moby
+  - Mypy
+  - pycache
+  - pycodestyle
+  - pyflakes
+  - pylint
+  - pypa
+  - pypi
+  - pyproject
+  - Pytest
+  - PYTHONPATH
+  - pyupgrade
+  - setuptools
+  - shfmt
+  - softprops
+  - startswith
+  - subclassing
+  - testpaths
+  - tomllib
+  - VENV
+  - WSLENV
+  - wslpath
