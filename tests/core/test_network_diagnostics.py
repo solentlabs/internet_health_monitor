@@ -62,8 +62,8 @@ TRACEROUTE_CASES = [
     (
         "three hops",
         "traceroute to 8.8.8.8 (8.8.8.8), 3 hops max, 46 byte packets\n"
-        " 1  192.168.1.1  0.512 ms\n 2  10.0.0.1  8.1 ms\n 3  68.86.1.1  12.0 ms\n",
-        {1: "192.168.1.1", 2: "10.0.0.1", 3: "68.86.1.1"},
+        " 1  192.168.1.1  0.512 ms\n 2  10.0.0.1  8.1 ms\n 3  198.51.100.1  12.0 ms\n",
+        {1: "192.168.1.1", 2: "10.0.0.1", 3: "198.51.100.1"},
     ),
     (
         "timeouts skipped",
@@ -78,6 +78,20 @@ TRACEROUTE_CASES = [
     ("IPv6 hop", " 1  fe80::1  0.5 ms\n", {1: "fe80::1"}),
     ("non-IP token skipped", " 1  gateway.lan  0.5 ms\n", {}),
     ("empty output", "", {}),
+]
+# fmt: on
+
+
+# Reverse DNS result per hop -> cached hostnames. Lookups that find no name
+# or raise are left out.
+# fmt: off
+HOSTNAME_CASES = [
+    # (description, lookup results by IP, expected hostnames)
+    ("names found", {"192.168.1.1": "router.lan", "198.51.100.1": "isp.example.net"},
+     {1: "router.lan", 2: "isp.example.net"}),
+    ("no PTR record", {"192.168.1.1": None, "198.51.100.1": "isp.example.net"},
+     {2: "isp.example.net"}),
+    ("lookup raises", {"192.168.1.1": OSError("boom"), "198.51.100.1": None}, {}),
 ]
 # fmt: on
 
@@ -195,13 +209,13 @@ class TestNetworkDiagnostics:
         diag._gateway_ip = "192.168.1.1"
         diag._hop_ips = {1: "192.168.1.1", 2: "10.0.0.1"}
         diag._gateway_latency_history.append(10.0)
-        diag._metadata_collected = True
+        diag._hostnames_collected = True
 
         diag.reset_all()
         assert diag._gateway_ip is None
         assert diag._hop_ips == {}
         assert len(diag._gateway_latency_history) == 0
-        assert diag._metadata_collected is False
+        assert diag._hostnames_collected is False
 
     def test_calculate_jitter_insufficient_data(self):
         """Test jitter calculation with insufficient data."""
@@ -339,6 +353,31 @@ class TestNetworkDiagnosticsResult:
         assert result.isp_hop_ip == "10.0.0.1"
         assert result.isp_hop_reachable is True
         assert result.isp_hop_latency_ms == 15.0
+
+
+@pytest.mark.parametrize(
+    ("description", "lookups", "expected"),
+    HOSTNAME_CASES,
+    ids=[c[0] for c in HOSTNAME_CASES],
+)
+@pytest.mark.asyncio
+async def test_collect_hostnames(
+    description: str, lookups: dict[str, str | None | Exception], expected: dict[int, str]
+) -> None:
+    """Hop hostnames come only from reverse DNS; failures leave no entry."""
+    diag = NetworkDiagnostics()
+    diag._hop_ips = {1: "192.168.1.1", 2: "198.51.100.1"}
+
+    async def fake_lookup(ip: str) -> str | None:
+        result = lookups[ip]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    with patch.object(diag, "_reverse_dns_lookup", side_effect=fake_lookup):
+        await diag._collect_hostnames()
+
+    assert diag._hop_hostnames == expected
 
 
 class TestNetworkDiagnosticsAsync:

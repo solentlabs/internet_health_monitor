@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **No more third-party lookups.** Hop IPs are no longer sent to ip-api.com
+  and the gateway's MAC address is no longer sent to macvendors.com, so the
+  hop ISP, ASN, location and MAC vendor attributes are gone. Hostnames still
+  come from reverse DNS.
+- **Removed the Refresh Network Info button.** Reset Network Cache also
+  re-reads hostnames.
 - **Tests run on the oldest and newest supported Home Assistant.**
   `make test` uses Python 3.12 (HA 2025.1.x), `make test-current` Python 3.14
   (newest HA), and CI runs both. Development dependencies are listed only in

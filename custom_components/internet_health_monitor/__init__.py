@@ -6,7 +6,7 @@ A Solent Labs integration for network health monitoring including:
 - Per-hop jitter (latency variance)
 - Packet loss percentage
 - DNS resolution timing
-- Rich metadata (reverse DNS, geolocation, ISP info)
+- Reverse DNS names for detected hops
 """
 
 from __future__ import annotations

@@ -70,6 +70,7 @@ def mock_diagnostics_result():
                 packets_sent=3,
                 packets_received=3,
                 reachable=True,
+                hostname="isp-router.example.com",
             ),
             HopInfo(
                 hop_number=3,
@@ -108,7 +109,7 @@ def mock_diagnostics_instance():
     diag = Mock(spec=NetworkDiagnostics)
     diag._gateway_detection_failed = False
     diag._hop_detection_failed = False
-    diag._metadata_collected = True
+    diag._hostnames_collected = True
     diag._gateway_latency_history = deque([5.0, 5.5, 6.0])
     return diag
 
@@ -274,6 +275,7 @@ async def test_diagnostics_hops_data(mock_config_entry, mock_coordinator, mock_d
     # Check hop 2
     assert hops[1]["hop_number"] == 2
     assert hops[1]["ip"] == "10.0.0.1"
+    assert hops[1]["hostname"] == "isp-router.example.com"
     assert hops[1]["typical_location"] == "isp"
 
     # Check hop 3
@@ -319,7 +321,7 @@ async def test_diagnostics_detection_state(mock_config_entry, mock_coordinator, 
     detection_state = diagnostics["detection_state"]
     assert detection_state["gateway_detection_failed"] is False
     assert detection_state["hop_detection_failed"] is False
-    assert detection_state["metadata_collected"] is True
+    assert detection_state["hostnames_collected"] is True
     assert detection_state["gateway_latency_history_size"] == 3
 
 
@@ -359,7 +361,7 @@ async def test_diagnostics_gateway_detection_failed(mock_config_entry, mock_coor
     diag_instance = Mock(spec=NetworkDiagnostics)
     diag_instance._gateway_detection_failed = True
     diag_instance._hop_detection_failed = False
-    diag_instance._metadata_collected = False
+    diag_instance._hostnames_collected = False
     diag_instance._gateway_latency_history = deque()
 
     hass = Mock(spec=HomeAssistant)
@@ -386,7 +388,7 @@ async def test_diagnostics_hop_detection_failed(mock_config_entry, mock_coordina
     diag_instance = Mock(spec=NetworkDiagnostics)
     diag_instance._gateway_detection_failed = False
     diag_instance._hop_detection_failed = True
-    diag_instance._metadata_collected = False
+    diag_instance._hostnames_collected = False
     diag_instance._gateway_latency_history = deque()
 
     hass = Mock(spec=HomeAssistant)
@@ -413,7 +415,7 @@ async def test_diagnostics_empty_latency_history(mock_config_entry, mock_coordin
     diag_instance = Mock(spec=NetworkDiagnostics)
     diag_instance._gateway_detection_failed = False
     diag_instance._hop_detection_failed = False
-    diag_instance._metadata_collected = True
+    diag_instance._hostnames_collected = True
     diag_instance._gateway_latency_history = deque()
 
     hass = Mock(spec=HomeAssistant)
@@ -440,7 +442,7 @@ async def test_diagnostics_large_latency_history(mock_config_entry, mock_coordin
     diag_instance = Mock(spec=NetworkDiagnostics)
     diag_instance._gateway_detection_failed = False
     diag_instance._hop_detection_failed = False
-    diag_instance._metadata_collected = True
+    diag_instance._hostnames_collected = True
     diag_instance._gateway_latency_history = deque(range(100))
 
     hass = Mock(spec=HomeAssistant)

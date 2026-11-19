@@ -188,6 +188,14 @@ Assistant Core 2025.12" [V]. HA 2026.9.3 raises `AttributeError:
 property 'config_entry' ... has no setter` [V, local test log]. Exact
 release that added the property [U].
 
+## R12. Documentation addresses and names
+
+RFC 5737 (https://www.rfc-editor.org/rfc/rfc5737): 192.0.2.0/24,
+198.51.100.0/24 and 203.0.113.0/24 are reserved for documentation [V].
+RFC 2606 (https://www.rfc-editor.org/rfc/rfc2606): `example.com`,
+`example.net` and `example.org` are reserved for examples [V]. Used for
+test fixtures (ADR-006).
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

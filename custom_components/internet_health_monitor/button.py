@@ -30,7 +30,6 @@ async def async_setup_entry(
     async_add_entities(
         [
             RefreshDiagnosticsButton(coordinator, entry),
-            RefreshNetworkInfoButton(coordinator, entry),
             ResetCacheButton(coordinator, entry),
         ]
     )
@@ -84,31 +83,8 @@ class RefreshDiagnosticsButton(InternetHealthButtonBase):
         await self.coordinator.async_request_refresh()
 
 
-class RefreshNetworkInfoButton(InternetHealthButtonBase):
-    """Button to refresh network metadata (reverse DNS, geo, etc.)."""
-
-    def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
-        """Initialize the refresh network info button."""
-        super().__init__(
-            coordinator,
-            entry,
-            "refresh_network_info",
-            "Refresh Network Info",
-            "mdi:earth-arrow-right",
-        )
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    async def async_press(self) -> None:
-        """Handle button press - refresh metadata (reverse DNS, geolocation, etc.)."""
-        _LOGGER.info("Refreshing network metadata (reverse DNS, geolocation, MAC vendor)")
-        diagnostics = self.hass.data[DOMAIN][self._entry.entry_id]["diagnostics"]
-        # Reset only metadata, keep hop detection intact
-        diagnostics.reset_metadata()
-        await self.coordinator.async_request_refresh()
-
-
 class ResetCacheButton(InternetHealthButtonBase):
-    """Button to reset all cached network detection (gateway, hops, metadata)."""
+    """Button to reset all cached network detection (gateway, hops, hostnames)."""
 
     def __init__(self, coordinator: DataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialize the reset button."""
@@ -123,7 +99,7 @@ class ResetCacheButton(InternetHealthButtonBase):
 
     async def async_press(self) -> None:
         """Handle button press - reset all cached network info."""
-        _LOGGER.info("Resetting all network diagnostics cache (gateway, hops, metadata)")
+        _LOGGER.info("Resetting all network diagnostics cache (gateway, hops, hostnames)")
         diagnostics = self.hass.data[DOMAIN][self._entry.entry_id]["diagnostics"]
         diagnostics.reset_all()
         await self.coordinator.async_request_refresh()

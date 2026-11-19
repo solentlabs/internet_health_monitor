@@ -29,7 +29,7 @@ HA layer  (custom_components/internet_health_monitor/*.py)
         │ calls run_diagnostics(), receives NetworkDiagnosticsResult
         ▼
 Core      (custom_components/internet_health_monitor/core/)
-    network_diagnostics.py: detection, probes, jitter, metadata
+    network_diagnostics.py: detection, probes, jitter, hop hostnames
         │ subprocesses (ping, traceroute, dig) and sockets
         ▼
 The network
@@ -38,7 +38,7 @@ The network
 **Core** has no `homeassistant` import. `NetworkDiagnostics` takes a
 `NetworkDiagnosticsConfig` and returns a `NetworkDiagnosticsResult`
 (dataclasses). It holds the only state: cached gateway and hop IPs,
-hop metadata, and a rolling latency history per hop (last 30 polls) for
+hop hostnames, and a rolling latency history per hop (last 30 polls) for
 jitter.
 
 **HA layer** maps the result to entities and owns configuration and
@@ -50,7 +50,7 @@ scheduling. It contains no measurement logic.
 | `config_flow.py` | Setup and options: scan interval (10 to 3600 s), DNS server, ping count (1 to 10), gateway and DNS monitoring toggles. |
 | `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency. All `state_class: measurement`. |
 | `binary_sensor.py` | `gateway_reachable` (gateway ping answered), `internet_reachable` (DNS query succeeded). |
-| `button.py` | Refresh diagnostics, refresh network info, reset cache. |
+| `button.py` | Refresh diagnostics, reset cache. |
 | `diagnostics.py` | HA diagnostics download. |
 
 ## One Poll
@@ -60,9 +60,9 @@ scheduling. It contains no measurement logic.
    the traceroute target: the DNS server if public, else `8.8.8.8`.
 2. **Until cached:** detect the gateway (`ip route`), then hops 1 to 3
    (`traceroute -n -q 1 -w 2 -m 3 <target>`).
-3. **Once, after hops are known:** collect hop metadata (see
-   [Data Leaving the Host](#data-leaving-the-host)) and detect the host
-   environment (container, connection type, install type).
+3. **Once, after hops are known:** look up each hop's hostname by
+   reverse DNS and detect the host environment (container, connection
+   type, install type).
 4. **Every poll, in parallel:** ping the gateway, ping each hop, query
    DNS. Each target gets `ping_count` single pings (`ping -c 1`), run one
    after another.
@@ -90,13 +90,15 @@ Linux host.
 
 ## Data Leaving the Host
 
-Beyond the probes themselves, metadata collection sends:
+Beyond the probes themselves (ping, traceroute and the DNS query), IHM
+sends only:
 
 | Destination | What is sent | When |
 |-------------|--------------|------|
-| `http://ip-api.com/json/<ip>` | Each public hop IP (private IPs are skipped) | Once per metadata collection |
-| `https://api.macvendors.com/<mac>` | The gateway's MAC address | Once per metadata collection |
-| Reverse DNS | Each hop IP | Once per metadata collection |
+| The host's configured DNS resolver | Each hop IP, as a reverse DNS query | Once after hops are detected, and after a cache reset |
+
+No third-party lookups (ADR-006). Speed test backends, when built and
+enabled, are the only addition (ADR-003).
 
 ## Planned Components
 

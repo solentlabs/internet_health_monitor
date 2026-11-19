@@ -25,22 +25,12 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
             hop_data = {
                 "hop_number": hop.hop_number,
                 "ip": hop.ip,
+                "hostname": hop.hostname,
                 "latency_ms": hop.latency_ms,
                 "jitter_ms": hop.jitter_ms,
                 "reachable": hop.reachable,
                 "typical_location": hop.typical_location,
             }
-            if hop.metadata:
-                hop_data["metadata"] = {
-                    "hostname": hop.metadata.hostname,
-                    "isp": hop.metadata.isp,
-                    "org": hop.metadata.org,
-                    "asn": hop.metadata.asn,
-                    "city": hop.metadata.city,
-                    "region": hop.metadata.region,
-                    "country": hop.metadata.country,
-                    "mac_vendor": hop.metadata.mac_vendor,
-                }
             hops_data.append(hop_data)
 
     # Build host environment data
@@ -80,7 +70,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
         "detection_state": {
             "gateway_detection_failed": diagnostics_instance._gateway_detection_failed,
             "hop_detection_failed": diagnostics_instance._hop_detection_failed,
-            "metadata_collected": diagnostics_instance._metadata_collected,
+            "hostnames_collected": diagnostics_instance._hostnames_collected,
             "gateway_latency_history_size": len(diagnostics_instance._gateway_latency_history),
         },
     }

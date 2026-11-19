@@ -12,6 +12,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [003](#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3) | Speed testing with user-selected backends (ROADMAP Phase 3) | Accepted 2026-11-18 |
 | [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
+| [006](#adr-006-no-third-party-lookups-no-pii-in-test-data) | No third-party lookups; no PII in test data | Open |
 
 ---
 
@@ -195,3 +196,26 @@ them.
 - A browser extension cannot send ICMP or run traceroute; it would reach
   core through a native helper, or measure HTTP timing only. Neither is
   planned.
+
+---
+
+## ADR-006: No third-party lookups; no PII in test data
+
+**Status:** Open. Recommendation: accept.
+
+**Context:** Hop enrichment sent each public hop IP to ip-api.com over
+plain HTTP and the gateway's MAC address to api.macvendors.com. Neither
+is a measurement, and both tell a third party about the user's network.
+
+**Decision:**
+- IHM sends nothing to a third party except the probes themselves and,
+  when enabled, the user-selected speed test backend (ADR-003).
+- Hop hostnames come from reverse DNS through the resolver the host
+  already uses. Nothing else enriches a hop.
+- Test data holds no PII: private ranges, well-known public resolvers,
+  documentation ranges and example hostnames such as `example.com`
+  (R12). Pasted logs are scrubbed before they become fixtures.
+
+**Constraints:** A feature that needs a new external lookup needs a new
+ADR. `docs/ARCHITECTURE.md § Data Leaving the Host` lists every
+destination.

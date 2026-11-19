@@ -104,46 +104,6 @@ def is_private_ip(ip: str) -> bool:
 
 
 @dataclass
-class HopMetadata:
-    """Metadata about a network hop collected from external sources."""
-
-    # Reverse DNS
-    hostname: str | None = None
-
-    # ip-api.com data
-    isp: str | None = None
-    org: str | None = None
-    asn: str | None = None
-    city: str | None = None
-    region: str | None = None
-    country: str | None = None
-    country_code: str | None = None
-    lat: float | None = None
-    lon: float | None = None
-    timezone: str | None = None
-
-    # MAC vendor (hop 1 only)
-    mac_vendor: str | None = None
-
-    def to_dict(self) -> dict:
-        """Convert to dictionary."""
-        return {
-            "hostname": self.hostname,
-            "isp": self.isp,
-            "org": self.org,
-            "asn": self.asn,
-            "city": self.city,
-            "region": self.region,
-            "country": self.country,
-            "country_code": self.country_code,
-            "lat": self.lat,
-            "lon": self.lon,
-            "timezone": self.timezone,
-            "mac_vendor": self.mac_vendor,
-        }
-
-
-@dataclass
 class HostEnvironment:
     """Information about the host environment."""
 
@@ -179,10 +139,7 @@ class HopInfo:
     packet_loss_percent: float | None = None
     packets_sent: int = 0
     packets_received: int = 0
-    hostname: str | None = None  # Kept for backwards compat, use metadata.hostname
-
-    # Rich metadata (populated on startup/refresh)
-    metadata: HopMetadata | None = None
+    hostname: str | None = None  # Reverse DNS name, if the hop has one
 
     # Typical location based on hop number
     @property
@@ -205,11 +162,9 @@ class HopInfo:
             "packets_sent": self.packets_sent,
             "packets_received": self.packets_received,
             "reachable": self.reachable,
-            "hostname": self.hostname or (self.metadata.hostname if self.metadata else None),
+            "hostname": self.hostname,
             "typical_location": self.typical_location,
         }
-        if self.metadata:
-            result["metadata"] = self.metadata.to_dict()
         return result
 
 
@@ -361,7 +316,7 @@ class NetworkDiagnostics:
     - Per-hop jitter calculation from ping history
     - Packet loss tracking
     - DNS resolution timing
-    - Rich metadata collection (reverse DNS, geolocation, ASN)
+    - Reverse DNS names for detected hops
 
     Designed to run on its own polling interval, independent of other polling.
     """
@@ -403,9 +358,9 @@ class NetworkDiagnostics:
         self._hop_ips: dict[int, str] = {}
         self._hop_detection_failed = False
 
-        # Cached hop metadata (hop_number -> HopMetadata)
-        self._hop_metadata: dict[int, HopMetadata] = {}
-        self._metadata_collected = False
+        # Cached reverse DNS names (hop_number -> hostname)
+        self._hop_hostnames: dict[int, str] = {}
+        self._hostnames_collected = False
 
         # Host environment info
         self._host_environment: HostEnvironment | None = None
@@ -478,10 +433,10 @@ class NetworkDiagnostics:
         if self._gateway_ip and not self._hop_ips and not self._hop_detection_failed:
             self._hop_ips = await self._detect_hops()
 
-        # Collect metadata on first run (or after refresh)
-        if self._hop_ips and not self._metadata_collected:
-            await self._collect_metadata()
-            self._metadata_collected = True
+        # Look up hop hostnames on first run (or after a cache reset)
+        if self._hop_ips and not self._hostnames_collected:
+            await self._collect_hostnames()
+            self._hostnames_collected = True
 
         # Detect host environment on first run
         if not self._host_environment:
@@ -719,7 +674,7 @@ class NetworkDiagnostics:
                         latency_ms=None,
                         jitter_ms=None,
                         reachable=False,
-                        metadata=self._hop_metadata.get(hop_num),
+                        hostname=self._hop_hostnames.get(hop_num),
                     )
                 )
             else:
@@ -738,7 +693,6 @@ class NetworkDiagnostics:
             packets_sent=0,
             packets_received=0,
             reachable=False,
-            metadata=None,
         )
 
     async def _check_single_hop(self, hop_number: int, ip: str) -> HopInfo:
@@ -786,7 +740,7 @@ class NetworkDiagnostics:
             packets_sent=packets_sent,
             packets_received=packets_received,
             reachable=packets_received > 0,
-            metadata=self._hop_metadata.get(hop_number),
+            hostname=self._hop_hostnames.get(hop_number),
         )
 
     async def _check_gateway(self) -> dict:
@@ -1037,101 +991,38 @@ class NetworkDiagnostics:
         self._hop_ips = {}
         self._hop_detection_failed = False
 
-    def reset_metadata(self) -> None:
-        """Reset cached metadata to force re-collection.
-
-        Call this to refresh hop metadata (reverse DNS, geo, etc.).
-        """
-        self._hop_metadata = {}
-        self._metadata_collected = False
+    def reset_hostnames(self) -> None:
+        """Clear cached hop hostnames and host environment so both are re-detected."""
+        self._hop_hostnames = {}
+        self._hostnames_collected = False
         self._host_environment = None
 
     def reset_all(self) -> None:
         """Reset all cached network information.
 
-        Clears gateway, hops, metadata, and latency history.
+        Clears gateway, hops, hostnames, and latency history.
         """
         self.reset_gateway()
         self.reset_hops()
-        self.reset_metadata()
+        self.reset_hostnames()
         self.clear_history()
 
     # =========================================================================
-    # Metadata Collection Methods
+    # Hop Hostnames
     # =========================================================================
 
-    async def _collect_metadata(self) -> None:
-        """Collect metadata for all detected hops.
-
-        Runs reverse DNS, ip-api.com lookups, and MAC vendor lookup in parallel.
-        """
-        if not self._hop_ips:
-            return
-
-        _LOGGER.info("Collecting hop metadata...")
-
-        # Collect metadata for each hop in parallel
-        tasks = []
-        for hop_num, ip in self._hop_ips.items():
-            tasks.append(self._collect_hop_metadata(hop_num, ip))
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for i, result in enumerate(results):
-            hop_num = list(self._hop_ips.keys())[i]
+    async def _collect_hostnames(self) -> None:
+        """Look up reverse DNS names for all detected hops, in parallel."""
+        hop_nums = list(self._hop_ips)
+        results = await asyncio.gather(
+            *(self._reverse_dns_lookup(self._hop_ips[n]) for n in hop_nums),
+            return_exceptions=True,
+        )
+        for hop_num, result in zip(hop_nums, results, strict=True):
             if isinstance(result, BaseException):
-                _LOGGER.debug("Metadata collection failed for hop %d: %s", hop_num, result)
+                _LOGGER.debug("Reverse DNS failed for hop %d: %s", hop_num, result)
             elif result:
-                self._hop_metadata[hop_num] = result
-
-        _LOGGER.info("Metadata collected for %d hops", len(self._hop_metadata))
-
-    async def _collect_hop_metadata(self, hop_number: int, ip: str) -> HopMetadata | None:
-        """Collect metadata for a single hop.
-
-        Args:
-            hop_number: The hop number (1, 2, 3)
-            ip: The IP address of the hop.
-
-        Returns:
-            HopMetadata with collected information.
-        """
-        metadata = HopMetadata()
-
-        # Run reverse DNS lookup
-        try:
-            hostname = await self._reverse_dns_lookup(ip)
-            metadata.hostname = hostname
-        except Exception as e:
-            _LOGGER.debug("Reverse DNS failed for %s: %s", ip, e)
-
-        # Only do ip-api lookup for public IPs
-        if not is_private_ip(ip):
-            try:
-                geo_data = await self._ip_api_lookup(ip)
-                if geo_data:
-                    metadata.isp = geo_data.get("isp")
-                    metadata.org = geo_data.get("org")
-                    metadata.asn = geo_data.get("as")
-                    metadata.city = geo_data.get("city")
-                    metadata.region = geo_data.get("regionName")
-                    metadata.country = geo_data.get("country")
-                    metadata.country_code = geo_data.get("countryCode")
-                    metadata.lat = geo_data.get("lat")
-                    metadata.lon = geo_data.get("lon")
-                    metadata.timezone = geo_data.get("timezone")
-            except Exception as e:
-                _LOGGER.debug("ip-api lookup failed for %s: %s", ip, e)
-
-        # MAC vendor lookup only for hop 1 (gateway)
-        if hop_number == 1:
-            try:
-                mac_vendor = await self._get_gateway_mac_vendor(ip)
-                metadata.mac_vendor = mac_vendor
-            except Exception as e:
-                _LOGGER.debug("MAC vendor lookup failed for %s: %s", ip, e)
-
-        return metadata
+                self._hop_hostnames[hop_num] = result
 
     async def _reverse_dns_lookup(self, ip: str) -> str | None:
         """Perform reverse DNS lookup for an IP address.
@@ -1156,140 +1047,6 @@ class NetworkDiagnostics:
             return None
         except TimeoutError:
             _LOGGER.debug("Reverse DNS timeout for %s", ip)
-            return None
-
-    async def _ip_api_lookup(self, ip: str) -> dict | None:
-        """Look up IP information using ip-api.com.
-
-        Args:
-            ip: The IP address to look up.
-
-        Returns:
-            Dict with ISP, ASN, geo info, or None on failure.
-        """
-        import json
-        import urllib.error
-        import urllib.request
-
-        url = f"http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,org,as"
-
-        try:
-            loop = asyncio.get_event_loop()
-
-            def fetch() -> dict[str, Any]:
-                req = urllib.request.Request(url, headers={"User-Agent": "InternetHealthMonitor/1.0"})
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    parsed: dict[str, Any] = json.loads(response.read().decode())
-                    return parsed
-
-            data = await asyncio.wait_for(
-                loop.run_in_executor(None, fetch),
-                timeout=15.0,
-            )
-
-            if data.get("status") == "success":
-                _LOGGER.debug("ip-api data for %s: ISP=%s, City=%s", ip, data.get("isp"), data.get("city"))
-                return data
-            else:
-                _LOGGER.debug("ip-api failed for %s: %s", ip, data.get("message"))
-                return None
-
-        except urllib.error.URLError as e:
-            _LOGGER.debug("ip-api request failed for %s: %s", ip, e)
-            return None
-        except TimeoutError:
-            _LOGGER.debug("ip-api timeout for %s", ip)
-            return None
-        except Exception as e:
-            _LOGGER.debug("ip-api error for %s: %s", ip, e)
-            return None
-
-    async def _get_gateway_mac_vendor(self, gateway_ip: str) -> str | None:
-        """Get the MAC vendor for the gateway.
-
-        Uses ARP table to find MAC, then looks up vendor from OUI.
-
-        Args:
-            gateway_ip: The gateway IP address.
-
-        Returns:
-            Vendor name if found, None otherwise.
-        """
-        try:
-            # Get MAC from ARP table
-            proc = await asyncio.create_subprocess_exec(
-                "ip",
-                "neigh",
-                "show",
-                gateway_ip,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5.0)
-
-            output = stdout.decode().strip()
-            # Format: "192.168.1.1 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE"
-            parts = output.split()
-            mac = None
-            for i, part in enumerate(parts):
-                if part == "lladdr" and i + 1 < len(parts):
-                    mac = parts[i + 1]
-                    break
-
-            if not mac:
-                _LOGGER.debug("No MAC found in ARP for %s", gateway_ip)
-                return None
-
-            # Look up vendor from MAC prefix (first 3 octets)
-            vendor = await self._lookup_mac_vendor(mac)
-            if vendor:
-                _LOGGER.debug("Gateway %s MAC vendor: %s", gateway_ip, vendor)
-            return vendor
-
-        except Exception as e:
-            _LOGGER.debug("MAC vendor lookup error: %s", e)
-            return None
-
-    async def _lookup_mac_vendor(self, mac: str) -> str | None:
-        """Look up MAC address vendor using macvendors.com API.
-
-        Args:
-            mac: MAC address in any format.
-
-        Returns:
-            Vendor name if found, None otherwise.
-        """
-        import urllib.error
-        import urllib.request
-
-        # Normalize MAC to uppercase with colons
-        mac_clean = mac.upper().replace("-", ":").replace(".", ":")
-
-        url = f"https://api.macvendors.com/{mac_clean}"
-
-        try:
-            loop = asyncio.get_event_loop()
-
-            def fetch() -> str:
-                req = urllib.request.Request(url, headers={"User-Agent": "InternetHealthMonitor/1.0"})
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    body: bytes = response.read()
-                    return body.decode().strip()
-
-            vendor = await asyncio.wait_for(
-                loop.run_in_executor(None, fetch),
-                timeout=15.0,
-            )
-            return vendor if vendor else None
-
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                _LOGGER.debug("MAC vendor not found for %s", mac)
-            else:
-                _LOGGER.debug("MAC vendor lookup HTTP error: %s", e)
-            return None
-        except Exception as e:
-            _LOGGER.debug("MAC vendor lookup error: %s", e)
             return None
 
     # =========================================================================

@@ -165,7 +165,7 @@ class HopSensorBase(CoordinatorEntity[DataUpdateCoordinator[NetworkDiagnosticsRe
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return common hop attributes including rich metadata."""
+        """Return common hop attributes."""
         hop = self._get_hop()
         if not hop:
             return {"hop_number": self._hop_number, "hop_ip": None, "reachable": False}
@@ -177,18 +177,7 @@ class HopSensorBase(CoordinatorEntity[DataUpdateCoordinator[NetworkDiagnosticsRe
             "typical_location": hop.typical_location,
         }
 
-        # Add metadata if available
-        if hop.metadata:
-            attrs["hostname"] = hop.metadata.hostname
-            attrs["isp"] = hop.metadata.isp
-            attrs["org"] = hop.metadata.org
-            attrs["asn"] = hop.metadata.asn
-            attrs["city"] = hop.metadata.city
-            attrs["region"] = hop.metadata.region
-            attrs["country"] = hop.metadata.country
-            attrs["country_code"] = hop.metadata.country_code
-            attrs["mac_vendor"] = hop.metadata.mac_vendor
-        elif hop.hostname:
+        if hop.hostname:
             attrs["hostname"] = hop.hostname
 
         return attrs

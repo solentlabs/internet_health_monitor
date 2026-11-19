@@ -11,7 +11,6 @@ from homeassistant.const import PERCENTAGE, UnitOfTime
 from custom_components.internet_health_monitor.const import DOMAIN, MANUFACTURER, NAME
 from custom_components.internet_health_monitor.core.network_diagnostics import (
     HopInfo,
-    HopMetadata,
     HostEnvironment,
     NetworkDiagnosticsResult,
 )
@@ -176,15 +175,8 @@ class TestHopLatencySensor:
         assert attrs["reachable"] is True
         assert attrs["typical_location"] == "isp"
 
-    def test_hop_sensor_with_metadata(self, mock_coordinator, mock_entry):
-        """Test hop sensor with metadata."""
-        metadata = HopMetadata(
-            hostname="isp-router.example.com",
-            isp="Example ISP",
-            asn="AS12345",
-            city="New York",
-            country="US",
-        )
+    def test_hop_sensor_with_hostname(self, mock_coordinator, mock_entry):
+        """Hop sensor exposes the reverse DNS name as an attribute."""
         hop = HopInfo(
             hop_number=2,
             ip="10.0.0.1",
@@ -194,7 +186,7 @@ class TestHopLatencySensor:
             packets_sent=3,
             packets_received=3,
             reachable=True,
-            metadata=metadata,
+            hostname="isp-router.example.com",
         )
         result = make_result(
             hops=[
@@ -226,10 +218,7 @@ class TestHopLatencySensor:
         sensor = HopLatencySensor(mock_coordinator, mock_entry, 2)
         attrs = sensor.extra_state_attributes
         assert attrs["hostname"] == "isp-router.example.com"
-        assert attrs["isp"] == "Example ISP"
-        assert attrs["asn"] == "AS12345"
-        assert attrs["city"] == "New York"
-        assert attrs["country"] == "US"
+        assert "isp" not in attrs
 
 
 class TestHopJitterSensor:
