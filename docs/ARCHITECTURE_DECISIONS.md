@@ -15,6 +15,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
 | [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
+| [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Open |
 
 ---
 
@@ -278,12 +279,11 @@ the interval and users do not get a field for it, in setup or options
 - **Comparable tools** use 30 to 60 s for "is it working now" monitoring:
   HA Ping 30 s, HA Speedtest.net 60 s, Uptime Kuma 60 s. SmokePing's 300 s
   suits long-term graphs, too slow for live sensors (R16).
-- **60 over 30:** half the probes and database writes, and jitter's
-  30-poll window (`DEFAULT_HISTORY_SIZE`) spans 30 minutes, steadier than
-  15. An outage shows within a minute either way.
+- **60 over 30:** half the probes and database writes; an outage shows
+  within a minute either way. Jitter is measured within each poll
+  (ADR-009), so the interval does not change it.
 - **Other intervals:** HA's documented route (polling off, an automation
-  calling `homeassistant.update_entity`; README.md § Polling). This also
-  changes jitter's time window.
+  calling `homeassistant.update_entity`; README.md § Polling).
 
 **Constraints:**
 - Every interval, timeout and limit lives in Core's `timing.py`; the HA
@@ -325,3 +325,29 @@ directly, as HA core does (R17).
   (`pyproject.toml [tool.mypy]`).
 - Core alone still supports Python 3.12 (its CLI); a CI job tests it there.
 - Raising the floor again needs a reason recorded here.
+
+---
+
+## ADR-009: Jitter is consecutive delay variation
+
+**Status:** Open. Recommendation: accept.
+
+**Context:** IHM reported jitter as the standard deviation of each poll's
+mean latency over the last 30 polls. That is not a standard definition: it
+measures drift across half an hour and averages away the packet-to-packet
+variation that calls, games and streams suffer. RFC 3550's interarrival
+jitter, RFC 5481's IPDV and Cloudflare's speed test all compare consecutive
+samples (R18).
+
+**Decision:** A target's jitter is the mean absolute difference between
+consecutive round-trip times among one poll's pings (`consecutive_jitter`
+in Core), as Cloudflare's speed test computes it (R18). It is the
+unsmoothed form of RFC 3550's estimator, over round-trip rather than
+one-way delay, since ping measures round trips.
+
+**Constraints:**
+- Jitter needs at least two replies in a poll; with one ping per target it
+  is unknown. The default is three.
+- No latency history is kept; each poll stands alone, and HA's long-term
+  statistics carry the trend.
+- Docs call it jitter (the term users know) and define it as above.

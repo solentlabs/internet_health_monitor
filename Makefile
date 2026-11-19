@@ -1,4 +1,4 @@
-.PHONY: help spell-check setup-current test-current test-all test-windows coverage-gates test test-quick clean lint lint-fix type-check format format-check check setup
+.PHONY: help spell-check hassfest setup-current test-current test-all test-windows coverage-gates test test-quick clean lint lint-fix type-check format format-check check setup
 
 # Default target - show help
 help:
@@ -23,6 +23,7 @@ help:
 	@echo "  make format      - Format code with black"
 	@echo "  make format-check - Check code formatting without modifying"
 	@echo "  make spell-check - cspell over the repo (needs Node.js; same as CI)"
+	@echo "  make hassfest    - HA's integration validator (Docker; same image as CI)"
 	@echo "  make check       - Run all code quality checks (lint, format, type, spelling)"
 
 # Setup development environment
@@ -102,6 +103,10 @@ format-check:
 # Spelling: cspell.config.yaml holds the project dictionary. Same command as CI.
 spell-check:
 	@npx --yes cspell@10 --config cspell.config.yaml --gitignore --dot --no-progress "**/*.{py,md,yaml,yml,json,toml,sh,txt}"
+
+# HA's own validator: manifest, translations, quality_scale.yaml. Same image as CI.
+hassfest:
+	@docker run --rm -v "$(CURDIR)://github/workspace" ghcr.io/home-assistant/hassfest
 
 check: lint format-check type-check spell-check
 	@echo "All code quality checks passed!"

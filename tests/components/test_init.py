@@ -25,8 +25,9 @@ from .conftest import SetupEntry
 # fmt: off
 OPTION_CASES = [
     ("defaults",   {},                                                       ("auto", 3, False)),
-    ("all set",    {CONF_DNS_SERVER: "9.9.9.9", CONF_PING_COUNT: 5, CONF_HOP_OWNERSHIP: True},
+    ("all set",    {CONF_DNS_SERVER: "quad9", CONF_PING_COUNT: 5, CONF_HOP_OWNERSHIP: True},
                                                                              ("9.9.9.9", 5, True)),
+    ("stored address", {CONF_DNS_SERVER: "1.1.1.1"},                         ("1.1.1.1", 3, False)),
 ]
 # fmt: on
 

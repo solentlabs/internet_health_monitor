@@ -8,8 +8,6 @@ from __future__ import annotations
 
 # Poll cadence. 60 s: docs/ARCHITECTURE_DECISIONS.md § ADR-007, sources R16.
 POLL_INTERVAL_S = 60
-# Jitter is the spread over this many polls: a 30-minute window at 60 s.
-DEFAULT_HISTORY_SIZE = 30
 
 # Pings per target per poll; sent one after another.
 DEFAULT_PING_COUNT = 3

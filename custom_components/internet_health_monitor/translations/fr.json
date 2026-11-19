@@ -67,10 +67,10 @@
     "dns_server": {
       "options": {
         "auto": "Détection automatique",
-        "1.1.1.1": "Cloudflare (1.1.1.1)",
-        "8.8.8.8": "Google (8.8.8.8)",
-        "9.9.9.9": "Quad9 (9.9.9.9)",
-        "208.67.222.222": "OpenDNS (208.67.222.222)"
+        "cloudflare": "Cloudflare (1.1.1.1)",
+        "google": "Google (8.8.8.8)",
+        "quad9": "Quad9 (9.9.9.9)",
+        "opendns": "OpenDNS (208.67.222.222)"
       }
     }
   },

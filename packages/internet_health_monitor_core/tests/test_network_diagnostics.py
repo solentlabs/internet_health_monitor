@@ -13,8 +13,29 @@ from solentlabs.internet_health_monitor_core.network_diagnostics import (
     NetworkDiagnostics,
     NetworkDiagnosticsConfig,
     NetworkDiagnosticsResult,
+    consecutive_jitter,
     format_ms,
 )
+
+# Round-trip times in sending order -> jitter: mean |difference| of consecutive
+# samples (RFC 3550 consecutive form, Cloudflare's speed test; ADR-009).
+# fmt: off
+JITTER_CASES = [
+    ("steady",            [5.0, 5.0, 5.0],       0.0),
+    ("one swing",         [1.0, 3.0, 2.0],       1.5),
+    ("order matters",     [1.0, 2.0, 3.0],       1.0),  # same values, spread smaller than the swing above
+    ("two samples",       [10.0, 14.0],          4.0),
+    ("one sample",        [10.0],                None),
+    ("no replies",        [],                    None),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "rtts", "expected"), JITTER_CASES, ids=[c[0] for c in JITTER_CASES])
+def test_consecutive_jitter(description: str, rtts: list[float], expected: float | None) -> None:
+    """Jitter is the mean absolute change between consecutive round-trip times."""
+    assert consecutive_jitter(rtts) == expected
+
 
 # Log value -> text. A missing measurement shows as "n/a", never 0.0ms.
 # fmt: off
@@ -56,7 +77,6 @@ class TestNetworkDiagnosticsConfig:
         assert config.ping_timeout == 2
         assert config.dns_server == "auto"
         assert config.dns_timeout == 5
-        assert config.history_size == 30
 
     def test_custom_config(self):
         """Test custom configuration values."""
@@ -83,21 +103,6 @@ class TestNetworkDiagnostics:
         assert diag.config.dns_server == "8.8.8.8"
         assert diag.config.ping_count == 5
 
-    def test_clear_history(self):
-        """Test clearing latency history."""
-        diag = NetworkDiagnostics()
-        diag._gateway_latency_history.append(10.0)
-        diag._gateway_latency_history.append(20.0)
-        diag._hop_latency_history[1].append(5.0)
-        diag._hop_latency_history[2].append(15.0)
-        assert len(diag._gateway_latency_history) == 2
-        assert len(diag._hop_latency_history[1]) == 1
-
-        diag.clear_history()
-        assert len(diag._gateway_latency_history) == 0
-        assert len(diag._hop_latency_history[1]) == 0
-        assert len(diag._hop_latency_history[2]) == 0
-
     def test_reset_gateway(self):
         """Test resetting cached gateway."""
         diag = NetworkDiagnostics()
@@ -113,36 +118,12 @@ class TestNetworkDiagnostics:
         diag = NetworkDiagnostics()
         diag._gateway_ip = "192.168.1.1"
         diag._hop_ips = {1: "192.168.1.1", 2: "10.0.0.1"}
-        diag._gateway_latency_history.append(10.0)
         diag._hostnames_collected = True
 
         diag.reset_all()
         assert diag._gateway_ip is None
         assert diag._hop_ips == {}
-        assert len(diag._gateway_latency_history) == 0
         assert diag._hostnames_collected is False
-
-    def test_calculate_jitter_insufficient_data(self):
-        """Test jitter calculation with insufficient data."""
-        from collections import deque
-
-        diag = NetworkDiagnostics()
-        history = deque()
-        assert diag._calculate_jitter(history) is None
-
-        history.append(10.0)
-        assert diag._calculate_jitter(history) is None  # Need at least 2 samples
-
-    def test_calculate_jitter(self):
-        """Test jitter calculation with sufficient data."""
-        from collections import deque
-
-        diag = NetworkDiagnostics()
-        history = deque([10.0, 12.0, 8.0, 11.0])
-
-        jitter = diag._calculate_jitter(history)
-        assert jitter is not None
-        assert jitter > 0
 
 
 class TestNetworkDiagnosticsResult:
@@ -538,14 +519,15 @@ async def test_detection_is_cached_until_reset() -> None:
     assert platform.trace_calls == 2  # type: ignore[attr-defined]
 
 
-async def test_jitter_builds_across_polls() -> None:
-    """Jitter needs history: none after one poll, a value after several."""
+async def test_jitter_from_one_poll() -> None:
+    """Jitter comes from the poll's own consecutive pings; no history is needed."""
     diag = _diag()
-    first = await diag.run_diagnostics()
-    assert first.gateway_jitter_ms is None
-    for _ in range(3):
-        result = await diag.run_diagnostics()
-    assert result.gateway_jitter_ms == 0.0
+    diag._gateway_ip = "192.168.1.1"
+    diag.config.ping_count = 3
+    rtts = iter([1.0, 3.0, 2.0])
+    diag._single_ping = AsyncMock(side_effect=lambda host: (True, next(rtts)))  # type: ignore[method-assign]
+    result = await diag._check_gateway()
+    assert result["jitter_ms"] == 1.5  # (|3-1| + |2-3|) / 2
 
 
 async def test_auto_dns_falls_back_when_undetected() -> None:
@@ -632,4 +614,4 @@ async def test_detection_state_reports_cache() -> None:
     state = diag.detection_state()
     assert state["platform"] == "fake"
     assert state["hop_detection_failed"] is False
-    assert state["gateway_latency_history_size"] == 1
+    assert state["trace_target"] == "8.8.8.8"

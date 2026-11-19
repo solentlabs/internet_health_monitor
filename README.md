@@ -98,7 +98,7 @@ Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS:
 | Sensor | Unit | Description |
 |--------|------|-------------|
 | Hop N latency | ms | Average round-trip time ping reported for this hop |
-| Hop N jitter | ms | Standard deviation of this hop's latency over the last 30 polls |
+| Hop N jitter | ms | Average change between consecutive ping round-trip times in this poll, as speed test sites measure it |
 | Hop N packet loss | % | Share of this poll's pings to the hop with no reply |
 | DNS latency | ms | Time for one uncached lookup at the DNS server |
 
@@ -218,8 +218,8 @@ entities:
 - **Some routers never answer.** A router that ignores traceroute or ping
   leaves its hop unknown or shows 100% loss, even when traffic passes through
   it normally.
-- **Jitter needs history.** It is the spread of a hop's latency across polls,
-  so it is unknown until the second poll and steadies over the first 30.
+- **Jitter needs two replies.** It compares consecutive pings within a poll,
+  so with Pings per target set to 1 it is unknown.
 - **Fixed 60-second polling** (see [Polling](#polling)).
 - **Hop ownership** finds no owner for private or shared ISP addresses
   (`10.x`, `100.64.x`), which many ISPs use on their first routers, and looks

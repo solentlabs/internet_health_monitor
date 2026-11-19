@@ -48,7 +48,11 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
     """Return the form, pre-filled from current values or DEFAULTS."""
 
     def default(key: str) -> Any:
-        return current.get(key, DEFAULTS[key])
+        value = current.get(key, DEFAULTS[key])
+        if key == CONF_DNS_SERVER:
+            # Older entries stored the address; show it as its named choice.
+            value = next((name for name, address in DNS_SERVERS.items() if address == value), value)
+        return value
 
     return probatio.Schema(
         {

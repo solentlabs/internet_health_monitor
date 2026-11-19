@@ -21,6 +21,7 @@ from .const import (
     CONF_PING_COUNT,
     DEFAULT_DNS_SERVER,
     DEFAULT_PING_COUNT,
+    DNS_SERVERS,
     DOMAIN,
     NAME,
     TROUBLESHOOTING_URL,
@@ -39,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
     options = entry.options
     config = NetworkDiagnosticsConfig(
         ping_count=options.get(CONF_PING_COUNT, DEFAULT_PING_COUNT),
-        dns_server=options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER),
+        dns_server=dns_server_address(options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER)),
         hop_ownership=options.get(CONF_HOP_OWNERSHIP, False),
     )
 
@@ -95,6 +96,11 @@ async def async_remove_entry(hass: HomeAssistant, entry: InternetHealthConfigEnt
     """Clear this integration's repair issues when it is removed."""
     for tool in OPTIONAL_TOOLS:
         ir.async_delete_issue(hass, DOMAIN, f"{tool}_missing")
+
+
+def dns_server_address(choice: str) -> str:
+    """The server for a DNS choice; a stored address (older entries) passes through."""
+    return DNS_SERVERS.get(choice, choice)
 
 
 async def _async_reload_on_options_change(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:

@@ -301,6 +301,23 @@ voluptuous; 2026.10.4 annotates it as `probatio.schema.Schema`.
 HA core strict typing settings: `mypy.ini`
 (https://github.com/home-assistant/core/blob/dev/mypy.ini) [V].
 
+## R18. Jitter
+
+- RFC 3550 § 6.4.1 (https://www.rfc-editor.org/rfc/rfc3550), read
+  2026-11-19 [V]: interarrival jitter "is defined to be the mean deviation
+  (smoothed absolute value) of the difference D in packet spacing at the
+  receiver compared to the sender for a pair of packets", updated as
+  `J(i) = J(i-1) + (|D(i-1,i)| - J(i-1))/16`.
+- RFC 5481 § 1 (https://www.rfc-editor.org/rfc/rfc5481) [V]: prefers
+  "delay variation" because "jitter" has many meanings; the industry
+  "predominantly implemented two specific formulations": IPDV, "where the
+  reference is the previous packet in the stream", and PDV, against the
+  minimum delay. RFC 3393 § 1.1 [V] likewise avoids the term.
+- Cloudflare speed test, `src/Results/MeasurementCalculations.ts`
+  (https://github.com/cloudflare/speedtest, MIT), read 2026-11-19 [V]:
+  `getJitter` "Computes jitter (ms) as the mean absolute difference between
+  consecutive latency samples. Returns `null` if fewer than 2 samples".
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

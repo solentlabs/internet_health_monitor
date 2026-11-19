@@ -21,5 +21,12 @@ CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
 
-# DNS server choices; labels are in the translations (selector.dns_server)
-DNS_SERVERS = ("auto", "1.1.1.1", "8.8.8.8", "9.9.9.9", "208.67.222.222")
+# DNS server choice -> the server Core times. Keys are translation keys
+# (selector.dns_server; hassfest allows only [a-z0-9-_]), so no addresses.
+DNS_SERVERS: dict[str, str] = {
+    DEFAULT_DNS_SERVER: DEFAULT_DNS_SERVER,  # "auto": the host's own resolver
+    "cloudflare": "1.1.1.1",
+    "google": "8.8.8.8",
+    "quad9": "9.9.9.9",
+    "opendns": "208.67.222.222",
+}

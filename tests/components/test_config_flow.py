@@ -25,7 +25,7 @@ from .conftest import SetupEntry
 USER_INPUT: dict[str, Any] = {
     CONF_ENABLE_GATEWAY_MONITORING: True,
     CONF_ENABLE_DNS_MONITORING: False,
-    CONF_DNS_SERVER: "1.1.1.1",
+    CONF_DNS_SERVER: "cloudflare",
     CONF_PING_COUNT: 5,
     CONF_HOP_OWNERSHIP: True,
 }
@@ -34,8 +34,9 @@ USER_INPUT: dict[str, Any] = {
 # fmt: off
 DEFAULT_CASES = [
     ("never set", {},                                                    ("auto", 3, False)),
-    ("stored",    {CONF_DNS_SERVER: "9.9.9.9", CONF_PING_COUNT: 2, CONF_HOP_OWNERSHIP: True},
-                                                                         ("9.9.9.9", 2, True)),
+    ("stored",    {CONF_DNS_SERVER: "quad9", CONF_PING_COUNT: 2, CONF_HOP_OWNERSHIP: True},
+                                                                         ("quad9", 2, True)),
+    ("stored address", {CONF_DNS_SERVER: "9.9.9.9"},                     ("quad9", 3, False)),
 ]
 # fmt: on
 

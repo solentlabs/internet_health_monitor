@@ -52,8 +52,7 @@ milliseconds (REFERENCES.md § R13).
 **Core** has no `homeassistant` import. `NetworkDiagnostics` takes a
 `NetworkDiagnosticsConfig` and returns a `NetworkDiagnosticsResult`
 (dataclasses). It holds the only state: cached gateway and hop IPs,
-hop hostnames, and a rolling latency history per hop (last 30 polls) for
-jitter.
+and hop hostnames. Each poll's measurements stand alone.
 
 **HA layer** maps the result to entities and owns configuration and
 scheduling. It contains no measurement logic.
@@ -94,8 +93,9 @@ scheduling. It contains no measurement logic.
    to every reading. Sources: RFC 2681, iputils `ping(8)` and HA core's
    ping integration ([REFERENCES.md § R10](REFERENCES.md#r10-ping-round-trip-time)).
    A hop's latency is the mean of its replies' round-trip times; loss is
-   the share of pings with no reply. Jitter is the standard deviation of
-   the per-poll mean latency over the rolling history.
+   the share of pings with no reply. Jitter is the mean absolute
+   difference between consecutive round-trip times within the poll
+   (ADR-009, [REFERENCES.md § R18](REFERENCES.md#r18-jitter)).
 
 **Failure isolation:** the three checks run under `asyncio.gather` with
 `return_exceptions=True`, so one failing check yields an unreachable or

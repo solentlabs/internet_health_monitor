@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Jitter now means what speed tests mean by it** (ADR-009): the average
+  change between consecutive ping round-trip times within each poll, as in
+  RFC 3550 and Cloudflare's speed test. It was the spread of per-poll
+  averages over 30 minutes, which hid packet-to-packet variation. Each poll
+  now reports its own jitter; no history is kept.
+
 - **Home Assistant 2026.10.0 is now the minimum** (ADR-008). IHM uses
   probatio, HA's validation library since 2026.9, and is strictly typed
   with HA core's own type-checking settings. Development and CI run on

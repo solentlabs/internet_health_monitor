@@ -44,6 +44,8 @@ words:
   - DOCSIS
   - gaierror
   - gethostbyaddr
+  - interarrival
+  - IPDV
   - Hostnames
   - IPFORWARDROW
   - Iphlpapi
@@ -63,6 +65,7 @@ words:
   - redetects
   - RESOLV
   - RRUL
+  - rtts
   - rtype
   - servfail
   - SNMP
@@ -131,6 +134,7 @@ words:
   - softprops
   - startswith
   - subclassing
+  - unsmoothed
   - testpaths
   - tomllib
   - VENV

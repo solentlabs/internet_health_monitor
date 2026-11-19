@@ -17,9 +17,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
-import statistics
 import time
-from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -28,7 +26,6 @@ from .hop_owner import HopOwner, lookup_owner
 from .platforms import HostEnvironment, Platform, get_platform
 from .timing import (
     DEFAULT_DNS_TIMEOUT,
-    DEFAULT_HISTORY_SIZE,
     DEFAULT_PING_COUNT,
     DEFAULT_PING_TIMEOUT,
     REVERSE_DNS_TIMEOUT_S,
@@ -65,6 +62,17 @@ PRIVATE_IP_PREFIXES = (
     "169.254.",  # Link-local
     "127.",  # Loopback
 )
+
+
+def consecutive_jitter(rtts: list[float]) -> float | None:
+    """Mean absolute difference between consecutive round-trip times; None under two.
+
+    The consecutive-sample form of RFC 3550 interarrival jitter, as Cloudflare's
+    speed test computes it (docs/REFERENCES.md § R18, ADR-009).
+    """
+    if len(rtts) < 2:
+        return None
+    return sum(abs(b - a) for a, b in zip(rtts, rtts[1:], strict=False)) / (len(rtts) - 1)
 
 
 def format_ms(value: float | None) -> str:
@@ -205,7 +213,6 @@ class NetworkDiagnosticsConfig:
     ping_timeout: int = DEFAULT_PING_TIMEOUT
     dns_server: str = DEFAULT_DNS_SERVER
     dns_timeout: int = DEFAULT_DNS_TIMEOUT
-    history_size: int = DEFAULT_HISTORY_SIZE
     # Opt-in: send public hop IPs to Team Cymru to learn their owner (ADR-006)
     hop_ownership: bool = False
 
@@ -216,7 +223,7 @@ class NetworkDiagnostics:
     Performs lightweight network checks including:
     - Gateway ping (auto-detected or configured)
     - 3-hop latency monitoring (gateway, ISP, backbone)
-    - Per-hop jitter calculation from ping history
+    - Per-hop jitter from consecutive ping round-trip times (ADR-009)
     - Packet loss tracking
     - DNS resolution timing
     - Reverse DNS names for detected hops
@@ -247,14 +254,6 @@ class NetworkDiagnostics:
             self.config.dns_server = dns_server
         if ping_count is not None:
             self.config.ping_count = ping_count
-
-        # History for jitter calculation - per hop
-        self._gateway_latency_history: deque[float] = deque(maxlen=self.config.history_size)
-        self._hop_latency_history: dict[int, deque[float]] = {
-            1: deque(maxlen=self.config.history_size),
-            2: deque(maxlen=self.config.history_size),
-            3: deque(maxlen=self.config.history_size),
-        }
 
         # Cached gateway
         self._gateway_ip: str | None = None
@@ -367,6 +366,7 @@ class NetworkDiagnostics:
             gateway_result: dict[str, Any] = {
                 "reachable": False,
                 "latency_ms": None,
+                "jitter_ms": None,
                 "packets_sent": self.config.ping_count,
                 "packets_received": 0,
             }
@@ -387,8 +387,7 @@ class NetworkDiagnostics:
         else:
             dns_result = results[2]
 
-        # Calculate gateway jitter from history
-        gateway_jitter = self._calculate_jitter(self._gateway_latency_history)
+        gateway_jitter = gateway_result["jitter_ms"]
 
         # Calculate packet loss
         packet_loss = None
@@ -525,26 +524,8 @@ class NetworkDiagnostics:
         Returns:
             HopInfo with latency, jitter, packet loss, and reachability.
         """
-        latencies = []
-        packets_received = 0
         packets_sent = self.config.ping_count
-
-        for _ in range(packets_sent):
-            success, latency = await self._single_ping(ip)
-            if success:
-                packets_received += 1
-                if latency is not None:
-                    latencies.append(latency)
-
-        # Calculate average latency
-        avg_latency = None
-        if latencies:
-            avg_latency = sum(latencies) / len(latencies)
-            # Add to history for jitter calculation
-            self._hop_latency_history[hop_number].append(avg_latency)
-
-        # Calculate per-hop jitter
-        jitter = self._calculate_jitter(self._hop_latency_history[hop_number])
+        packets_received, avg_latency, jitter = await self._ping_target(ip)
 
         # Calculate packet loss
         packet_loss = None
@@ -574,33 +555,37 @@ class NetworkDiagnostics:
             return {
                 "reachable": False,
                 "latency_ms": None,
+                "jitter_ms": None,
                 "packets_sent": 0,
                 "packets_received": 0,
             }
 
-        latencies = []
-        packets_received = 0
-
-        for _ in range(self.config.ping_count):
-            success, latency = await self._single_ping(self._gateway_ip)
-            if success:
-                packets_received += 1
-                if latency is not None:
-                    latencies.append(latency)
-
-        # Calculate average latency
-        avg_latency = None
-        if latencies:
-            avg_latency = sum(latencies) / len(latencies)
-            # Add to history for jitter calculation
-            self._gateway_latency_history.append(avg_latency)
+        packets_received, avg_latency, jitter = await self._ping_target(self._gateway_ip)
 
         return {
             "reachable": packets_received > 0,
             "latency_ms": avg_latency,
+            "jitter_ms": jitter,
             "packets_sent": self.config.ping_count,
             "packets_received": packets_received,
         }
+
+    async def _ping_target(self, host: str) -> tuple[int, float | None, float | None]:
+        """Send ping_count pings one after another; return (replies, mean RTT, jitter).
+
+        Jitter is the mean absolute difference between consecutive round-trip
+        times in this poll (ADR-009).
+        """
+        replies = 0
+        rtts: list[float] = []
+        for _ in range(self.config.ping_count):
+            replied, rtt = await self._single_ping(host)
+            if replied:
+                replies += 1
+                if rtt is not None:
+                    rtts.append(rtt)
+        mean = sum(rtts) / len(rtts) if rtts else None
+        return replies, mean, consecutive_jitter(rtts)
 
     async def _single_ping(self, host: str) -> tuple[bool, float | None]:
         """Ping once; return (reply received, round-trip ms or None if not reported)."""
@@ -615,34 +600,6 @@ class NetworkDiagnostics:
             _LOGGER.debug("DNS probe to %s failed: %s", server, e)
             latency_ms = None
         return {"success": latency_ms is not None, "latency_ms": latency_ms}
-
-    def _calculate_jitter(self, history: deque[float]) -> float | None:
-        """Calculate jitter from latency history.
-
-        Jitter is the standard deviation of recent latency measurements.
-
-        Args:
-            history: Deque of latency measurements.
-
-        Returns:
-            Jitter in milliseconds, or None if insufficient data.
-        """
-        if len(history) < 2:
-            return None
-
-        try:
-            return statistics.stdev(history)
-        except statistics.StatisticsError:
-            return None
-
-    def clear_history(self) -> None:
-        """Clear all latency histories.
-
-        Useful for resetting jitter calculation after configuration changes.
-        """
-        self._gateway_latency_history.clear()
-        for history in self._hop_latency_history.values():
-            history.clear()
 
     def reset_gateway(self) -> None:
         """Reset cached gateway to force re-detection.
@@ -668,7 +625,6 @@ class NetworkDiagnostics:
             "hop_detection_failed": self._hop_detection_failed,
             "hostnames_collected": self._hostnames_collected,
             "trace_target": self._trace_target,
-            "gateway_latency_history_size": len(self._gateway_latency_history),
         }
 
     def reset_hostnames(self) -> None:
@@ -681,12 +637,11 @@ class NetworkDiagnostics:
     def reset_all(self) -> None:
         """Reset all cached network information.
 
-        Clears gateway, hops, hostnames, and latency history.
+        Clears gateway, hops and hostnames.
         """
         self.reset_gateway()
         self.reset_hops()
         self.reset_hostnames()
-        self.clear_history()
 
     # =========================================================================
     # Hop Hostnames
