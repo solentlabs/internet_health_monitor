@@ -6,7 +6,7 @@ name = "internet-health-monitor"
 version = "0.1.0"
 description = "Internet health monitoring integration for Home Assistant - gateway latency, jitter, packet loss, DNS monitoring"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Solent Labs"},
@@ -19,20 +19,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
-dependencies = []  # HA provides all runtime dependencies
-
-[project.optional-dependencies]
-dev = [
-    "black>=24.0",
-    "ruff>=0.8.0",
-    "mypy>=1.10",
-    "pytest>=8.0",
-    "pytest-cov>=5.0",
-    "pytest-asyncio>=0.24.0",
-    "pre-commit>=3.8.0",
-]
+dependencies = []  # HA provides all runtime dependencies; dev tools: requirements-dev.txt
 
 [project.urls]
 # Repository = "https://github.com/solentlabs/ha-internet-health-monitor"  # Uncomment when public

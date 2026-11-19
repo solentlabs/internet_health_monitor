@@ -1,14 +1,17 @@
-.PHONY: help test test-quick clean lint lint-fix type-check format format-check check setup
+.PHONY: help setup-current test-current test-all test test-quick clean lint lint-fix type-check format format-check check setup
 
 # Default target - show help
 help:
-	@echo "HA Network Diagnostics - Available Commands"
+	@echo "Internet Health Monitor - Available Commands"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make setup       - Create venv and install dependencies"
+	@echo "  make setup         - .venv on Python 3.12 via uv: minimum HA (2025.1.x)"
+	@echo "  make setup-current - .venv-current on Python 3.14 via uv: newest HA"
 	@echo ""
 	@echo "Development:"
-	@echo "  make test        - Run full test suite with coverage"
+	@echo "  make test        - Tests with coverage on minimum HA (.venv)"
+	@echo "  make test-current - Tests on newest HA (.venv-current)"
+	@echo "  make test-all    - Both"
 	@echo "  make test-quick  - Quick test run (no coverage)"
 	@echo "  make clean       - Remove test artifacts and cache files"
 	@echo ""
@@ -23,16 +26,30 @@ help:
 # Setup development environment
 setup:
 	@echo "Creating virtual environment..."
-	python3 -m venv .venv
+	uv venv --allow-existing --seed --python 3.12 .venv
 	@echo "Installing dependencies..."
-	.venv/bin/pip install -e ".[dev]"
+	@# pip, not uv pip: HA 2025.1.x pins a pre-release (aiohasupervisor==0.2.2b5),
+	@# which pip accepts and uv's resolver refuses.
+	.venv/bin/pip install -r requirements-dev.txt
 	@echo "Installing pre-commit hooks..."
 	.venv/bin/pre-commit install
 	@echo "Setup complete! Activate with: source .venv/bin/activate"
 
-# Run full test suite with coverage
+# Newest HA: needs Python 3.14 (uv installs it if missing)
+setup-current:
+	uv venv --allow-existing --python 3.14 .venv-current
+	uv pip install --python .venv-current -r requirements-dev.txt
+
+# Run full test suite with coverage (minimum HA)
 test:
 	@.venv/bin/pytest --cov=custom_components/internet_health_monitor --cov-report=term-missing
+
+# Tests on the newest HA
+test-current:
+	@.venv-current/bin/pytest -q
+
+# Both HA versions
+test-all: test test-current
 
 # Quick test (no coverage)
 test-quick:

@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Tests run on the oldest and newest supported Home Assistant.**
+  `make test` uses Python 3.12 (HA 2025.1.x), `make test-current` Python 3.14
+  (newest HA), and CI runs both. Development dependencies are listed only in
+  `requirements-dev.txt`.
 - **Home Assistant 2025.1.0 is now the minimum**, so the options flow can
   rely on HA providing `config_entry`.
 

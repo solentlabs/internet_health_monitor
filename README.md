@@ -273,11 +273,12 @@ apk add bind-tools
 git clone https://github.com/solentlabs/internet-health-monitor.git
 cd internet_health_monitor
 
-# Set up development environment
-make setup
+# Set up development environments (needs uv: https://docs.astral.sh/uv/)
+make setup           # Python 3.12, oldest supported HA (2025.1.x)
+make setup-current   # Python 3.14, newest HA
 
-# Run tests
-make test
+# Run tests on both HA versions
+make test-all
 
 # Run linting
 make check
