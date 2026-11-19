@@ -18,7 +18,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Accepted 2026-11-19 |
 | [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
 | [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19 |
-| [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Open |
+| [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Accepted 2026-11-19 |
 
 ---
 
@@ -443,7 +443,7 @@ and a new decision here.
 
 ## ADR-012: Reachability confirms before off and re-checks fast while off
 
-**Status:** Open. Records the developer's choice of 2026-11-19; awaiting his Accept.
+**Status:** Accepted 2026-11-19
 
 **Context:** Gateway reachable and Internet reachable changed only on the
 60-second poll (ADR-007). Internet reachable rested on one DNS query, so
