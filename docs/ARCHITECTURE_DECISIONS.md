@@ -13,6 +13,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
 | [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
+| [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
 
 ---
 
@@ -260,3 +261,34 @@ rule. Current uses: speed test backends (ADR-003) and hop ownership
 
 **Constraints:** Every new outside service meets the rule above and is
 recorded here or in its own ADR.
+
+---
+
+## ADR-007: Fixed 60-second polling
+
+**Status:** Accepted 2026-11-19
+
+**Context:** IHM targets HA's Platinum quality scale. Its Bronze rule
+`appropriate-polling`, and HA core's own guidance, say the developer sets
+the interval and users do not get a field for it, in setup or options
+(R16). IHM had a Scan Interval field; it was removed.
+
+**Decision:** IHM polls every 60 seconds.
+- **Comparable tools** use 30 to 60 s for "is it working now" monitoring:
+  HA Ping 30 s, HA Speedtest.net 60 s, Uptime Kuma 60 s. SmokePing's 300 s
+  suits long-term graphs, too slow for live sensors (R16).
+- **60 over 30:** half the probes and database writes, and jitter's
+  30-poll window (`DEFAULT_HISTORY_SIZE`) spans 30 minutes, steadier than
+  15. An outage shows within a minute either way.
+- **Other intervals:** HA's documented route (polling off, an automation
+  calling `homeassistant.update_entity`; README.md § Polling). This also
+  changes jitter's time window.
+
+**Constraints:**
+- Every interval, timeout and limit lives in Core's `timing.py`; the HA
+  coordinator, the forms and the CLI read from it. No host defines its own.
+- A regular poll's worst case (`steady_poll_bound_s`) must stay under
+  `POLL_INTERVAL_S` at the maximum ping count; a test enforces it. The CLI
+  refuses an `--interval` shorter than that bound for the chosen ping count.
+- Passive bufferbloat (ADR-001) needs about one probe per second, which no
+  poll interval provides; it gets its own cadence when it is built.

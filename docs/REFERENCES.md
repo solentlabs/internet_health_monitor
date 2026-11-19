@@ -254,6 +254,34 @@ https://www.team-cymru.com/ip-asn-mapping, read 2026-11-19 [V]:
 Format confirmed by a live query for 8.8.8.8 (2026-11-19): ASN 15169,
 "GOOGLE - Google LLC, US" [V, local run].
 
+## R16. Polling intervals
+
+HA's rule and guidance, read 2026-11-19 [V]:
+- Quality scale `appropriate-polling`
+  (https://github.com/home-assistant/developers.home-assistant/blob/master/docs/core/integration-quality-scale/rules/appropriate-polling.md):
+  set "an appropriate polling interval that will serve the majority of
+  users"; the interval "is not a field in the config flow"; users wanting
+  more frequent updates "can define a custom polling interval"
+  (https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval).
+- HA core's integration guidance
+  (https://github.com/home-assistant/core/blob/dev/.claude/skills/ha-integration-knowledge/SKILL.md):
+  "Polling intervals are NOT user-configurable. Never add scan_interval,
+  update_interval, or polling frequency options to config flows or config
+  entries."
+- Counter-view: discussion #306
+  (https://github.com/orgs/home-assistant/discussions/306) asks for
+  configurable intervals and calls the automation route "not very user
+  friendly".
+
+Defaults of comparable tools, read from their source 2026-11-19 [V]:
+
+| Tool | Interval | Probes per poll | Source |
+|------|----------|-----------------|--------|
+| HA Ping integration | 30 s | 5 pings | `homeassistant/components/ping/coordinator.py`, `const.py` (home-assistant/core, dev) |
+| HA Speedtest.net integration | 60 s | one test | `homeassistant/components/speedtestdotnet/const.py` |
+| Uptime Kuma | 60 s | one check | `src/pages/EditMonitor.vue` (louislam/uptime-kuma, master) |
+| SmokePing | 300 s | 20 pings | `etc/config.dist.in` `step`, `pings` (oetiker/SmokePing, master) |
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

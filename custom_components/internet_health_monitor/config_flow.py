@@ -29,6 +29,8 @@ from .const import (
     DNS_SERVERS,
     DOMAIN,
     NAME,
+    PING_COUNT_MAX,
+    PING_COUNT_MIN,
 )
 
 # Field -> default when the user has never set it. One list for setup and
@@ -62,7 +64,9 @@ def build_schema(current: Mapping[str, Any]) -> vol.Schema:
                 )
             ),
             vol.Required(CONF_PING_COUNT, default=default(CONF_PING_COUNT)): vol.All(
-                NumberSelector(NumberSelectorConfig(min=1, max=10, step=1, mode=NumberSelectorMode.BOX)),
+                NumberSelector(
+                    NumberSelectorConfig(min=PING_COUNT_MIN, max=PING_COUNT_MAX, step=1, mode=NumberSelectorMode.BOX)
+                ),
                 vol.Coerce(int),
             ),
             vol.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),

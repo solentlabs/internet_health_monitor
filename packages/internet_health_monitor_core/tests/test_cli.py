@@ -26,7 +26,7 @@ PARSE_CASES = [
 REJECT_CASES = [
     ("ping count 0",     ["--ping-count", "0"]),
     ("ping count 11",    ["--ping-count", "11"]),
-    ("interval 9",       ["--interval", "9"]),
+    ("interval 0",       ["--interval", "0"]),
     ("interval 3601",    ["--interval", "3601"]),
     ("non-number",       ["--ping-count", "three"]),
 ]
@@ -103,3 +103,26 @@ def test_main_exits_zero_on_ctrl_c() -> None:
     """Ctrl-C stops a running monitor cleanly."""
     with patch.object(cli, "run", side_effect=KeyboardInterrupt):
         assert cli.main(["--interval", "60"]) == 0
+
+
+# (--interval, --ping-count) -> accepted? A poll must fit in the interval.
+# fmt: off
+INTERVAL_FIT_CASES = [
+    ("1 ping fits 10 s",   ["--interval", "10", "--ping-count", "1"],  True),
+    ("10 pings need 50 s", ["--interval", "20", "--ping-count", "10"], False),
+    ("default fits 60 s",  ["--interval", "60"],                       True),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    ("description", "argv", "accepted"), INTERVAL_FIT_CASES, ids=[c[0] for c in INTERVAL_FIT_CASES]
+)
+def test_interval_must_fit_a_poll(description: str, argv: list[str], accepted: bool) -> None:
+    """An interval shorter than a poll's worst case is refused before anything runs."""
+    with patch.object(cli, "run", AsyncMock()):
+        if accepted:
+            assert cli.main(argv) == 0
+        else:
+            with pytest.raises(SystemExit):
+                cli.main(argv)

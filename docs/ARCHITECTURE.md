@@ -34,6 +34,7 @@ Core      (packages/internet_health_monitor_core/, module
            solentlabs.internet_health_monitor_core, on PyPI as
            solentlabs-internet-health-monitor-core)
     network_diagnostics.py: polling, caching, jitter, loss, DNS, hostnames
+    timing.py: every interval, timeout and limit (ADR-007)
         │ calls Platform: gateway, system DNS, ping, trace, host environment
         ▼
     platforms/  get_platform() picks: linux.py (ip, ping, traceroute)
@@ -60,7 +61,7 @@ scheduling. It contains no measurement logic.
 | File | Role |
 |------|------|
 | `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`; reloads when options change. |
-| `coordinator.py` | `InternetHealthCoordinator` polls every 60 s (fixed; HA quality scale `appropriate-polling`), and the typed config entry and runtime data. |
+| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007), and the typed config entry and runtime data. |
 | `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
 | `config_flow.py` | Setup and options from one `build_schema`: gateway and DNS monitoring, DNS server, pings per target (1 to 10), hop ownership. One entry per HA. |
 | `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency. All `state_class: measurement`. |

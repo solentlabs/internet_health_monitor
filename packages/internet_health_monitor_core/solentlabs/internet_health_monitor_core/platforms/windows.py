@@ -7,6 +7,7 @@ import logging
 from collections.abc import Callable
 from typing import Protocol, TypeVar
 
+from ..timing import TRACE_PROBE_TIMEOUT_S
 from .base import HostEnvironment
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ IP_TTL_EXPIRED_TRANSIT = 11013
 
 # Any public address works: GetBestRoute only reads the routing table.
 ROUTE_PROBE_ADDRESS = "8.8.8.8"
-TRACE_TIMEOUT_MS = 2000
+TRACE_TIMEOUT_MS = TRACE_PROBE_TIMEOUT_S * 1000
 DEFAULT_TTL = 128
 
 

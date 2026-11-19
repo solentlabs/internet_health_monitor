@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 
+from ..timing import PING_PROCESS_GRACE_S, TRACE_PROBE_TIMEOUT_S
 from .base import HostEnvironment
 
 _LOGGER = logging.getLogger(__name__)
@@ -177,7 +178,9 @@ class LinuxPlatform:
     async def ping(self, host: str, timeout_s: int) -> tuple[bool, float | None]:
         """Ping once; latency is ping's own round-trip time (R10), not process wall-clock."""
         try:
-            code, out, _ = await _run("ping", "-c", "1", "-W", str(timeout_s), host, timeout=timeout_s + 3)
+            code, out, _ = await _run(
+                "ping", "-c", "1", "-W", str(timeout_s), host, timeout=timeout_s + PING_PROCESS_GRACE_S
+            )
         except (OSError, TimeoutError) as e:
             _LOGGER.debug("Ping error for %s: %s", host, e)
             return False, None
@@ -189,10 +192,19 @@ class LinuxPlatform:
         return True, rtt
 
     async def trace(self, target: str, max_hops: int) -> dict[int, str]:
-        """Run `traceroute -n -q 1 -w 2 -m <max_hops>`."""
+        """Run `traceroute -n -q 1 -w <probe timeout> -m <max_hops>`."""
         try:
             _, out, _ = await _run(
-                "traceroute", "-n", "-q", "1", "-w", "2", "-m", str(max_hops), target, timeout=max_hops * 3 + 5
+                "traceroute",
+                "-n",
+                "-q",
+                "1",
+                "-w",
+                str(TRACE_PROBE_TIMEOUT_S),
+                "-m",
+                str(max_hops),
+                target,
+                timeout=max_hops * (TRACE_PROBE_TIMEOUT_S + 1) + PING_PROCESS_GRACE_S,
             )
         except FileNotFoundError:
             _LOGGER.debug("traceroute command not found")

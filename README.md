@@ -56,7 +56,8 @@ During setup, and later under Configure, you can set:
 
 ### Polling
 
-IHM polls every 60 seconds. For a different interval, open the integration's
+IHM polls every 60 seconds, in line with comparable monitors
+([ADR-007](docs/ARCHITECTURE_DECISIONS.md#adr-007-fixed-60-second-polling)). For a different interval, open the integration's
 System options, turn off "Enable polling for changes", and call
 `homeassistant.update_entity` from an automation:
 

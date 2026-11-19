@@ -10,7 +10,7 @@ rules:
     comment: The integration registers no actions of its own.
   appropriate-polling:
     status: done
-    comment: Fixed 60 s (coordinator.py SCAN_INTERVAL), not a form field; README.md Polling shows the automation for another interval.
+    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route."
   brands:
     status: done
     comment: brand/icon.png, icon.svg, logo.png and dark variants in the integration directory.

@@ -112,3 +112,13 @@ async def test_removing_entry_clears_repair_issue(hass: HomeAssistant, setup_ent
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert ir.async_get(hass).async_get_issue(DOMAIN, "traceroute_missing") is None
+
+
+async def test_poll_interval_comes_from_core(setup_entry: SetupEntry) -> None:
+    """The integration polls at Core's POLL_INTERVAL_S (ADR-007), not a value of its own."""
+    from datetime import timedelta
+
+    from solentlabs.internet_health_monitor_core.timing import POLL_INTERVAL_S
+
+    entry = await setup_entry()
+    assert entry.runtime_data.coordinator.update_interval == timedelta(seconds=POLL_INTERVAL_S)

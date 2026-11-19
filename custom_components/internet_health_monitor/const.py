@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+# Defaults and limits come from Core (timing.py), so the integration and the CLI agree.
+from solentlabs.internet_health_monitor_core.network_diagnostics import DEFAULT_DNS_SERVER
+from solentlabs.internet_health_monitor_core.timing import DEFAULT_PING_COUNT, PING_COUNT_MAX, PING_COUNT_MIN
+
+__all__ = ["DEFAULT_DNS_SERVER", "DEFAULT_PING_COUNT", "PING_COUNT_MAX", "PING_COUNT_MIN"]
+
 DOMAIN = "internet_health_monitor"
 NAME = "Internet Health Monitor"
 MANUFACTURER = "Solent Labs"
@@ -14,9 +20,6 @@ CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
-
-DEFAULT_DNS_SERVER = "auto"  # the host's own resolver
-DEFAULT_PING_COUNT = 3
 
 # DNS server choices; labels are in the translations (selector.dns_server)
 DNS_SERVERS = ("auto", "1.1.1.1", "8.8.8.8", "9.9.9.9", "208.67.222.222")

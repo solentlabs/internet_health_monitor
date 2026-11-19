@@ -9,16 +9,12 @@ import json
 import sys
 from typing import TextIO
 
-from .network_diagnostics import (
-    DEFAULT_DNS_SERVER,
-    DEFAULT_PING_COUNT,
-    NetworkDiagnostics,
-    NetworkDiagnosticsConfig,
-)
+from .network_diagnostics import DEFAULT_DNS_SERVER, NetworkDiagnostics, NetworkDiagnosticsConfig
+from .timing import DEFAULT_PING_COUNT, PING_COUNT_MAX, PING_COUNT_MIN, steady_poll_bound_s
 
-# Same limits as the HA options flow.
-PING_COUNT_RANGE = (1, 10)
-INTERVAL_RANGE = (10, 3600)
+PING_COUNT_RANGE = (PING_COUNT_MIN, PING_COUNT_MAX)
+# The lower bound also depends on --ping-count: a poll must finish before the next.
+INTERVAL_RANGE = (1, 3600)
 
 
 def _int_in(low: int, high: int) -> type[int]:
@@ -76,7 +72,13 @@ async def run(args: argparse.Namespace, out: TextIO) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     """Run the command line and return the exit code."""
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.interval is not None and args.interval < steady_poll_bound_s(args.ping_count):
+        parser.error(
+            f"--interval {args.interval} is shorter than a poll can take with "
+            f"--ping-count {args.ping_count} ({steady_poll_bound_s(args.ping_count)} s)"
+        )
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(run(args, sys.stdout))
     return 0

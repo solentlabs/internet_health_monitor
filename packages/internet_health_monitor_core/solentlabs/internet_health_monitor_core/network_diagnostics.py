@@ -26,17 +26,20 @@ from typing import Any
 from . import dns_probe
 from .hop_owner import HopOwner, lookup_owner
 from .platforms import HostEnvironment, Platform, get_platform
+from .timing import (
+    DEFAULT_DNS_TIMEOUT,
+    DEFAULT_HISTORY_SIZE,
+    DEFAULT_PING_COUNT,
+    DEFAULT_PING_TIMEOUT,
+    REVERSE_DNS_TIMEOUT_S,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-# Defaults
-DEFAULT_PING_COUNT = 3
-DEFAULT_PING_TIMEOUT = 2
+# Targets. Intervals, timeouts and limits are in timing.py.
 DEFAULT_DNS_SERVER = "auto"  # Auto-detect from system
 FALLBACK_DNS_SERVER = "1.1.1.1"  # Fallback if detection fails
 DEFAULT_TRACE_TARGET = "8.8.8.8"  # Default traceroute target
-DEFAULT_DNS_TIMEOUT = 5
-DEFAULT_HISTORY_SIZE = 30  # Keep last 30 results for jitter calculation
 NUM_HOPS = 3  # Fixed: always trace 3 hops (gateway, ISP, backbone)
 
 # Private IP ranges (RFC 1918 + link-local)
@@ -736,7 +739,7 @@ class NetworkDiagnostics:
             loop = asyncio.get_event_loop()
             result = await asyncio.wait_for(
                 loop.run_in_executor(None, socket.gethostbyaddr, ip),
-                timeout=5.0,
+                timeout=REVERSE_DNS_TIMEOUT_S,
             )
             hostname = result[0]
             if hostname == ip:

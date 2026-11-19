@@ -39,8 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use proper controls with a help line on every field. Entity names, errors
   and icons are translated. The device shows IHM's version.
 - **The scan interval setting is gone.** IHM polls every 60 seconds, as Home
-  Assistant asks of integrations; README.md § Polling shows how to poll at
-  another interval with an automation.
+  Assistant asks of integrations and in line with comparable monitors
+  (ADR-007); README.md § Polling shows how to poll at another interval with
+  an automation. Every interval and timeout now lives in Core's `timing.py`.
+- **CLI `--interval`** must be at least as long as a poll can take for the
+  chosen `--ping-count`, so polls never overlap.
 - **Reset network cache is disabled by default**, and both buttons are now
   diagnostic entities. A press whose poll fails now reports an error.
 - **Docs use real entity ids.** The README and dashboard examples named

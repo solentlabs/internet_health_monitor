@@ -11,15 +11,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsResult
+from solentlabs.internet_health_monitor_core.timing import POLL_INTERVAL_S
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# Fixed poll interval (HA quality scale: appropriate-polling). Users who want
-# another interval disable polling and call homeassistant.update_entity from
-# an automation (README.md § Polling).
-SCAN_INTERVAL = timedelta(seconds=60)
+# Fixed poll interval from Core (ADR-007; HA quality scale appropriate-polling).
+# Users who want another interval disable polling and call
+# homeassistant.update_entity from an automation (README.md § Polling).
+SCAN_INTERVAL = timedelta(seconds=POLL_INTERVAL_S)
 
 
 @dataclass
