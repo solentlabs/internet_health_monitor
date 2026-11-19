@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import socket
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -280,8 +280,8 @@ async def test_reverse_dns_lookup(
 ) -> None:
     """Only a real name counts; an echoed IP or a failed lookup gives None."""
     target = "solentlabs.internet_health_monitor_core.network_diagnostics.socket.gethostbyaddr"
-    kwargs = {"side_effect": lookup} if isinstance(lookup, Exception) else {"return_value": lookup}
-    with patch(target, **kwargs):
+    mock = Mock(side_effect=lookup) if isinstance(lookup, Exception) else Mock(return_value=lookup)
+    with patch(target, mock):
         assert await NetworkDiagnostics()._reverse_dns_lookup("192.0.2.1") == expected
 
 
@@ -557,6 +557,7 @@ async def test_check_dns(description: str, probe: dict, expected: dict) -> None:
         "solentlabs.internet_health_monitor_core.network_diagnostics.dns_probe.query_time_ms", AsyncMock(**probe)
     ) as query:
         assert await diag._check_dns() == expected
+    assert query.await_args is not None
     assert query.await_args.args[0] == "1.1.1.1"
 
 

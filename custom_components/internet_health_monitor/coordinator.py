@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 import random
+from collections.abc import Coroutine
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Literal, override
 
@@ -44,6 +45,8 @@ _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=POLL_INTERVAL_S)
 
 ReachabilityTarget = Literal["gateway", "internet"]
+# What async_call_later accepts; HassJob is invariant in its return type.
+type QuickCheckJob = HassJob[[datetime], Coroutine[Any, Any, None] | None]
 
 
 @dataclass
@@ -100,10 +103,10 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
             if cancel := self._pending.pop(target, None):
                 cancel()
         elif target not in self._pending:
-            job = HassJob(partial(self._async_quick_check, target), cancel_on_shutdown=True)
+            job: QuickCheckJob = HassJob(partial(self._async_quick_check, target), cancel_on_shutdown=True)
             self._pending[target] = async_call_later(self.hass, delay, job)
 
-    async def _async_quick_check(self, target: ReachabilityTarget, _now: Any) -> None:
+    async def _async_quick_check(self, target: ReachabilityTarget, _now: datetime) -> None:
         """One gateway ping or one DNS query, then show the result."""
         self._pending.pop(target, None)
         check = self.diagnostics.check_gateway if target == "gateway" else self.diagnostics.check_internet
@@ -212,7 +215,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
             delay = random.uniform(
                 0, SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S
             )  # noqa: S311  # spreading load, not security
-            job = HassJob(self._async_run_waiting, cancel_on_shutdown=True)
+            job: QuickCheckJob = HassJob(self._async_run_waiting, cancel_on_shutdown=True)
             self._pending.append(async_call_later(self.hass, delay, job))
             return
         await self._async_test()
@@ -232,7 +235,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         # Usage sensors belong to the poll coordinator; show the new totals now.
         self.config_entry.runtime_data.coordinator.async_update_listeners()
 
-    async def _async_run_waiting(self, _now: Any) -> None:
+    async def _async_run_waiting(self, _now: datetime) -> None:
         """Start an automated run whose random wait is over; a failure shows on the sensors."""
         self._pending = self._pending[1:]
         await self._async_test()

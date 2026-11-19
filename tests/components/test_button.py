@@ -5,9 +5,9 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from homeassistant.components.button import (
-    DOMAIN as BUTTON_DOMAIN,
-    SERVICE_PRESS,
+from homeassistant.components.button import (  # public in HA, not in its __all__
+    DOMAIN as BUTTON_DOMAIN,  # pyright: ignore[reportPrivateImportUsage]
+    SERVICE_PRESS,  # pyright: ignore[reportPrivateImportUsage]
 )
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant

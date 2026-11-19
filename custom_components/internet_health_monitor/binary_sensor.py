@@ -6,8 +6,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import override
 
-from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
+from homeassistant.components.binary_sensor import (  # public in HA, not in its __all__
+    BinarySensorDeviceClass,  # pyright: ignore[reportPrivateImportUsage]
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -72,8 +72,8 @@ class ReachabilitySensor(InternetHealthEntity[InternetHealthCoordinator], Binary
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
-    @override
     @property
+    @override
     def is_on(self) -> bool | None:
         """Whether the target answers, confirmed by quick checks before turning off (ADR-012)."""
         return self.coordinator.reachability[self.entity_description.target].reachable

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import re
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import probatio
 import pytest
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
@@ -284,8 +286,8 @@ async def test_register_card(components: set[str], serves: bool, desc: str) -> N
     """The command is always registered; the module is served and loaded only with frontend and http."""
     hass = _hass_with(components)
     with (
-        patch("custom_components.internet_health_monitor.card.websocket_api.async_register_command") as command,
-        patch("custom_components.internet_health_monitor.card.add_extra_js_url") as add_url,
+        patch("homeassistant.components.websocket_api.async_register_command") as command,
+        patch("homeassistant.components.frontend.add_extra_js_url") as add_url,
     ):
         await async_register_card(hass)
     command.assert_called_once()
@@ -304,7 +306,7 @@ async def test_register_card_failure_is_contained(caplog: pytest.LogCaptureFixtu
     """A registration error is logged, never raised: monitoring must still load."""
     hass = _hass_with({"frontend", "http"})
     hass.http.async_register_static_paths.side_effect = RuntimeError("boom")
-    with patch("custom_components.internet_health_monitor.card.websocket_api.async_register_command"):
+    with patch("homeassistant.components.websocket_api.async_register_command"):
         await async_register_card(hass)
     assert "monitoring is unaffected" in caplog.text
 
@@ -335,3 +337,21 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     ]
     hidden = build_card_config(hass, CARD_OPTIONS_SCHEMA({"include_speed_test": False}))
     assert len(hidden["cards"]) == len(card["cards"]) - 2
+
+
+async def test_card_import_failure_does_not_stop_monitoring(
+    hass: HomeAssistant, setup_entry: SetupEntry, caplog: pytest.LogCaptureFixture
+) -> None:
+    """If a release moves an HA piece the card imports, the card is skipped and IHM still loads."""
+    real_import = builtins.__import__
+
+    def moved(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "homeassistant.components.frontend":
+            raise ImportError("moved in a future release")
+        return real_import(name, *args, **kwargs)
+
+    with patch("builtins.__import__", moved):
+        await async_register_card(hass)
+    assert "monitoring is unaffected" in caplog.text
+    entry = await setup_entry()
+    assert entry.state is ConfigEntryState.LOADED

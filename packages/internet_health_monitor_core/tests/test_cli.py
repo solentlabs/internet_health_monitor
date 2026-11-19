@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import io
 import json
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -66,7 +66,7 @@ def test_parse_rejects(description: str, argv: list[str]) -> None:
 async def test_single_poll_prints_one_json_line() -> None:
     """Without --interval, one poll runs and its result is one JSON line."""
     out = io.StringIO()
-    args = SimpleNamespace(dns_server="auto", ping_count=3, interval=None, hop_ownership=False)
+    args = argparse.Namespace(dns_server="auto", ping_count=3, interval=None, hop_ownership=False)
     with patch.object(cli.NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())):
         await cli.run(args, out)
 
@@ -89,7 +89,7 @@ async def test_interval_polls_until_stopped() -> None:
             raise StopLoopError
 
     out = io.StringIO()
-    args = SimpleNamespace(dns_server="auto", ping_count=3, interval=60, hop_ownership=False)
+    args = argparse.Namespace(dns_server="auto", ping_count=3, interval=60, hop_ownership=False)
     with (
         patch.object(cli.NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())),
         patch.object(cli.asyncio, "sleep", fake_sleep),

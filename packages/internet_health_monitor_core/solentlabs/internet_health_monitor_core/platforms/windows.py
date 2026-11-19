@@ -28,12 +28,15 @@ class IpHelperApi(Protocol):
 
     def echo(self, ip: str, ttl: int, timeout_ms: int) -> tuple[int, str | None, int | None]:
         """Send one echo request; return (IP_STATUS, replying address, round-trip ms)."""
+        ...
 
     def next_hop(self, destination: str) -> str | None:
         """Return the next hop toward destination, or None if on-link."""
+        ...
 
     def dns_servers(self) -> list[str]:
         """Return the configured DNS servers."""
+        ...
 
 
 class WindowsPlatform:

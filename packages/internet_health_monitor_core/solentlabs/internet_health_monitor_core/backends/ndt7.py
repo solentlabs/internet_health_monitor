@@ -26,7 +26,10 @@ UPLOAD_KEY = "wss:///ndt/v7/upload"
 FIRST_MESSAGE = 1 << 13
 MAX_MESSAGE = 1 << 24
 _PAYLOAD = os.urandom(MAX_MESSAGE)
-WS_TIMEOUT = aiohttp.ClientWSTimeout(ws_receive=timing.SPEED_TEST_REQUEST_TIMEOUT_S, ws_close=5.0)
+# ClientWSTimeout is an old-style attrs class whose fields pyright cannot see; mypy checks the call.
+WS_TIMEOUT = aiohttp.ClientWSTimeout(
+    ws_receive=timing.SPEED_TEST_REQUEST_TIMEOUT_S, ws_close=5.0  # pyright: ignore[reportCallIssue]
+)
 
 
 def _ms(microseconds: float | None) -> float | None:

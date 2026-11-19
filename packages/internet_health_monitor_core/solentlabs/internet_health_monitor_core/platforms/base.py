@@ -51,21 +51,28 @@ class Platform(Protocol):
 
     async def default_gateway(self) -> str | None:
         """Return the default gateway IP, or None if there is none."""
+        ...
 
     async def system_dns(self) -> str | None:
         """Return the first DNS server the OS is configured to use, or None."""
+        ...
 
     async def ping(self, host: str, timeout_s: int) -> tuple[bool, float | None]:
         """Send one echo request; return (reply received, round-trip ms or None)."""
+        ...
 
     async def trace(self, target: str, max_hops: int) -> dict[int, str]:
         """Return {hop number: IP} for hops 1 to max_hops; unanswered hops are left out."""
+        ...
 
     async def host_environment(self) -> HostEnvironment:
         """Describe the host: connection type and container."""
+        ...
 
     def missing_tools(self) -> list[str]:
         """Return required system tools that are not installed (blocking: run in an executor)."""
+        ...
 
     def missing_optional_tools(self) -> list[str]:
         """Return optional tools that are not installed; each disables part of the measurements."""
+        ...

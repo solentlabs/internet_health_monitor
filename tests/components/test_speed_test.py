@@ -203,14 +203,14 @@ async def test_options_flow_asks_mlab_consent(hass: HomeAssistant, setup_entry: 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     form = {**entry.options, CONF_SPEED_TEST_BACKEND: "mlab"}
     result = await hass.config_entries.options.async_configure(result["flow_id"], form)
-    assert (result["type"], result["step_id"]) == (FlowResultType.FORM, "mlab_consent")
+    assert (result.get("type"), result.get("step_id")) == (FlowResultType.FORM, "mlab_consent")
 
     result = await hass.config_entries.options.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: False})
-    assert result["errors"] == {"base": "mlab_consent_required"}
+    assert result.get("errors") == {"base": "mlab_consent_required"}
 
     result = await hass.config_entries.options.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: True})
     await hass.async_block_till_done()
-    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result.get("type") is FlowResultType.CREATE_ENTRY
     assert (entry.options[CONF_SPEED_TEST_BACKEND], entry.options[CONF_MLAB_CONSENT]) == ("mlab", True)
 
 
@@ -220,7 +220,7 @@ async def test_mlab_consent_is_asked_once(hass: HomeAssistant, setup_entry: Setu
     result = await hass.config_entries.options.async_init(entry.entry_id)
     form = {key: value for key, value in entry.options.items() if key != CONF_MLAB_CONSENT}
     result = await hass.config_entries.options.async_configure(result["flow_id"], form)
-    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result.get("type") is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_MLAB_CONSENT] is True
 
 
@@ -261,13 +261,13 @@ async def test_setup_flow_asks_mlab_consent(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {**DEFAULTS, CONF_SPEED_TEST_BACKEND: "mlab"}
     )
-    assert result["step_id"] == "mlab_consent"
+    assert result.get("step_id") == "mlab_consent"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: False})
-    assert result["errors"] == {"base": "mlab_consent_required"}
+    assert result.get("errors") == {"base": "mlab_consent_required"}
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: True})
     await hass.async_block_till_done()
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["options"][CONF_MLAB_CONSENT] is True
+    assert result.get("type") is FlowResultType.CREATE_ENTRY
+    assert (result.get("options") or {}).get(CONF_MLAB_CONSENT) is True
 
 
 async def test_reconfigure_asks_mlab_consent(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
@@ -276,10 +276,10 @@ async def test_reconfigure_asks_mlab_consent(hass: HomeAssistant, setup_entry: S
     result = await entry.start_reconfigure_flow(hass)
     form = {**entry.options, CONF_SPEED_TEST_BACKEND: "mlab"}
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {**DEFAULTS, **form})
-    assert result["step_id"] == "mlab_consent"
+    assert result.get("step_id") == "mlab_consent"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: True})
     await hass.async_block_till_done()
-    assert result["reason"] == "reconfigure_successful"
+    assert result.get("reason") == "reconfigure_successful"
     assert entry.options[CONF_SPEED_TEST_BACKEND] == "mlab"
 
 

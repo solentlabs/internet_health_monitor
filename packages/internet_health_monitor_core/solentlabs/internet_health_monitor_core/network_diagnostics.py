@@ -382,7 +382,7 @@ class NetworkDiagnostics:
         results = await asyncio.gather(gateway_task, hops_task, dns_task, return_exceptions=True)
 
         # Handle gateway result
-        if isinstance(results[0], Exception):
+        if isinstance(results[0], BaseException):
             _LOGGER.debug("Gateway check failed: %s", results[0])
             gateway_result: dict[str, Any] = {
                 "reachable": False,
@@ -395,14 +395,14 @@ class NetworkDiagnostics:
             gateway_result = results[0]
 
         # Handle hops result
-        if isinstance(results[1], Exception):
+        if isinstance(results[1], BaseException):
             _LOGGER.debug("Hops check failed: %s", results[1])
             hops_result: list[HopInfo] = []
         else:
             hops_result = results[1]
 
         # Handle DNS result
-        if isinstance(results[2], Exception):
+        if isinstance(results[2], BaseException):
             _LOGGER.debug("DNS check failed: %s", results[2])
             dns_result: dict[str, Any] = {"success": False, "latency_ms": None}
         else:

@@ -2,7 +2,7 @@
 
 Which service runs your speed test, what each choice means for you, and
 how IHM measures. Decision:
-[ARCHITECTURE_DECISIONS.md § ADR-003](ARCHITECTURE_DECISIONS.md#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3).
+[ARCHITECTURE_DECISIONS.md § ADR-003](ARCHITECTURE_DECISIONS.md#adr-003-speed-testing-with-user-selected-backends).
 Sources and evidence labels: [REFERENCES.md](REFERENCES.md) R5, R9, R19,
 R20. IHM keeps to each provider's published terms as closely as it can;
 where terms are silent, it uses the provider the way the provider's own
@@ -153,9 +153,8 @@ it, so its absence is deliberate:
 - Fast.com publishes no API. Every client, HA core's included, reads an
   access token out of fast.com's own page: automated access to a
   Netflix website.
-- IHM keeps to providers' terms as closely as it can (ADR-003). A
-  Fast.com backend was built and removed for this reason. If Netflix
-  grants permission in writing, it can return as one module.
+- IHM keeps to providers' terms as closely as it can (ADR-003). Written
+  permission from Netflix would let it return as one module.
 
 ## Passive Bufferbloat, Without a Speed Test
 

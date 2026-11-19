@@ -55,34 +55,36 @@ def _defaults(schema: Any) -> dict[str, Any]:
 async def test_user_flow_creates_entry(hass: HomeAssistant) -> None:
     """The form creates one entry, keyed to the domain, with the input as options."""
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
-    assert result["type"] is FlowResultType.FORM
+    assert result.get("type") is FlowResultType.FORM
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
     await hass.async_block_till_done()
 
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == NAME
-    assert result["options"] == USER_INPUT
-    assert result["result"].unique_id == DOMAIN
+    assert result.get("type") is FlowResultType.CREATE_ENTRY
+    assert result.get("title") == NAME
+    assert result.get("options") == USER_INPUT
+    created = result.get("result")
+    assert created is not None
+    assert created.unique_id == DOMAIN
 
 
 async def test_second_entry_aborts(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
     """One host, one entry: a second setup is refused."""
     await setup_entry()
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
+    assert result.get("type") is FlowResultType.ABORT
+    assert result.get("reason") == "already_configured"
 
 
 async def test_options_flow_saves(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
     """The options form saves the new settings on the entry."""
     entry = await setup_entry()
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["type"] is FlowResultType.FORM
+    assert result.get("type") is FlowResultType.FORM
 
     result = await hass.config_entries.options.async_configure(result["flow_id"], USER_INPUT)
     await hass.async_block_till_done()
-    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result.get("type") is FlowResultType.CREATE_ENTRY
     assert dict(entry.options) == USER_INPUT
 
 
@@ -117,13 +119,13 @@ async def test_reconfigure_updates_and_reloads(hass: HomeAssistant, setup_entry:
     """Reconfigure shows the current settings, saves the new ones and reloads."""
     entry = await setup_entry(**{CONF_PING_COUNT: 2})
     result = await entry.start_reconfigure_flow(hass)
-    assert result["type"] is FlowResultType.FORM
-    assert _defaults(result["data_schema"])[CONF_PING_COUNT] == 2
+    assert result.get("type") is FlowResultType.FORM
+    assert _defaults(result.get("data_schema"))[CONF_PING_COUNT] == 2
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
     await hass.async_block_till_done()
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "reconfigure_successful"
+    assert result.get("type") is FlowResultType.ABORT
+    assert result.get("reason") == "reconfigure_successful"
     assert dict(entry.options) == USER_INPUT
     assert entry.runtime_data.diagnostics.config.ping_count == 5
 

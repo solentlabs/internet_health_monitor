@@ -238,14 +238,14 @@ class ResultSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
-    @override
     @property
+    @override
     def native_value(self) -> StateType:
         """Return the measurement."""
         return self.entity_description.value_fn(self.coordinator.data)
 
-    @override
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return context for the measurement."""
         return self.entity_description.attrs_fn(self.coordinator.data)
@@ -261,15 +261,15 @@ class SpeedTestSensor(InternetHealthEntity[SpeedTestCoordinator], SensorEntity):
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
-    @override
     @property
+    @override
     def native_value(self) -> float | None:
         """Return the field, or None before the first test."""
         result = self.coordinator.data
         return self.entity_description.value_fn(result) if result else None
 
-    @override
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, Any]:
         """Which backend and server measured it, and when."""
         result = self.coordinator.data
@@ -289,14 +289,14 @@ class UsageSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity)
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
-    @override
     @property
+    @override
     def available(self) -> bool:
         """Totals are known even when the latest poll failed."""
         return True
 
-    @override
     @property
+    @override
     def native_value(self) -> float:
         """Return the total."""
         return self.entity_description.value_fn(self.coordinator.usage.totals)
@@ -310,8 +310,8 @@ class InstallTypeSensor(InternetHealthEntity[InternetHealthCoordinator], SensorE
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
-    @override
     @property
+    @override
     def native_value(self) -> str | None:
         """Return the installation type, or None if HA does not know it."""
         return INSTALL_TYPES.get(self.coordinator.config_entry.runtime_data.installation_type)
@@ -332,15 +332,15 @@ class HopSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity):
         """This sensor's hop in the latest result."""
         return self.coordinator.data.get_hop(self._hop_number)
 
-    @override
     @property
+    @override
     def native_value(self) -> float | None:
         """Return the measurement, or None if the hop was not found."""
         hop = self._hop()
         return self.entity_description.value_fn(hop) if hop else None
 
-    @override
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, Any]:
         """Describe the hop: address, reachability, name, owner, packet counts."""
         hop = self._hop()

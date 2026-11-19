@@ -94,7 +94,9 @@ into a dashboard instead of using the card. Registered in `async_setup`.
   not loaded. `manifest.json` lists `frontend`, `http` and
   `websocket_api` as `after_dependencies`, so a headless HA still loads
   IHM. Any exception is logged as a warning and never reaches
-  `async_setup`.
+  `async_setup`. HA's frontend, http and websocket modules are imported
+  inside that guard, not at module load, so an HA release that moves
+  one skips the card instead of stopping IHM from loading.
 - **Definition.** The module defines its element and fills
   `window.customCards` before any `await`: HA waits only two seconds
   for an undefined `custom:` element. It re-checks the element registry

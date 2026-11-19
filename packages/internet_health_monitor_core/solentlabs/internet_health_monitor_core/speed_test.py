@@ -83,9 +83,11 @@ class SpeedTestBackend(Protocol):
     @property
     def name(self) -> BackendName:
         """The backend's key in BACKEND_NAMES."""
+        ...
 
     async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
         """Run one test; each direction stops at *max_bytes*; add every byte moved to *transfer* as it moves."""
+        ...
 
 
 def _backends() -> dict[BackendName, Callable[[], SpeedTestBackend]]:

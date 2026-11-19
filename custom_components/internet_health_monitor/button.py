@@ -85,8 +85,8 @@ class RunSpeedTestButton(InternetHealthEntity[SpeedTestCoordinator], ButtonEntit
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
-    @override
     @property
+    @override
     def available(self) -> bool:
         """Stays available after a failed test, so the user can try again."""
         return True

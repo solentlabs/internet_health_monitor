@@ -9,10 +9,10 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 |-----|-------|--------|
 | [001](#adr-001-bufferbloat-is-measured-passively-in-ihm) | Bufferbloat is measured passively in IHM | Accepted 2026-11-18 |
 | [002](#adr-002-ihm-stays-a-standalone-integration) | IHM stays a standalone integration | Accepted 2026-11-18 |
-| [003](#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3) | Speed testing with user-selected backends (ROADMAP Phase 3) | Accepted 2026-11-18 |
+| [003](#adr-003-speed-testing-with-user-selected-backends) | Speed testing with user-selected backends | Open |
 | [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
-| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19; rule 4 amended 2026-11-19 |
+| [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
 | [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
 | [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Accepted 2026-11-19 |
@@ -56,7 +56,7 @@ and graphs in HA against the camera's streaming state.
 **Constraints:**
 - The passive signal works with no active test configured. Active
   tests are separate and opt-in
-  ([ADR-003](#adr-003-speed-testing-with-user-selected-backends-roadmap-phase-3)).
+  ([ADR-003](#adr-003-speed-testing-with-user-selected-backends)).
 - Gateway and first-ISP-hop latency stay separate entities in ms with
   stable entity ids, so the comparison can be made in HA.
 
@@ -108,87 +108,60 @@ REFERENCES.md):
 
 ---
 
-## ADR-003: Speed testing with user-selected backends (ROADMAP Phase 3)
+## ADR-003: Speed testing with user-selected backends
 
-**Status:** Accepted 2026-11-18; built 2026-11-19 with four backends (amendments below)
+**Status:** Open. Rewritten to state the current decision; awaiting the developer's Accept.
 
-**Question:** Keep ROADMAP Phase 3, given hass-speedtest-ookla (R8)
+**Question:** Offer active speed tests, given hass-speedtest-ookla (R8)
 already ships throughput, loaded latency and a bloat grade?
 
-**Decision:** Keep it, and do it better than R8:
-- **Modular backends.** Every backend implements one shared interface
-  (run a test, return download, upload, idle latency and loaded latency
-  per direction where the API provides them). Adding a bandwidth API
-  means adding one module; nothing else changes.
-- **User selects the backend.** No lock-in to one provider.
-- **First backend: M-Lab NDT7** (decided 2026-11-18). The order of the
-  rest is open; the interface must not assume any one provider.
+**Decision:** Yes, done better than R8.
+- **One interface, one module per backend.** Each backend runs a test and
+  returns download, upload, idle latency, loaded latency per direction
+  and the data it used (Core `speed_test.py`, `backends/`). Adding a
+  provider means adding one module.
+- **The user chooses the backend:** Cloudflare, M-Lab NDT7 or
+  LibreSpeed, or none (the default).
 - **IHM runs its own tests.** No backend reads another HA integration's
-  sensors (decided 2026-11-18): IHM is meant to replace those
-  integrations, not depend on them. The backend
-  list comes from a research pass across available services (Open
-  Verification Items), not from the current ROADMAP list alone.
-- **Bufferbloat included.** Each active test reports idle and loaded
-  latency per direction, complementing ADR-001's passive signal.
-- **No server to run.** No backend requires the user or Solent Labs to
-  host a server.
-- **Fix R8's known gaps:** loaded-latency sensors keep long-term
-  statistics, a failed test is visible rather than leaving stale values,
-  and no test runs on HA restart.
-
-**Constraints** (relaxed 2026-11-18, see Permission below):
-- A backend may use a public endpoint without written permission
-  (R5 Cloudflare, R9), provided:
-  - the default schedule is modest, and the provider's published limits
-    apply where they exist (R9: M-Lab, about 4 a day);
-  - requests identify IHM honestly (User-Agent or client name);
-  - the docs state IHM is not affiliated with the provider.
-- No backend accepts a license or terms on the user's behalf. The Ookla
-  CLI is excluded: hass-speedtest-ookla runs it with `--accept-license
-  --accept-gdpr` (R8), and its EULA is "personal, non-commercial use".
-- Client libraries must have a license compatible with distribution
-  (R5: cloudflarepycli is GPL-3.0 and not used).
-- Tests never run without explicit user configuration: off by default, and only from the button or an automation.
-
-**Amendments (2026-11-19, developer's decisions):**
-- **Reuse, patch, or write our own; ours must be better.** A library
-  that fits IHM's rules is reused; one with gaps is patched upstream or
-  replaced by our own code, which must beat every alternative on
-  measurable terms. No Python client met the rules: `fastdotcom`, which
-  HA core uses, blocks, returns 0 on failure and sets no User-Agent
-  (R19); there is no Python NDT7 client (R9); `cloudflarepycli` is
-  GPL-3.0 (R5). So IHM's Core has its own async clients, one engine for
-  the HTTP backends, in `speed_test.py` and `backends/`.
-- **Follow each provider's terms as closely as possible.** Keeping to
-  the letter of every provider's published terms is part of what IHM
-  offers users, not only a risk control. Where terms are silent, IHM
-  uses the provider the way its own published client does, identifies
-  itself, and stays modest.
-- **Fast.com is not offered.** Netflix's Terms of Use forbid "any
-  robot, spider, scraper or other automated means to access the Netflix
-  service", and define that service to include "our websites" (R19).
-  Fast.com publishes no API, so every client reads a token from
-  fast.com's page: automated access to a Netflix website. A Fast.com
-  backend was built and removed for this reason. Written permission from
-  Netflix would reopen it; it would be one module behind the same
-  interface.
-- **No built-in schedule.** HA's `appropriate-polling` rule (R16) bars a
-  user-set interval, so tests run only from the Run speed test button or
-  an automation that presses it. Two settings bound the cost: a data
-  limit per test (default 1000 MB) and tests per day (default 4, max 40;
-  M-Lab's automated and interactive limits, R9), counting every run.
-  With M-Lab, a press no person made (automation, script) counts toward
-  at most 4 a day and starts after a random wait of up to an hour, as
-  its AUP asks automated clients to randomize (R9).
+  sensors.
+- **Bufferbloat included,** complementing ADR-001's passive signal.
+- **No server to run,** by the user or Solent Labs.
+- **Tests run only when asked:** from the Run speed test button or an
+  automation that presses it. HA's `appropriate-polling` rule (R16) bars
+  a user-set schedule, and no test runs at startup.
+- **Two limits bound the cost,** counting every run: a data limit per
+  test (default 1000 MB; each direction stops at half) and tests per
+  day (default 4, up to 40).
 - **A failed test is visible:** the sensors go unavailable and the
-  button raises the reason; nothing reads 0. Each result reports the
-  data it used.
+  button gives the reason; nothing reads 0. A failure still reports the
+  data it moved.
+- **Our own clients.** A library that meets IHM's rules is reused, one
+  with gaps is patched upstream, and otherwise IHM writes its own, which
+  must beat the alternatives on measurable terms. None qualified:
+  `fastdotcom` blocks, returns 0 on failure and sets no User-Agent
+  (R19); no Python NDT7 client exists (R9); `cloudflarepycli` is
+  GPL-3.0 (R5).
 
-**Permission:** The original rule required a recorded permission basis
-for every backend. Other HA integrations call these endpoints with no
-published permission (R8: ha-cloudflare-speed-test runs hourly against
-speed.cloudflare.com by default), so that rule left IHM unable to match
-them. Asking Cloudflare in writing remains open to the developer.
+**Constraints:**
+- **Keep to each provider's terms as closely as possible;** this is part
+  of what IHM offers. Where terms are silent, use the provider as its
+  own published client does, identify honestly, and stay modest.
+- A backend may use a public endpoint without written permission
+  (other HA integrations do: R8), provided the provider's published
+  limits apply, requests identify IHM (User-Agent or client name), and
+  the docs state IHM is not affiliated.
+- **M-Lab:** the user consents before first use, since M-Lab publishes
+  results with the user's IP address; a run no person started counts
+  toward at most 4 a day and starts after a random wait of up to an hour
+  (R9).
+- **Not offered:** Fast.com, because Netflix's Terms of Use forbid "any
+  robot, spider, scraper or other automated means to access the Netflix
+  service" and include "our websites" in it, while every client must
+  read a token from fast.com's page (R19); Ookla, whose CLI needs a
+  personal, non-commercial license accepted on the user's behalf (R8).
+  Written permission from a provider would reopen it.
+- No backend accepts a license or terms for the user, and client
+  libraries must have a license compatible with distribution.
 
 ---
 
@@ -259,7 +232,7 @@ Adding it is one module implementing `Platform`, one branch in
 
 ## ADR-006: Outside services only by user choice
 
-**Status:** Accepted 2026-11-19; rule 4 amended 2026-11-19 (speed tests)
+**Status:** Accepted 2026-11-19
 
 **Context:** Hop enrichment sent each public hop IP to ip-api.com over
 plain HTTP and the gateway's MAC address to api.macvendors.com, always
@@ -275,8 +248,8 @@ all of these hold:
 3. **Listed.** `docs/ARCHITECTURE.md § Data Leaving the Host` has a row
    for it.
 4. **Minimal.** It sends only what it needs; never the user's own
-   address or device identifiers. One exception, amended 2026-11-19: a
-   speed test is a connection from the user's network, so the provider
+   address or device identifiers. The exception is a speed test: it is a
+   connection from the user's network, so the provider
    always sees the user's public IP address. The option's description
    says so, and says which provider publishes it (M-Lab, which also
    requires the user's confirmation before its first use).
