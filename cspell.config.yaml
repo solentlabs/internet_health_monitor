@@ -36,6 +36,7 @@ words:
   - upgrader # CHANGELOG narrative section wording
   - clientsession # async_get_clientsession
   - pytestmark
+  - usefixtures # pytest marker
   - pyrightconfig # pyright config file
   - caplog # pytest fixture
   - capsys # pytest fixture
