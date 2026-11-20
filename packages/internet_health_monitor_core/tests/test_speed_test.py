@@ -31,6 +31,7 @@ pytestmark = pytest.mark.enable_socket  # loopback only: in-process servers on 1
 
 LIMIT = 4_000_000  # bytes per direction: keeps every test fast
 BLOCK = b"\0" * 65536
+SLOW_BLOCK_S = 0.01
 
 # A server answers a load or probe request with a redirect -> the test fails; the target gets nothing.
 # A server answers with JSON of the wrong shape -> SpeedTestError, as every failure.
@@ -63,6 +64,7 @@ class Fake:
         self.malformed: dict[str, Any] = {}  # path -> JSON body of the wrong shape
         self.redirect: set[str] = set()  # paths that answer 302 to /elsewhere (a server pointing load at a LAN device)
         self.locate_status = 200
+        self.slow = False  # load moves one block per SLOW_BLOCK_S each way: a line slower than the limit
         self.base = ""
 
     @web.middleware
@@ -88,6 +90,8 @@ class Fake:
             chunk = BLOCK[: min(len(BLOCK), size - sent)]
             await resp.write(chunk)
             sent += len(chunk)
+            if self.slow and size > 0:
+                await asyncio.sleep(SLOW_BLOCK_S)
         return resp
 
     async def cf_down(self, request: web.Request) -> web.StreamResponse:
@@ -96,7 +100,9 @@ class Fake:
 
     async def sink(self, request: web.Request) -> web.Response:
         """Accept an upload or a probe."""
-        await request.read()
+        async for _ in request.content.iter_chunked(len(BLOCK)):
+            if self.slow:
+                await asyncio.sleep(SLOW_BLOCK_S)
         return web.Response(text="")
 
     async def libre_list(self, request: web.Request) -> web.Response:
@@ -174,11 +180,36 @@ class Fake:
 
 
 @pytest.fixture(autouse=True)
-def short_test(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Shrink each direction so a test takes well under a second."""
-    monkeypatch.setattr(timing, "SPEED_TEST_DIRECTION_S", 0.4)
+def limit_ends_each_direction(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make every run's order fixed, so results never depend on how busy the machine is.
+
+    The data limit, never the clock, ends a direction: 4 MB moves on loopback in milliseconds,
+    and the window is only a guard against a hung test. Each direction's load starts after a
+    probe has answered, since on loopback the limit is otherwise reached before any probe returns.
+    """
+    monkeypatch.setattr(timing, "SPEED_TEST_DIRECTION_S", 30.0)
     monkeypatch.setattr(timing, "SPEED_TEST_WARMUP_S", 0.1)
     monkeypatch.setattr(timing, "SPEED_TEST_PROBE_INTERVAL_S", 0.02)
+    answered = [0]
+    original_probe = _http.probe
+
+    async def counted_probe(session: aiohttp.ClientSession, server: _http.HttpServer) -> float:
+        result = await original_probe(session, server)
+        answered[0] += 1
+        return result
+
+    def after_a_probe(stream: _http.StreamFn) -> _http.StreamFn:
+        async def gated(session: aiohttp.ClientSession, server: _http.HttpServer, index: int, counter: Any) -> None:
+            seen = answered[0]
+            while answered[0] == seen:
+                await asyncio.sleep(0.001)
+            await stream(session, server, index, counter)
+
+        return gated
+
+    monkeypatch.setattr(_http, "probe", counted_probe)
+    monkeypatch.setattr(_http, "_download_stream", after_a_probe(_http._download_stream))
+    monkeypatch.setattr(_http, "_upload_stream", after_a_probe(_http._upload_stream))
 
 
 @pytest.fixture
@@ -237,6 +268,34 @@ async def test_backend_measures_both_directions(
     assert 0 < result.data_used_mb <= 2 * LIMIT / 1e6 + 8
     assert fake.user_agents == {USER_AGENT}
     assert "/__results" not in fake.paths  # never reports to a results endpoint
+
+
+async def test_time_ends_a_slow_line(
+    fake: Fake, session: aiohttp.ClientSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On a line too slow to reach the limit, each direction runs its full window; speed is timed after warm-up."""
+    fake.slow = True
+    window, warmup = 0.6, 0.2
+    monkeypatch.setattr(timing, "SPEED_TEST_DIRECTION_S", window)
+    monkeypatch.setattr(timing, "SPEED_TEST_WARMUP_S", warmup)
+    measured: list[tuple[int, float]] = []
+    original = _http._run_until
+
+    async def recorded(tasks: list[asyncio.Task[None]], counter: Any, seconds: float) -> None:
+        await original(tasks, counter, seconds)
+        measured.append((counter.total, seconds))
+
+    monkeypatch.setattr(_http, "_run_until", recorded)
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+    result = await CloudflareBackend(fake.base).run(session, 10**12, Transfer())
+    assert loop.time() - start >= 2 * window  # time, not the limit, ended both directions
+    assert result.download_mbps > 0 and result.upload_mbps > 0
+    # Each direction: one wait for warm-up, one for the rest; throughput counts only the rest.
+    (down_warm, _), (down_end, down_rest), (up_warm, _), (up_end, _) = measured
+    assert down_rest == pytest.approx(window - warmup)
+    assert 0 < down_warm < down_end and 0 < up_warm < up_end
+    assert result.download_mbps <= (down_end - down_warm) * 8 / 1e6 / (window - warmup) * 1.01
 
 
 async def test_ndt7_latency_and_upload_come_from_the_server(fake: Fake, session: aiohttp.ClientSession) -> None:
@@ -391,6 +450,8 @@ async def test_failed_test_reports_data_it_moved(
 ) -> None:
     """A test that fails partway still reports the MB it moved, so usage totals match the ISP's count."""
     fake.fail.add("/__up")  # download completes, then every upload is refused after it is sent
+    # Bodies smaller than the limit, so each stream waits for its refusal before the limit is reached.
+    monkeypatch.setattr(_http, "UPLOAD_REQUEST_BYTES", _http.READ_CHUNK)
     monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": lambda: CloudflareBackend(fake.base)})
     with pytest.raises(SpeedTestError) as err:
         await run_speed_test("cloudflare", session, data_limit_mb=8)

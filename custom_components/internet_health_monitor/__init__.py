@@ -53,6 +53,7 @@ from .coordinator import (
     ReachabilityTarget,
     SpeedTestCoordinator,
 )
+from .log_buffer import async_setup_log_buffer
 from .services import async_setup_services
 from .usage import (
     STORAGE_KEY as USAGE_STORAGE_KEY,
@@ -66,23 +67,10 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the actions and the dashboard card, once per HA start."""
+    """Start the log buffer, register the actions and the dashboard card, once per HA start."""
+    async_setup_log_buffer(hass)
     async_setup_services(hass)
     await async_register_card(hass)
-    return True
-
-
-async def async_migrate_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
-    """Bring an older entry up to date before setup.
-
-    1.1 -> 1.2: entries from before the Long-term statistics option already
-    built statistics, so they keep it on; turning it off would raise one HA
-    warning per sensor (ADR-013). New entries start off. HA itself refuses an
-    entry from a newer major version before calling this.
-    """
-    if entry.minor_version < 2:
-        options = {CONF_LONG_TERM_STATISTICS: True, **entry.options}
-        hass.config_entries.async_update_entry(entry, options=options, minor_version=2)
     return True
 
 

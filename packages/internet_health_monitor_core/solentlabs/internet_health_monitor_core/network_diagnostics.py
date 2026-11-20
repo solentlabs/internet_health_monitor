@@ -761,7 +761,7 @@ class NetworkDiagnostics:
             if hostname == ip:
                 # Some resolvers (Docker's among them) echo the address back
                 return None
-            _LOGGER.debug("Reverse DNS for %s: %s", ip, hostname)
+            _LOGGER.debug("Reverse DNS found a name for %s", ip)  # not the name: it can place the user
             return hostname
         except (socket.herror, socket.gaierror):
             # No reverse DNS entry

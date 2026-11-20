@@ -475,6 +475,28 @@ Read 2026-11-19 [V]:
   (`_unrecorded_attributes`, `helpers/entity.py`, HA 2026.11) but not an
   entity's state; only the user's `recorder: exclude` does that.
 
+## R24. Addresses that place no one
+
+Read 2026-11-20 [V]:
+
+- HA developer docs, integration diagnostics
+  (<https://contributors.home-assistant.io/core/integrations/diagnostics/>):
+  users post diagnostics in public issues, so "Location data, like
+  coordinates and addresses" and "Personal information" stay out;
+  `async_redact_data` replaces listed keys with `**REDACTED**`, and
+  `None` passes through.
+- RFC 1918 (<https://www.rfc-editor.org/rfc/rfc1918>) § 3: private
+  blocks 10/8, 172.16/12, 192.168/16.
+- RFC 6598 (<https://www.rfc-editor.org/rfc/rfc6598>): Shared Address
+  Space 100.64.0.0/10, for carrier-grade NAT; packets using it "MUST
+  NOT be forwarded across Service Provider boundaries."
+- IANA special-purpose registries
+  (<https://www.iana.org/assignments/iana-ipv4-special-registry/>,
+  <https://www.iana.org/assignments/iana-ipv6-special-registry/>):
+  127.0.0.0/8 loopback (RFC 1122) and 169.254.0.0/16 link local
+  (RFC 3927), neither globally reachable; ::1/128 loopback and
+  fe80::/10 link-local (RFC 4291), fc00::/7 unique local (RFC 4193).
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

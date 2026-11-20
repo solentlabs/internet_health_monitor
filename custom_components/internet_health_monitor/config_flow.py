@@ -166,8 +166,6 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
     """One entry per Home Assistant: it monitors this host's own path."""
 
     VERSION = 1
-    # 2: Long-term statistics option; older entries keep statistics on (__init__.async_migrate_entry).
-    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Nothing is pending until the first screen is submitted."""

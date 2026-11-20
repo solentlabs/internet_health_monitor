@@ -9,7 +9,6 @@ import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
@@ -31,16 +30,6 @@ OPTION_CASES = [
     ("all set",    {CONF_DNS_SERVER: "quad9", CONF_PING_COUNT: 5, CONF_HOP_OWNERSHIP: True},
                                                                              ("9.9.9.9", 5, True)),
     ("stored address", {CONF_DNS_SERVER: "1.1.1.1"},                         ("1.1.1.1", 3, False)),
-]
-# fmt: on
-
-# entry version -> after setup: (loaded, Long-term statistics option)
-# fmt: off
-MIGRATION_CASES: list[tuple[str, int, int, dict[str, bool], tuple[bool, bool | None]]] = [
-    ("before the option keeps statistics", 1, 1, {},                              (True, True)),
-    ("before, choice already stored",      1, 1, {"long_term_statistics": False}, (True, False)),
-    ("current entry untouched",            1, 2, {},                              (True, None)),
-    ("from a newer IHM (HA refuses)",        2, 1, {},                              (False, None)),
 ]
 # fmt: on
 
@@ -170,26 +159,6 @@ async def test_entities_no_longer_created_are_removed(
 
     await set_options(hass, entry, {})
     assert {key: entity_id(hass, platform, entry, key) for platform, key in removed} == before
-
-
-@pytest.mark.parametrize(
-    ("description", "version", "minor", "options", "expected"), MIGRATION_CASES, ids=[c[0] for c in MIGRATION_CASES]
-)
-async def test_migration(
-    hass: HomeAssistant,
-    poll: AsyncMock,
-    description: str,
-    version: int,
-    minor: int,
-    options: dict[str, bool],
-    expected: tuple[bool, bool | None],
-) -> None:
-    """Entries from before the Long-term statistics option keep statistics on, so HA raises no warnings."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=DOMAIN, version=version, minor_version=minor, options=options)
-    entry.add_to_hass(hass)
-    loaded = await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-    assert (loaded, entry.options.get("long_term_statistics")) == expected
 
 
 async def test_monitoring_switches_reach_core(hass: HomeAssistant, setup_entry: SetupEntry) -> None:

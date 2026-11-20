@@ -104,7 +104,7 @@ rules:
     comment: "One service device per entry: name, manufacturer, sw_version, entry_type SERVICE (entity.py)."
   diagnostics:
     status: done
-    comment: diagnostics.py returns options, coordinator state, hop and DNS data; no credentials exist; hop IPs and hostnames are ISP routers, not redacted; 100% covered.
+    comment: diagnostics.py returns options, coordinator state, hop and DNS data and recent logs (log_buffer.py); redact.py removes hop hostnames and public addresses (ARCHITECTURE.md § Diagnostics); no credentials exist; 100% covered.
   discovery:
     status: exempt
     comment: Nothing to discover; IHM measures the HA host's own network path, not a device or service on the network.

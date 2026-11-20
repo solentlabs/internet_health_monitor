@@ -70,7 +70,9 @@ scheduling. It contains no measurement logic.
 | `button.py` | Refresh diagnostics; Reset network cache (disabled by default); Run speed test (with a service chosen; a press with no user counts as automated). A failed press raises a translated error. |
 | `dashboard.py`, `services.py`, `card/` | Dashboard card: one layout builder behind the `generate_dashboard_card` action and the bundled Lovelace card; additive, so a card failure never stops monitoring ([DASHBOARD_CARD.md](DASHBOARD_CARD.md)). Registered once in `async_setup`. |
 | `usage.py` | `UsageTracker`: running totals of pings, traceroutes, DNS queries and speed test runs and data. Adds Core's per-instance `NetworkDiagnostics.counts` to totals stored in HA storage (`internet_health_monitor.usage`), probe counts written within 5 minutes (a fixed deadline: HA's delayed save slides on every call) and on unload, speed test totals at once. |
-| `diagnostics.py` | HA diagnostics download: options, poll state, the core's result and detection state. |
+| `diagnostics.py` | HA diagnostics download: options, poll state, the core's result, detection state, usage totals, speed test state and recent logs, redacted (§ Diagnostics). |
+| `log_buffer.py` | `LogBuffer`: the newest 200 records from IHM's and Core's loggers, in memory, for the download. |
+| `redact.py` | What the download leaves out (§ Diagnostics). |
 | `strings.json`, `translations/`, `icons.json` | Every form label, entity name, error message and icon; no names or icons in code. |
 | `quality_scale.yaml` | Self-assessment against HA's quality scale; README.md § Quality Scale renders it. |
 
@@ -136,6 +138,25 @@ sends only:
 
 Nothing else goes to an outside service; any that is added is opt-in and listed here (ADR-006). Every speed test request carries the User-Agent `internet-health-monitor/<version>`.
 
+## Diagnostics
+
+HA's diagnostics download is what a user attaches to a bug report, so it
+carries IHM's recent log records: HA OS keeps no log file a user can
+attach, and HA's system log holds only warnings and errors.
+
+- **Logs:** `log_buffer.py` keeps the newest 200 records from the
+  integration's and Core's loggers in memory from HA start, at whatever
+  level HA's logger settings allow (INFO by default; everything with
+  debug logging on). IHM never changes a logger's level.
+- **Redacted** (HA asks that location and personal data stay out,
+  [REFERENCES.md § R24](REFERENCES.md#r24-addresses-that-place-no-one)):
+  hop hostnames, by key; and every public address, wherever it appears,
+  logs included. Kept: private, shared (CGNAT), loopback and link-local
+  ranges, and the public resolvers IHM offers. A hop's network (ASN and
+  owner) stays, so the ISP is still known.
+- **Never logged:** a hop's hostname. The diagnostics redact it by key,
+  and the log line that found it names only the address.
+
 ## Security
 
 Reviewed 2026-11-19 (ROADMAP Phase 5); `packages/internet_health_monitor_core/tests/test_security.py` holds each guarantee.
@@ -154,8 +175,8 @@ Reviewed 2026-11-19 (ROADMAP Phase 5); `packages/internet_health_monitor_core/te
   follows no redirects, so a tampered list or a server cannot aim test
   traffic at a device on the LAN.
 - **Nothing secret is held.** IHM stores no credentials. The public IP
-  address is never read or stored; diagnostics hold options, detected
-  hops and the last results.
+  address is never read or stored; the diagnostics download is redacted
+  (§ Diagnostics).
 - **The card renders no HTML from data.** Messages are set with
   `textContent`; the layout is built by HA's own card helpers.
 

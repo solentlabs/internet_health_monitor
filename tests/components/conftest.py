@@ -16,7 +16,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.internet_health_monitor.config_flow import InternetHealthConfigFlow
 from custom_components.internet_health_monitor.const import DOMAIN, NAME
 from solentlabs.internet_health_monitor_core.network_diagnostics import (
     HopInfo,
@@ -81,7 +80,6 @@ async def setup_entry(hass: HomeAssistant) -> AsyncIterator[SetupEntry]:
             unique_id=DOMAIN,
             title=NAME,
             options=options,
-            minor_version=InternetHealthConfigFlow.MINOR_VERSION,  # as a new setup creates it
         )
         entry.add_to_hass(hass)
         await hass.config_entries.async_setup(entry.entry_id)

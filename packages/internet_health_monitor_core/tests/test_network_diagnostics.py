@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import socket
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -303,13 +304,18 @@ def test_format_ms(description: str, value: float | None, expected: str) -> None
     ("description", "lookup", "expected"), REVERSE_DNS_CASES, ids=[c[0] for c in REVERSE_DNS_CASES]
 )
 async def test_reverse_dns_lookup(
-    description: str, lookup: tuple[str, list[str], list[str]] | Exception, expected: str | None
+    description: str,
+    lookup: tuple[str, list[str], list[str]] | Exception,
+    expected: str | None,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Only a real name counts; an echoed IP or a failed lookup gives None."""
+    """Only a real name counts; an echoed IP or a failed lookup gives None. The name is never logged."""
     target = "solentlabs.internet_health_monitor_core.network_diagnostics.socket.gethostbyaddr"
     mock = Mock(side_effect=lookup) if isinstance(lookup, Exception) else Mock(return_value=lookup)
+    caplog.set_level(logging.DEBUG)
     with patch(target, mock):
         assert await NetworkDiagnostics()._reverse_dns_lookup("192.0.2.1") == expected
+    assert "example.com" not in caplog.text  # a hop's name can place the user; logs reach diagnostics
 
 
 class TestNetworkDiagnosticsAsync:

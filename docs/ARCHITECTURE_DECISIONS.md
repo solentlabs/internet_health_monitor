@@ -504,13 +504,6 @@ keep a sensor's state out of state history, which only the user's
   readings. A before-and-after trend over months (UC-6) needs it; the
   10 days of state history serves the rest, and the card's graphs (at
   most 168 hours) never need it.
-- **Existing entries keep statistics on.** An entry created before the
-  option (config entry 1.1) already built statistics; switching them off
-  would raise one HA warning per sensor. A one-time migration to 1.2
-  (`async_migrate_entry`) turns the option on for such entries; new
-  entries start off. This is the policy Cable Modem Monitor chose for
-  the same change: new installs change, existing ones keep their
-  behavior until the user opts out.
 
 **Consequences:** Without `state_class`, the frontend still draws these
 sensors as lines, since they have units (frontend `src/data/history.ts`).

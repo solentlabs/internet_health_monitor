@@ -412,6 +412,15 @@ IHM reads the host's default route every poll, so a router that comes up
 after Home Assistant, or a new one, is found within a minute. Check that the
 host has one (`ip route show default`).
 
+### Reporting a problem
+
+Attach the diagnostics download (Settings, Devices & services, Internet
+Health Monitor, the three-dot menu, Download diagnostics). It includes
+IHM's recent log entries, so no log file is needed. Hop hostnames and
+public IP addresses are replaced with `**REDACTED**`; private addresses and
+each hop's network owner stay. For more detail, turn on debug logging on
+the same page, wait for the problem to happen, then download.
+
 ## Quality Scale
 
 Home Assistant grades only its built-in integrations against its [Integration Quality Scale](https://contributors.home-assistant.io/core/quality-scale/). This is a self-assessment against the same rules; each rule's status and evidence is in [quality_scale.yaml](custom_components/internet_health_monitor/quality_scale.yaml). A tier is reached when all of its rules and every rule below it are met.
