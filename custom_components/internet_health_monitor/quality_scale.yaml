@@ -10,7 +10,7 @@ rules:
     comment: "generate_dashboard_card is registered in async_setup (services.py async_setup_services), so it exists before any entry loads; it raises a translated ServiceValidationError when no entry exists (tests/components/test_dashboard.py)."
   appropriate-polling:
     status: done
-    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route. Speed tests never poll: update_interval None; they run on a Run speed test press and, with the nightly test on, once a night at a random time from 1 to 5 am, within the daily limit and data budget (coordinator.py SpeedTestCoordinator)."
+    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route. Speed tests never poll: update_interval None; they run on a Run speed test press and, with automatic tests on, at a random time from 1 to 5 am, weekly or as often as the user's data budget holds every test (Core data_plan.py); the user sets a budget, never an interval (coordinator.py SpeedTestCoordinator)."
   brands:
     status: done
     comment: brand/icon.png, icon.svg, logo.png and dark variants in the integration directory.

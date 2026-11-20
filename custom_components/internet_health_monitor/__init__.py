@@ -140,7 +140,7 @@ async def _async_speed_test(
         hass,
         entry,
         backend,
-        data_limit_mb=options.get(CONF_SPEED_TEST_DATA_LIMIT, timing.SPEED_TEST_DATA_LIMIT_MB_DEFAULT),
+        data_limit_mb=options.get(CONF_SPEED_TEST_DATA_LIMIT, timing.SPEED_TEST_DATA_LIMIT_MB_AUTO),
         daily_limit=options.get(CONF_SPEED_TEST_DAILY_LIMIT, timing.SPEED_TEST_DAILY_DEFAULT),
         usage=usage,
         automatic=options.get(CONF_SPEED_TEST_AUTOMATIC, True),

@@ -16,7 +16,7 @@ from solentlabs.internet_health_monitor_core.platforms.linux import (
     parse_resolv_conf,
     parse_traceroute_hops,
 )
-from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, Transfer
+from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedTestError, Transfer
 
 # ┌──────────────────────────────┬──────────────────────────────────────────┐
 # │ target                       │ why it must never reach ping/traceroute  │
@@ -94,4 +94,4 @@ async def test_ndt7_refuses_plain_websocket() -> None:
         pytest.raises(SpeedTestError, match="no M-Lab server could be reached"),
     ):
         async with aiohttp.ClientSession() as session:
-            await backend.run(session, 1000, Transfer())
+            await backend.run(session, DataLimit(1, 1), Transfer())

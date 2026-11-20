@@ -10,12 +10,13 @@ import asyncio
 import json
 import os
 import statistics
+from dataclasses import dataclass
 from typing import Any, Literal
 
 import aiohttp
 
 from .. import timing
-from ..speed_test import CLIENT_NAME, CLIENT_VERSION, SpeedTestError, SpeedTestResult, Transfer, now
+from ..speed_test import CLIENT_NAME, CLIENT_VERSION, DataLimit, EndedBy, SpeedTestError, SpeedTestResult, Transfer, now
 from ._http import HEADERS, REQUEST_TIMEOUT, check_status
 
 LOCATE_URL = "https://locate.measurementlab.net/v2/nearest/ndt/ndt7"
@@ -66,6 +67,17 @@ class _Readings:
         return _ms(statistics.median(self.rtt_us)) if self.rtt_us else None
 
 
+@dataclass(frozen=True)
+class _Run:
+    """One direction's result: throughput, bytes moved, what ended it and how long it ran."""
+
+    mbps: float
+    moved: int
+    readings: _Readings
+    ended_by: EndedBy
+    seconds: float
+
+
 class Ndt7Backend:
     """Download, upload and latency against the nearest M-Lab server."""
 
@@ -91,10 +103,8 @@ class Ndt7Backend:
             raise SpeedTestError("M-Lab's Locate API returned no servers")
         return results
 
-    async def _download(
-        self, session: aiohttp.ClientSession, url: str, max_bytes: int, transfer: Transfer
-    ) -> tuple[float, int, _Readings]:
-        """Receive until the server closes or *max_bytes* arrive; return (Mbit/s, bytes, readings)."""
+    async def _download(self, session: aiohttp.ClientSession, url: str, max_bytes: int, transfer: Transfer) -> _Run:
+        """Receive until the server closes, the protocol's longest run passes, or *max_bytes* arrive."""
         loop = asyncio.get_running_loop()
         readings, total = _Readings(), 0
         async with session.ws_connect(
@@ -114,11 +124,9 @@ class Ndt7Backend:
             elapsed = loop.time() - start
         if total <= 0 or elapsed <= 0:
             raise SpeedTestError("M-Lab server sent no data")
-        return total * 8 / 1e6 / elapsed, total, readings
+        return _Run(total * 8 / 1e6 / elapsed, total, readings, _ended(total, max_bytes), elapsed)
 
-    async def _upload(
-        self, session: aiohttp.ClientSession, url: str, max_bytes: int, transfer: Transfer
-    ) -> tuple[float, int, _Readings]:
+    async def _upload(self, session: aiohttp.ClientSession, url: str, max_bytes: int, transfer: Transfer) -> _Run:
         """Send for SPEED_TEST_DIRECTION_S or *max_bytes*; throughput is what the server says it received."""
         loop = asyncio.get_running_loop()
         readings, sent, size = _Readings(), 0, FIRST_MESSAGE
@@ -148,13 +156,14 @@ class Ndt7Backend:
                 await ws.close()
             finally:
                 reader.cancel()
+        ended_by = _ended(sent, max_bytes)
         if readings.app_bytes and readings.app_elapsed_us:
-            return readings.app_bytes * 8 / readings.app_elapsed_us, sent, readings
+            return _Run(readings.app_bytes * 8 / readings.app_elapsed_us, sent, readings, ended_by, elapsed)
         if sent <= 0 or elapsed <= 0:
             raise SpeedTestError("M-Lab server accepted no data")
-        return sent * 8 / 1e6 / elapsed, sent, readings
+        return _Run(sent * 8 / 1e6 / elapsed, sent, readings, ended_by, elapsed)
 
-    async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
+    async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
         """Run one test, falling back to the next candidate if a server cannot be reached."""
         started = now()
         last_error: Exception | None = None
@@ -164,27 +173,36 @@ class Ndt7Backend:
                 last_error = SpeedTestError(f"{candidate.get('machine')} offered no wss:// URL")
                 continue
             try:
-                download_mbps, down_bytes, down = await self._download(session, urls[DOWNLOAD_KEY], max_bytes, transfer)
+                down = await self._download(session, urls[DOWNLOAD_KEY], limit.download_mb * 1_000_000, transfer)
             except (aiohttp.ClientError, OSError) as err:
                 last_error = err
                 continue
-            upload_mbps, up_bytes, up = await self._upload(session, urls[UPLOAD_KEY], max_bytes, transfer)
+            up = await self._upload(session, urls[UPLOAD_KEY], limit.upload_mb * 1_000_000, transfer)
             city = (candidate.get("location") or {}).get("city")
             machine = str(candidate.get("machine", "M-Lab"))
             return SpeedTestResult(
                 backend=self.name,
                 server=f"{machine} ({city})" if city else machine,
-                download_mbps=round(download_mbps, 2),
-                upload_mbps=round(upload_mbps, 2),
-                idle_latency_ms=_round(_ms(down.min_rtt_us)),
-                download_latency_ms=_round(down.loaded_ms()),
-                upload_latency_ms=_round(up.loaded_ms()),
-                data_used_mb=round((down_bytes + up_bytes) / 1e6, 1),
+                download_mbps=round(down.mbps, 2),
+                upload_mbps=round(up.mbps, 2),
+                idle_latency_ms=_round(_ms(down.readings.min_rtt_us)),
+                download_latency_ms=_round(down.readings.loaded_ms()),
+                upload_latency_ms=_round(up.readings.loaded_ms()),
+                data_used_mb=round((down.moved + up.moved) / 1e6, 1),
                 started_at=started,
-                downloaded_mb=round(down_bytes / 1e6, 1),
-                uploaded_mb=round(up_bytes / 1e6, 1),
+                downloaded_mb=round(down.moved / 1e6, 1),
+                uploaded_mb=round(up.moved / 1e6, 1),
+                download_ended_by=down.ended_by,
+                upload_ended_by=up.ended_by,
+                download_s=round(down.seconds, 1),
+                upload_s=round(up.seconds, 1),
             )
         raise SpeedTestError(f"no M-Lab server could be reached: {last_error}")
+
+
+def _ended(moved: int, max_bytes: int) -> EndedBy:
+    """The data limit ended the direction if it was reached; otherwise time or the server did."""
+    return "data_limit" if moved >= max_bytes else "time"
 
 
 def _round(value: float | None) -> float | None:

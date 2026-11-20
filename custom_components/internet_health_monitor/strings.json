@@ -50,18 +50,18 @@
       },
       "speed_test": {
         "title": "Speed tests",
-        "description": "Run speed test and automations start a test at any time. At {limit_mb} MB a test, the nightly test alone uses up to {monthly_gb} GB in 30 days; most tests use less.",
+        "description": "Run speed test and automations start a test at any time. Last test: {last_test}. Each test may use up to {limit_mb} MB, so automatic tests run every {every_days} day(s), using at most {monthly_gb} GB in any 30 days. Before the first test, the automatic limit is 500 MB. The rules: README, How much data speed tests use.",
         "data": {
-          "speed_test_automatic": "Nightly test",
+          "speed_test_automatic": "Automatic tests",
           "speed_test_data_limit_mb": "Data limit per test",
           "speed_test_daily_limit": "Daily test limit",
           "speed_test_budget_gb": "Data budget per 30 days"
         },
         "data_description": {
-          "speed_test_automatic": "One test a night at a random time between 1 and 5 am, when the line is likely quiet. Off: tests run only from Run speed test or an automation.",
-          "speed_test_data_limit_mb": "Most data one test may use, both directions together (100 to 10000 MB); each direction stops at half. On a fast line a lower limit gives a shorter, less precise test.",
-          "speed_test_daily_limit": "A cap, not a schedule: once this many tests ran in the last 24 hours, more are refused until the oldest is a day old (1 to 40). Counts the nightly test, the button and automations. M-Lab asks automated tests to stay at 4 or fewer.",
-          "speed_test_budget_gb": "0 for none. A test starts only if it fits in what is left of this after the last 30 days of speed tests. If your plan has a data cap, keep this to a small share of it."
+          "speed_test_automatic": "At a random time between 1 and 5 am, when the line is likely quiet: weekly with no data budget; with one, as often as the budget holds every test. Off: tests run only from Run speed test or an automation.",
+          "speed_test_data_limit_mb": "0 for automatic: each direction gets what 10 s at the last test's speed used, plus 25%, within the budget. Or 100 to 10000 MB, both directions together; each direction stops at half. A test the limit ends is shorter and less precise.",
+          "speed_test_daily_limit": "A cap, not a schedule: once this many tests ran in the last 24 hours, more are refused until the oldest is a day old (1 to 40). Counts automatic tests, the button and automations. M-Lab asks automated tests to stay at 4 or fewer.",
+          "speed_test_budget_gb": "0 for none. Sets how often automatic tests run, and a test starts only if it fits in what is left of this after the last 30 days of speed tests. If your plan has a data cap, keep this to a small share of it."
         }
       },
       "mlab_consent": {
@@ -77,7 +77,9 @@
       "reconfigure_successful": "Settings were updated."
     },
     "error": {
-      "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service."
+      "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service.",
+      "data_limit_too_small": "Use 0 for automatic, or 100 MB or more.",
+      "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget."
     }
   },
   "options": {
@@ -107,18 +109,18 @@
       },
       "speed_test": {
         "title": "Speed tests",
-        "description": "Run speed test and automations start a test at any time. At {limit_mb} MB a test, the nightly test alone uses up to {monthly_gb} GB in 30 days; most tests use less.",
+        "description": "Run speed test and automations start a test at any time. Last test: {last_test}. Each test may use up to {limit_mb} MB, so automatic tests run every {every_days} day(s), using at most {monthly_gb} GB in any 30 days. Before the first test, the automatic limit is 500 MB. The rules: README, How much data speed tests use.",
         "data": {
-          "speed_test_automatic": "Nightly test",
+          "speed_test_automatic": "Automatic tests",
           "speed_test_data_limit_mb": "Data limit per test",
           "speed_test_daily_limit": "Daily test limit",
           "speed_test_budget_gb": "Data budget per 30 days"
         },
         "data_description": {
-          "speed_test_automatic": "One test a night at a random time between 1 and 5 am, when the line is likely quiet. Off: tests run only from Run speed test or an automation.",
-          "speed_test_data_limit_mb": "Most data one test may use, both directions together (100 to 10000 MB); each direction stops at half. On a fast line a lower limit gives a shorter, less precise test.",
-          "speed_test_daily_limit": "A cap, not a schedule: once this many tests ran in the last 24 hours, more are refused until the oldest is a day old (1 to 40). Counts the nightly test, the button and automations. M-Lab asks automated tests to stay at 4 or fewer.",
-          "speed_test_budget_gb": "0 for none. A test starts only if it fits in what is left of this after the last 30 days of speed tests. If your plan has a data cap, keep this to a small share of it."
+          "speed_test_automatic": "At a random time between 1 and 5 am, when the line is likely quiet: weekly with no data budget; with one, as often as the budget holds every test. Off: tests run only from Run speed test or an automation.",
+          "speed_test_data_limit_mb": "0 for automatic: each direction gets what 10 s at the last test's speed used, plus 25%, within the budget. Or 100 to 10000 MB, both directions together; each direction stops at half. A test the limit ends is shorter and less precise.",
+          "speed_test_daily_limit": "A cap, not a schedule: once this many tests ran in the last 24 hours, more are refused until the oldest is a day old (1 to 40). Counts automatic tests, the button and automations. M-Lab asks automated tests to stay at 4 or fewer.",
+          "speed_test_budget_gb": "0 for none. Sets how often automatic tests run, and a test starts only if it fits in what is left of this after the last 30 days of speed tests. If your plan has a data cap, keep this to a small share of it."
         }
       },
       "mlab_consent": {
@@ -130,7 +132,9 @@
       }
     },
     "error": {
-      "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service."
+      "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service.",
+      "data_limit_too_small": "Use 0 for automatic, or 100 MB or more.",
+      "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget."
     }
   },
   "selector": {
@@ -219,6 +223,16 @@
           },
           "tested_at": {
             "name": "Tested at"
+          },
+          "ended_by": {
+            "name": "Ended by",
+            "state": {
+              "time": "Time",
+              "data_limit": "Data limit"
+            }
+          },
+          "duration_s": {
+            "name": "Duration"
           }
         }
       },
@@ -233,6 +247,16 @@
           },
           "tested_at": {
             "name": "Tested at"
+          },
+          "ended_by": {
+            "name": "Ended by",
+            "state": {
+              "time": "Time",
+              "data_limit": "Data limit"
+            }
+          },
+          "duration_s": {
+            "name": "Duration"
           }
         }
       },
@@ -280,6 +304,56 @@
       },
       "speed_test_data_used": {
         "name": "Speed test data used",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Tested at"
+          }
+        }
+      },
+      "speed_test_download_latency_increase": {
+        "name": "Speed test download latency increase",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Tested at"
+          }
+        }
+      },
+      "speed_test_upload_latency_increase": {
+        "name": "Speed test upload latency increase",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Server"
+          },
+          "tested_at": {
+            "name": "Tested at"
+          }
+        }
+      },
+      "speed_test_bufferbloat_grade": {
+        "name": "Speed test bufferbloat grade",
+        "state": {
+          "a_plus": "A+",
+          "a": "A",
+          "b": "B",
+          "c": "C",
+          "d": "D",
+          "f": "F"
+        },
         "state_attributes": {
           "backend": {
             "name": "Backend"

@@ -15,7 +15,7 @@ import aiohttp
 
 from . import mlab_runs
 from .network_diagnostics import DEFAULT_DNS_SERVER, NetworkDiagnostics, NetworkDiagnosticsConfig
-from .speed_test import BACKEND_NAMES, SpeedTestError, run_speed_test
+from .speed_test import BACKEND_NAMES, DataLimit, SpeedTestError, run_speed_test
 from .timing import (
     DEFAULT_PING_COUNT,
     PING_COUNT_MAX,
@@ -75,7 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--data-limit",
         type=_int_in(SPEED_TEST_DATA_LIMIT_MB_MIN, SPEED_TEST_DATA_LIMIT_MB_MAX),
         default=SPEED_TEST_DATA_LIMIT_MB_DEFAULT,
-        help="most MB one speed test may use, both directions together",
+        help="most MB one speed test may use, both directions together; each direction stops at half",
     )
     parser.add_argument(
         "--mlab-consent",
@@ -93,7 +93,7 @@ async def speed_test(args: argparse.Namespace, out: TextIO, err: TextIO, delay_s
         await asyncio.sleep(delay_s)
     async with aiohttp.ClientSession() as session:
         try:
-            result = await run_speed_test(args.speed_test, session, data_limit_mb=args.data_limit)
+            result = await run_speed_test(args.speed_test, session, DataLimit.even(args.data_limit))
         except SpeedTestError as error:
             err.write(f"speed test failed: {error} (used {error.downloaded_mb} MB down, {error.uploaded_mb} MB up)\n")
             return 1

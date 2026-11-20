@@ -77,6 +77,9 @@ _SPEED_TEST: list[Row] = [
     ("sensor", "speed_test_idle_latency", "Idle latency"),
     ("sensor", "speed_test_download_latency", "Download latency"),
     ("sensor", "speed_test_upload_latency", "Upload latency"),
+    ("sensor", "speed_test_bufferbloat_grade", "Bufferbloat grade"),
+    ("sensor", "speed_test_download_latency_increase", "Download latency increase"),
+    ("sensor", "speed_test_upload_latency_increase", "Upload latency increase"),
     ("sensor", "speed_test_data_used", "Data used"),
     ("button", "run_speed_test", "Run speed test"),
 ]

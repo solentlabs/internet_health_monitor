@@ -50,18 +50,18 @@
       },
       "speed_test": {
         "title": "测速",
-        "description": "“运行测速”和自动化可随时开始测试。按每次 {limit_mb} MB 计，仅夜间测试在 30 天内最多使用 {monthly_gb} GB；大多数测试用得更少。",
+        "description": "“运行测速”和自动化可随时开始测试。上次测试：{last_test}。每次测试最多可用 {limit_mb} MB，因此自动测试每 {every_days} 天运行一次，任意 30 天内最多使用 {monthly_gb} GB。首次测试前，自动上限为 500 MB。规则见 README 的“How much data speed tests use”。",
         "data": {
-          "speed_test_automatic": "夜间测试",
+          "speed_test_automatic": "自动测试",
           "speed_test_data_limit_mb": "每次测试数据上限",
           "speed_test_daily_limit": "每日测试上限",
           "speed_test_budget_gb": "每 30 天数据预算"
         },
         "data_description": {
-          "speed_test_automatic": "每晚在凌晨 1 点到 5 点之间的随机时间测试一次，此时线路通常空闲。关闭：仅通过“运行测速”或自动化测试。",
-          "speed_test_data_limit_mb": "一次测试最多可使用的数据量，两个方向合计（100 到 10000 MB）；每个方向用到一半即停止。在高速线路上，较低的上限会让测试更短、精度更低。",
-          "speed_test_daily_limit": "这是上限，不是计划：过去 24 小时内测试达到此次数后，新的测试将被拒绝，直到最早的一次满一天（1 到 40）。夜间测试、按钮和自动化都计入。M-Lab 要求自动测试不超过 4 次。",
-          "speed_test_budget_gb": "0 表示不限。仅当测试能放进过去 30 天测速用量之外的剩余额度时才会开始。如果您的套餐有流量上限，请只用其中一小部分。"
+          "speed_test_automatic": "在凌晨 1 点到 5 点之间的随机时间进行，此时线路通常空闲：未设数据预算时每周一次；设了预算时，在预算能容纳每次测试的前提下尽量频繁。关闭：仅通过“运行测速”或自动化测试。",
+          "speed_test_data_limit_mb": "0 表示自动：每个方向分配上次测试速度下 10 秒所用的数据量，再加 25%，且不超过预算。或设为 100 到 10000 MB，两个方向合计；每个方向用到一半即停止。被上限提前结束的测试更短、精度更低。",
+          "speed_test_daily_limit": "这是上限，不是计划：过去 24 小时内测试达到此次数后，新的测试将被拒绝，直到最早的一次满一天（1 到 40）。自动测试、按钮和自动化都计入。M-Lab 要求自动测试不超过 4 次。",
+          "speed_test_budget_gb": "0 表示不限。决定自动测试的频率，且仅当测试能放进过去 30 天测速用量之外的剩余额度时才会开始。如果您的套餐有流量上限，请只用其中一小部分。"
         }
       },
       "mlab_consent": {
@@ -77,7 +77,9 @@
       "reconfigure_successful": "设置已更新。"
     },
     "error": {
-      "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。"
+      "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。",
+      "data_limit_too_small": "自动请填 0，否则至少 100 MB。",
+      "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。"
     }
   },
   "options": {
@@ -107,18 +109,18 @@
       },
       "speed_test": {
         "title": "测速",
-        "description": "“运行测速”和自动化可随时开始测试。按每次 {limit_mb} MB 计，仅夜间测试在 30 天内最多使用 {monthly_gb} GB；大多数测试用得更少。",
+        "description": "“运行测速”和自动化可随时开始测试。上次测试：{last_test}。每次测试最多可用 {limit_mb} MB，因此自动测试每 {every_days} 天运行一次，任意 30 天内最多使用 {monthly_gb} GB。首次测试前，自动上限为 500 MB。规则见 README 的“How much data speed tests use”。",
         "data": {
-          "speed_test_automatic": "夜间测试",
+          "speed_test_automatic": "自动测试",
           "speed_test_data_limit_mb": "每次测试数据上限",
           "speed_test_daily_limit": "每日测试上限",
           "speed_test_budget_gb": "每 30 天数据预算"
         },
         "data_description": {
-          "speed_test_automatic": "每晚在凌晨 1 点到 5 点之间的随机时间测试一次，此时线路通常空闲。关闭：仅通过“运行测速”或自动化测试。",
-          "speed_test_data_limit_mb": "一次测试最多可使用的数据量，两个方向合计（100 到 10000 MB）；每个方向用到一半即停止。在高速线路上，较低的上限会让测试更短、精度更低。",
-          "speed_test_daily_limit": "这是上限，不是计划：过去 24 小时内测试达到此次数后，新的测试将被拒绝，直到最早的一次满一天（1 到 40）。夜间测试、按钮和自动化都计入。M-Lab 要求自动测试不超过 4 次。",
-          "speed_test_budget_gb": "0 表示不限。仅当测试能放进过去 30 天测速用量之外的剩余额度时才会开始。如果您的套餐有流量上限，请只用其中一小部分。"
+          "speed_test_automatic": "在凌晨 1 点到 5 点之间的随机时间进行，此时线路通常空闲：未设数据预算时每周一次；设了预算时，在预算能容纳每次测试的前提下尽量频繁。关闭：仅通过“运行测速”或自动化测试。",
+          "speed_test_data_limit_mb": "0 表示自动：每个方向分配上次测试速度下 10 秒所用的数据量，再加 25%，且不超过预算。或设为 100 到 10000 MB，两个方向合计；每个方向用到一半即停止。被上限提前结束的测试更短、精度更低。",
+          "speed_test_daily_limit": "这是上限，不是计划：过去 24 小时内测试达到此次数后，新的测试将被拒绝，直到最早的一次满一天（1 到 40）。自动测试、按钮和自动化都计入。M-Lab 要求自动测试不超过 4 次。",
+          "speed_test_budget_gb": "0 表示不限。决定自动测试的频率，且仅当测试能放进过去 30 天测速用量之外的剩余额度时才会开始。如果您的套餐有流量上限，请只用其中一小部分。"
         }
       },
       "mlab_consent": {
@@ -130,7 +132,9 @@
       }
     },
     "error": {
-      "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。"
+      "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。",
+      "data_limit_too_small": "自动请填 0，否则至少 100 MB。",
+      "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。"
     }
   },
   "selector": {
@@ -219,6 +223,16 @@
           },
           "tested_at": {
             "name": "测试时间"
+          },
+          "ended_by": {
+            "name": "结束原因",
+            "state": {
+              "time": "时间",
+              "data_limit": "数据上限"
+            }
+          },
+          "duration_s": {
+            "name": "时长"
           }
         }
       },
@@ -233,6 +247,16 @@
           },
           "tested_at": {
             "name": "测试时间"
+          },
+          "ended_by": {
+            "name": "结束原因",
+            "state": {
+              "time": "时间",
+              "data_limit": "数据上限"
+            }
+          },
+          "duration_s": {
+            "name": "时长"
           }
         }
       },
@@ -280,6 +304,56 @@
       },
       "speed_test_data_used": {
         "name": "测速数据用量",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_download_latency_increase": {
+        "name": "测速下载延迟增加",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_upload_latency_increase": {
+        "name": "测速上传延迟增加",
+        "state_attributes": {
+          "backend": {
+            "name": "后端"
+          },
+          "server": {
+            "name": "服务器"
+          },
+          "tested_at": {
+            "name": "测试时间"
+          }
+        }
+      },
+      "speed_test_bufferbloat_grade": {
+        "name": "测速缓冲膨胀等级",
+        "state": {
+          "a_plus": "A+",
+          "a": "A",
+          "b": "B",
+          "c": "C",
+          "d": "D",
+          "f": "F"
+        },
         "state_attributes": {
           "backend": {
             "name": "后端"

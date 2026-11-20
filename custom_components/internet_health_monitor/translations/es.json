@@ -50,18 +50,18 @@
       },
       "speed_test": {
         "title": "Pruebas de velocidad",
-        "description": "Ejecutar prueba de velocidad y las automatizaciones inician una prueba en cualquier momento. Con {limit_mb} MB por prueba, solo la prueba nocturna usa hasta {monthly_gb} GB en 30 días; la mayoría de las pruebas usan menos.",
+        "description": "Ejecutar prueba de velocidad y las automatizaciones inician una prueba en cualquier momento. Última prueba: {last_test}. Cada prueba puede usar hasta {limit_mb} MB, así que las pruebas automáticas se ejecutan cada {every_days} día(s) y usan como máximo {monthly_gb} GB en 30 días. Antes de la primera prueba, el límite automático es de 500 MB. Las reglas: README, «How much data speed tests use».",
         "data": {
-          "speed_test_automatic": "Prueba nocturna",
+          "speed_test_automatic": "Pruebas automáticas",
           "speed_test_data_limit_mb": "Límite de datos por prueba",
           "speed_test_daily_limit": "Límite diario de pruebas",
           "speed_test_budget_gb": "Presupuesto de datos por 30 días"
         },
         "data_description": {
-          "speed_test_automatic": "Una prueba cada noche a una hora aleatoria entre la 1 y las 5, cuando la línea suele estar libre. Desactivada: las pruebas solo se ejecutan con Ejecutar prueba de velocidad o una automatización.",
-          "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
-          "speed_test_daily_limit": "Un tope, no un horario: si ya se ejecutaron tantas pruebas en las últimas 24 horas, las siguientes se rechazan hasta que la más antigua cumpla un día (1 a 40). Cuenta la prueba nocturna, el botón y las automatizaciones. M-Lab pide que las pruebas automáticas no pasen de 4.",
-          "speed_test_budget_gb": "0 para ninguno. Una prueba solo empieza si cabe en lo que queda de esto tras las pruebas de los últimos 30 días. Si tu plan tiene un límite de datos, mantén esto en una pequeña parte de él."
+          "speed_test_automatic": "A una hora aleatoria entre la 1 y las 5, cuando la línea suele estar libre: semanal sin presupuesto de datos; con él, tan a menudo como el presupuesto admita cada prueba. Desactivadas: las pruebas solo se ejecutan con Ejecutar prueba de velocidad o una automatización.",
+          "speed_test_data_limit_mb": "0 para automático: cada sentido recibe lo que usaron 10 s a la velocidad de la última prueba, más un 25 %, dentro del presupuesto. O de 100 a 10000 MB, ambos sentidos juntos; cada sentido se detiene a la mitad. Una prueba que termina por el límite es más corta y menos precisa.",
+          "speed_test_daily_limit": "Un tope, no un horario: si ya se ejecutaron tantas pruebas en las últimas 24 horas, las siguientes se rechazan hasta que la más antigua cumpla un día (1 a 40). Cuenta las pruebas automáticas, el botón y las automatizaciones. M-Lab pide que las pruebas automáticas no pasen de 4.",
+          "speed_test_budget_gb": "0 para ninguno. Define con qué frecuencia se ejecutan las pruebas automáticas, y una prueba solo empieza si cabe en lo que queda de esto tras las pruebas de los últimos 30 días. Si tu plan tiene un límite de datos, mantén esto en una pequeña parte de él."
         }
       },
       "mlab_consent": {
@@ -77,7 +77,9 @@
       "reconfigure_successful": "Se actualizó la configuración."
     },
     "error": {
-      "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio."
+      "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
+      "data_limit_too_small": "Usa 0 para automático, o 100 MB o más.",
+      "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto."
     }
   },
   "options": {
@@ -107,18 +109,18 @@
       },
       "speed_test": {
         "title": "Pruebas de velocidad",
-        "description": "Ejecutar prueba de velocidad y las automatizaciones inician una prueba en cualquier momento. Con {limit_mb} MB por prueba, solo la prueba nocturna usa hasta {monthly_gb} GB en 30 días; la mayoría de las pruebas usan menos.",
+        "description": "Ejecutar prueba de velocidad y las automatizaciones inician una prueba en cualquier momento. Última prueba: {last_test}. Cada prueba puede usar hasta {limit_mb} MB, así que las pruebas automáticas se ejecutan cada {every_days} día(s) y usan como máximo {monthly_gb} GB en 30 días. Antes de la primera prueba, el límite automático es de 500 MB. Las reglas: README, «How much data speed tests use».",
         "data": {
-          "speed_test_automatic": "Prueba nocturna",
+          "speed_test_automatic": "Pruebas automáticas",
           "speed_test_data_limit_mb": "Límite de datos por prueba",
           "speed_test_daily_limit": "Límite diario de pruebas",
           "speed_test_budget_gb": "Presupuesto de datos por 30 días"
         },
         "data_description": {
-          "speed_test_automatic": "Una prueba cada noche a una hora aleatoria entre la 1 y las 5, cuando la línea suele estar libre. Desactivada: las pruebas solo se ejecutan con Ejecutar prueba de velocidad o una automatización.",
-          "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
-          "speed_test_daily_limit": "Un tope, no un horario: si ya se ejecutaron tantas pruebas en las últimas 24 horas, las siguientes se rechazan hasta que la más antigua cumpla un día (1 a 40). Cuenta la prueba nocturna, el botón y las automatizaciones. M-Lab pide que las pruebas automáticas no pasen de 4.",
-          "speed_test_budget_gb": "0 para ninguno. Una prueba solo empieza si cabe en lo que queda de esto tras las pruebas de los últimos 30 días. Si tu plan tiene un límite de datos, mantén esto en una pequeña parte de él."
+          "speed_test_automatic": "A una hora aleatoria entre la 1 y las 5, cuando la línea suele estar libre: semanal sin presupuesto de datos; con él, tan a menudo como el presupuesto admita cada prueba. Desactivadas: las pruebas solo se ejecutan con Ejecutar prueba de velocidad o una automatización.",
+          "speed_test_data_limit_mb": "0 para automático: cada sentido recibe lo que usaron 10 s a la velocidad de la última prueba, más un 25 %, dentro del presupuesto. O de 100 a 10000 MB, ambos sentidos juntos; cada sentido se detiene a la mitad. Una prueba que termina por el límite es más corta y menos precisa.",
+          "speed_test_daily_limit": "Un tope, no un horario: si ya se ejecutaron tantas pruebas en las últimas 24 horas, las siguientes se rechazan hasta que la más antigua cumpla un día (1 a 40). Cuenta las pruebas automáticas, el botón y las automatizaciones. M-Lab pide que las pruebas automáticas no pasen de 4.",
+          "speed_test_budget_gb": "0 para ninguno. Define con qué frecuencia se ejecutan las pruebas automáticas, y una prueba solo empieza si cabe en lo que queda de esto tras las pruebas de los últimos 30 días. Si tu plan tiene un límite de datos, mantén esto en una pequeña parte de él."
         }
       },
       "mlab_consent": {
@@ -130,7 +132,9 @@
       }
     },
     "error": {
-      "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio."
+      "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
+      "data_limit_too_small": "Usa 0 para automático, o 100 MB o más.",
+      "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto."
     }
   },
   "selector": {
@@ -219,6 +223,16 @@
           },
           "tested_at": {
             "name": "Probado el"
+          },
+          "ended_by": {
+            "name": "Terminada por",
+            "state": {
+              "time": "Tiempo",
+              "data_limit": "Límite de datos"
+            }
+          },
+          "duration_s": {
+            "name": "Duración"
           }
         }
       },
@@ -233,6 +247,16 @@
           },
           "tested_at": {
             "name": "Probado el"
+          },
+          "ended_by": {
+            "name": "Terminada por",
+            "state": {
+              "time": "Tiempo",
+              "data_limit": "Límite de datos"
+            }
+          },
+          "duration_s": {
+            "name": "Duración"
           }
         }
       },
@@ -280,6 +304,56 @@
       },
       "speed_test_data_used": {
         "name": "Prueba de velocidad: datos usados",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_download_latency_increase": {
+        "name": "Prueba de velocidad: aumento de latencia en descarga",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_upload_latency_increase": {
+        "name": "Prueba de velocidad: aumento de latencia en subida",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Probado el"
+          }
+        }
+      },
+      "speed_test_bufferbloat_grade": {
+        "name": "Prueba de velocidad: nota de bufferbloat",
+        "state": {
+          "a_plus": "A+",
+          "a": "A",
+          "b": "B",
+          "c": "C",
+          "d": "D",
+          "f": "F"
+        },
         "state_attributes": {
           "backend": {
             "name": "Backend"

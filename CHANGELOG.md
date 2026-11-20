@@ -32,11 +32,16 @@ with Python 3.12 or later.
   Nothing extra runs while everything answers.
 - **Speed tests (off by default)** with Cloudflare, M-Lab NDT7 or
   LibreSpeed: download, upload, latency at rest and under load each way,
-  and the data used. A nightly test at a random time from 1 to 5 am, the
-  Run speed test button and automations run them, within a data limit per
-  test, a daily test limit and an optional 30-day data budget. Each
+  and the data used, each throughput saying whether time or the data
+  limit ended it. Automatic tests at a random time from 1 to 5 am, weekly
+  or as often as the 30-day data budget holds every test; the Run speed
+  test button and automations run them too, within a daily test limit.
+  The data limit per test is automatic by default, sized from the last
+  result for a whole test, and the setup screen shows its working. Each
   option says what the service sees; M-Lab asks for consent first because
   it publishes results with your IP address.
+- **Bufferbloat:** the latency increase under load in each direction, and
+  a grade from A+ to F on Waveform's published scale.
 - **Hop ownership (off by default):** the network operator of each public
   hop, from Team Cymru over DNS.
 - **Usage totals:** pings, traceroutes, DNS queries, speed tests and their

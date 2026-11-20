@@ -35,6 +35,8 @@ Core      (packages/internet_health_monitor_core/, module
            solentlabs-internet-health-monitor-core)
     network_diagnostics.py: polling, caching, jitter, loss, DNS, hostnames
     speed_test.py: one speed test interface and result (ADR-003)
+    data_plan.py: a test's data limit and automatic tests' spacing
+    bufferbloat.py: Waveform's grade (R3; ADR-004 amendment)
     mlab_runs.py: M-Lab's per-client limits for the command line
         backends/: _http.py (shared engine), cloudflare.py, librespeed.py, ndt7.py
     timing.py: every interval, timeout and limit (ADR-007)
@@ -63,9 +65,9 @@ scheduling. It contains no measurement logic.
 | File | Role |
 | ------ | ------ |
 | `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`. The options flow and Reconfigure reload the entry. |
-| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test when the button is pressed and, if the nightly test is on, once a night; enforces the data limit, daily limit, 30-day data budget and M-Lab's automated-client rules; and stores each run's time and data and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
+| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test when the button is pressed and, with automatic tests on, overnight at the spacing Core's `data_plan.py` derives from the budget; sizes each test's data limit (automatic from the last result, or the user's); enforces the data limit, daily limit, 30-day data budget and M-Lab's automated-client rules; and stores each run's time and data, the last automatic test and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
 | `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
-| `config_flow.py` | Setup and options, two screens: `build_schema` (gateway and DNS monitoring, DNS server, pings per target 1 to 10, hop ownership, usage totals, speed test service), then, with a service chosen, `build_speed_test_schema` (nightly test, data limit, daily test limit, data budget, with the nightly test's 30-day cost shown); an M-Lab consent step. One entry per HA. |
+| `config_flow.py` | Setup and options, two screens: `build_schema` (gateway and DNS monitoring, DNS server, pings per target 1 to 10, hop ownership, usage totals, speed test service), then, with a service chosen, `build_speed_test_schema` (automatic tests, data limit with 0 for automatic, daily test limit, data budget), with the working shown from the last result and a data limit no test could use refused; an M-Lab consent step. One entry per HA. |
 | `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency and, with a service chosen, six speed test readings, `state_class: measurement` only with the Long-term statistics option on (ADR-013). Usage totals: no `state_class`, so no long-term statistics. Diagnostic enums: Connection type (Core's host environment) and Install type (HA's own `system_info`). |
 | `binary_sensor.py` | `gateway_reachable` (gateway ping answered), `internet_reachable` (DNS query succeeded). |
 | `button.py` | Refresh diagnostics; Reset network cache (disabled by default); Run speed test (with a service chosen; a press with no user counts as automated). A failed press raises a translated error. |

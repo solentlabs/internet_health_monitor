@@ -35,6 +35,9 @@ Every backend returns the same result (Core `speed_test.SpeedTestResult`):
 | Idle latency | Median round trip before any load |
 | Download latency, upload latency | Median round trip while that direction is loaded. Minus idle latency, this is bufferbloat |
 | Data used | Megabytes of test data, both directions, so you can budget a data cap |
+| Ended by, duration | Per direction: `time` if it ran its window (for M-Lab's download, until the server ended it), `data_limit` if its limit stopped it early; and the seconds it was loaded |
+| Latency increase | Per direction, loaded minus idle latency: bufferbloat. Noise can make it slightly negative |
+| Bufferbloat grade | A+ to F: the larger increase on Waveform's scale (REFERENCES.md § R3), as Waveform grades. One measured input read against a cited scale ([ADR-004](ARCHITECTURE_DECISIONS.md#adr-004-no-composite-health-sensors)) |
 | Server | Which server ran the test |
 
 A test that fails returns no numbers: the speed test sensors go
@@ -76,13 +79,15 @@ results or telemetry endpoint, and gives up after 60 s.
 
 ## Running Tests and Limits
 
-Tests run three ways: the *Nightly test*, the **Run speed test**
-button, and automations that press it. The nightly test is on by
-default once a service is chosen and runs at a random time from 1 to
-5 am local (Core `timing.py`). HA's quality rules bar a user-set
-interval (R16), so it is only on or off; an automation covers any other
-time or condition (README.md § Speed Testing). Overnight, a test is
-least likely to slow a call or a game. IHM does not check whether the
+Tests run three ways: *Automatic tests*, the **Run speed test**
+button, and automations that press it. Automatic tests are on by
+default once a service is chosen and start at a random time from 1 to
+5 am local (Core `timing.py`): weekly with no data budget, or as often
+as the budget holds every test ([Data Use](#data-use)). HA's quality
+rules bar a user-set interval (R16), so the user sets a budget and IHM
+derives the spacing; an automation covers any other time or condition
+(README.md § Speed Testing). Overnight, a test is least likely to slow
+a call or a game. IHM does not check whether the
 line is busy: the FCC's test units do (R21), but they sit between modem
 and router, and the HA host cannot see other devices' traffic.
 
@@ -90,14 +95,14 @@ Three settings bound the cost, counting every run, failed ones included:
 
 | Setting | Default | Range | Why |
 | --------- | --------- | ------- | ----- |
-| Data limit per test | 500 MB | 100 to 10000 MB | Each direction stops at half, so a fast line cannot use a large share of a data cap. 30 nightly tests use at most 30 times this |
+| Data limit per test | 0 (automatic) | 0, or 100 to 10000 MB | Automatic: sized for a whole test from the last result ([Data Use](#data-use)). Set by hand: each direction stops at half. The form refuses a limit larger than the budget |
 | Daily test limit | 4 | 1 to 40 | Any 24 hours. 4 is M-Lab's limit for automated clients; 40 its limit for interactive users (R9) |
-| Data budget per 30 days | 0 (none) | 0 to 10000 GB | A test starts only if its data limit fits what speed tests have left of it in the last 30 days, so it is never exceeded. SamKnows aims for under 10% of a monthly cap on slower plans (R22); IHM's advice is a small share |
+| Data budget per 30 days | 0 (none) | 0 to 10000 GB | A test starts only if its data limit fits what speed tests have left of it in the last 30 days, so it is never exceeded. It also sets how often automatic tests run. SamKnows aims for under 10% of a monthly cap on slower plans (R22); IHM's advice is a small share |
 
 With M-Lab, IHM also follows its rules for automated clients (R9). A
-run with no person behind it (the nightly test, an automation or a
+run with no person behind it (an automatic test, an automation or a
 script) counts toward at most 4 a day, whatever the daily test limit
-says. The nightly test already starts at a random time; one an
+says. An automatic test already starts at a random time; one an
 automation starts waits a random time of up to an hour, so homes
 running the same automation do not test at the same moment; the press returns at once and the sensors update
 when the test finishes. M-Lab asks for randomized times without naming
@@ -113,9 +118,36 @@ counts toward the 4 and waits a random time of up to an hour. Any run past
 
 ## Data Use
 
-A 10 s test in each direction moves roughly 10 s × your line speed:
-about 125 MB down on a 100 Mbit/s line, 1.25 GB on a 1 Gbit/s line,
-plus the upload. Each result reports the exact amount (Data used).
+The rules in Core `data_plan.py`; README.md § How Much Data Speed Tests
+Use shows them for typical lines. A whole test beats a short one, so
+IHM sizes each test to finish and spaces tests to fit the budget.
+
+- **A full test** loads each direction for `SPEED_TEST_DIRECTION_S`
+  (10 s), so it moves about that many seconds of each direction's
+  speed: 1.25 MB per Mbit/s, about 1.3 GB on a 1000/40 line. Each
+  result reports the exact amount (Data used).
+- **Automatic data limit** (setting 0): each direction gets 10 s at the
+  last test's speed, times `SPEED_TEST_AUTO_LIMIT_MARGIN` (1.25, IHM's
+  choice, so a line up to a quarter faster still gets a whole test), up
+  to the next 10 MB, from 50 to 5000 MB. Each direction stops at its
+  own limit, so a slow upload does not cost a fast download its share.
+  With no last result, the first test uses the default 500 MB, split
+  evenly. A limit set by hand is split evenly.
+- **Within the budget:** an automatic limit larger than the whole
+  budget is cut to it, keeping the smaller direction whole where it can.
+  The form refuses a hand-set limit larger than the budget.
+- **Spacing:** with no budget, automatic tests run every
+  `SPEED_TEST_AUTO_EVERY_DAYS_NO_BUDGET` (7) days. With one, the budget
+  holds k tests at their limit; tests are spaced every
+  ⌈(30 days + 5 h) ÷ k⌉ days, so no 30 days hold more than k even when
+  each starts anywhere in its 4-hour window and a clock change moves it
+  an hour. The budget therefore never refuses an automatic test. The
+  next test is that many nights after the last automatic one; a test a
+  limit refuses is tried the next night.
+- **The working is shown:** the setup screen gives the last test's
+  speeds, the limit per test, the days between automatic tests and the
+  most they can use in any 30 days; each download and upload reading
+  carries `ended_by` and `duration_s`.
 
 ## Backends
 

@@ -16,7 +16,7 @@ import pytest
 from solentlabs.internet_health_monitor_core import cli, mlab_runs
 from solentlabs.internet_health_monitor_core.mlab_runs import MlabRun
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsResult
-from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
+from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedTestError, SpeedTestResult
 from solentlabs.internet_health_monitor_core.timing import SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S
 
 CLI = cli.__name__
@@ -189,7 +189,7 @@ def test_speed_test_prints_result_or_reason() -> None:
     result = SpeedTestResult("mlab", "s", 100.0, 10.0, 12.0, 40.0, 300.0, 140.0, 1.0)
     with patch.object(cli, "run_speed_test", AsyncMock(return_value=result)) as run:
         assert cli.main(["--speed-test", "mlab", "--mlab-consent", "--data-limit", "200"]) == 0
-    assert run.call_args.args[0] == "mlab" and run.call_args.kwargs["data_limit_mb"] == 200
+    assert run.call_args.args[0] == "mlab" and run.call_args.args[2] == DataLimit(100, 100)  # split evenly
 
     out, err = io.StringIO(), io.StringIO()
     args = cli.build_parser().parse_args(["--speed-test", "cloudflare"])

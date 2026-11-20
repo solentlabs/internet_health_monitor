@@ -50,18 +50,18 @@
       },
       "speed_test": {
         "title": "Testes de velocidade",
-        "description": "Executar teste de velocidade e automações iniciam um teste a qualquer momento. Com {limit_mb} MB por teste, só o teste noturno usa até {monthly_gb} GB em 30 dias; a maioria dos testes usa menos.",
+        "description": "Executar teste de velocidade e automações iniciam um teste a qualquer momento. Último teste: {last_test}. Cada teste pode usar até {limit_mb} MB, então os testes automáticos rodam a cada {every_days} dia(s) e usam no máximo {monthly_gb} GB em 30 dias. Antes do primeiro teste, o limite automático é de 500 MB. As regras: README, \"How much data speed tests use\".",
         "data": {
-          "speed_test_automatic": "Teste noturno",
+          "speed_test_automatic": "Testes automáticos",
           "speed_test_data_limit_mb": "Limite de dados por teste",
           "speed_test_daily_limit": "Limite diário de testes",
           "speed_test_budget_gb": "Orçamento de dados por 30 dias"
         },
         "data_description": {
-          "speed_test_automatic": "Um teste por noite em um horário aleatório entre 1h e 5h, quando a linha costuma estar livre. Desligado: os testes só rodam por Executar teste de velocidade ou uma automação.",
-          "speed_test_data_limit_mb": "Máximo de dados que um teste pode usar, os dois sentidos juntos (100 a 10000 MB); cada sentido para na metade. Numa linha rápida, um limite menor dá um teste mais curto e menos preciso.",
-          "speed_test_daily_limit": "Um teto, não um horário: depois de tantos testes nas últimas 24 horas, os seguintes são recusados até o mais antigo completar um dia (1 a 40). Conta o teste noturno, o botão e as automações. O M-Lab pede que testes automáticos fiquem em 4 ou menos.",
-          "speed_test_budget_gb": "0 para nenhum. Um teste só começa se couber no que resta disto após os testes dos últimos 30 dias. Se seu plano tem franquia de dados, mantenha isto em uma pequena parte dela."
+          "speed_test_automatic": "Em um horário aleatório entre 1h e 5h, quando a linha costuma estar livre: semanal sem orçamento de dados; com um, tão frequente quanto o orçamento comporta cada teste. Desligado: os testes só rodam por Executar teste de velocidade ou uma automação.",
+          "speed_test_data_limit_mb": "0 para automático: cada sentido recebe o que 10 s na velocidade do último teste usaram, mais 25%, dentro do orçamento. Ou 100 a 10000 MB, os dois sentidos juntos; cada sentido para na metade. Um teste encerrado pelo limite é mais curto e menos preciso.",
+          "speed_test_daily_limit": "Um teto, não um horário: depois de tantos testes nas últimas 24 horas, os seguintes são recusados até o mais antigo completar um dia (1 a 40). Conta os testes automáticos, o botão e as automações. O M-Lab pede que testes automáticos fiquem em 4 ou menos.",
+          "speed_test_budget_gb": "0 para nenhum. Define a frequência dos testes automáticos, e um teste só começa se couber no que resta disto após os testes dos últimos 30 dias. Se seu plano tem franquia de dados, mantenha isto em uma pequena parte dela."
         }
       },
       "mlab_consent": {
@@ -77,7 +77,9 @@
       "reconfigure_successful": "As configurações foram atualizadas."
     },
     "error": {
-      "mlab_consent_required": "Confirme para usar o M-Lab, ou feche esta janela e escolha outro serviço."
+      "mlab_consent_required": "Confirme para usar o M-Lab, ou feche esta janela e escolha outro serviço.",
+      "data_limit_too_small": "Use 0 para automático, ou 100 MB ou mais.",
+      "data_limit_over_budget": "Um teste poderia usar mais que todo o orçamento de dados. Reduza o limite de dados, use 0 para automático ou aumente o orçamento."
     }
   },
   "options": {
@@ -107,18 +109,18 @@
       },
       "speed_test": {
         "title": "Testes de velocidade",
-        "description": "Executar teste de velocidade e automações iniciam um teste a qualquer momento. Com {limit_mb} MB por teste, só o teste noturno usa até {monthly_gb} GB em 30 dias; a maioria dos testes usa menos.",
+        "description": "Executar teste de velocidade e automações iniciam um teste a qualquer momento. Último teste: {last_test}. Cada teste pode usar até {limit_mb} MB, então os testes automáticos rodam a cada {every_days} dia(s) e usam no máximo {monthly_gb} GB em 30 dias. Antes do primeiro teste, o limite automático é de 500 MB. As regras: README, \"How much data speed tests use\".",
         "data": {
-          "speed_test_automatic": "Teste noturno",
+          "speed_test_automatic": "Testes automáticos",
           "speed_test_data_limit_mb": "Limite de dados por teste",
           "speed_test_daily_limit": "Limite diário de testes",
           "speed_test_budget_gb": "Orçamento de dados por 30 dias"
         },
         "data_description": {
-          "speed_test_automatic": "Um teste por noite em um horário aleatório entre 1h e 5h, quando a linha costuma estar livre. Desligado: os testes só rodam por Executar teste de velocidade ou uma automação.",
-          "speed_test_data_limit_mb": "Máximo de dados que um teste pode usar, os dois sentidos juntos (100 a 10000 MB); cada sentido para na metade. Numa linha rápida, um limite menor dá um teste mais curto e menos preciso.",
-          "speed_test_daily_limit": "Um teto, não um horário: depois de tantos testes nas últimas 24 horas, os seguintes são recusados até o mais antigo completar um dia (1 a 40). Conta o teste noturno, o botão e as automações. O M-Lab pede que testes automáticos fiquem em 4 ou menos.",
-          "speed_test_budget_gb": "0 para nenhum. Um teste só começa se couber no que resta disto após os testes dos últimos 30 dias. Se seu plano tem franquia de dados, mantenha isto em uma pequena parte dela."
+          "speed_test_automatic": "Em um horário aleatório entre 1h e 5h, quando a linha costuma estar livre: semanal sem orçamento de dados; com um, tão frequente quanto o orçamento comporta cada teste. Desligado: os testes só rodam por Executar teste de velocidade ou uma automação.",
+          "speed_test_data_limit_mb": "0 para automático: cada sentido recebe o que 10 s na velocidade do último teste usaram, mais 25%, dentro do orçamento. Ou 100 a 10000 MB, os dois sentidos juntos; cada sentido para na metade. Um teste encerrado pelo limite é mais curto e menos preciso.",
+          "speed_test_daily_limit": "Um teto, não um horário: depois de tantos testes nas últimas 24 horas, os seguintes são recusados até o mais antigo completar um dia (1 a 40). Conta os testes automáticos, o botão e as automações. O M-Lab pede que testes automáticos fiquem em 4 ou menos.",
+          "speed_test_budget_gb": "0 para nenhum. Define a frequência dos testes automáticos, e um teste só começa se couber no que resta disto após os testes dos últimos 30 dias. Se seu plano tem franquia de dados, mantenha isto em uma pequena parte dela."
         }
       },
       "mlab_consent": {
@@ -130,7 +132,9 @@
       }
     },
     "error": {
-      "mlab_consent_required": "Confirme para usar o M-Lab, ou feche esta janela e escolha outro serviço."
+      "mlab_consent_required": "Confirme para usar o M-Lab, ou feche esta janela e escolha outro serviço.",
+      "data_limit_too_small": "Use 0 para automático, ou 100 MB ou mais.",
+      "data_limit_over_budget": "Um teste poderia usar mais que todo o orçamento de dados. Reduza o limite de dados, use 0 para automático ou aumente o orçamento."
     }
   },
   "selector": {
@@ -219,6 +223,16 @@
           },
           "tested_at": {
             "name": "Testado em"
+          },
+          "ended_by": {
+            "name": "Encerrado por",
+            "state": {
+              "time": "Tempo",
+              "data_limit": "Limite de dados"
+            }
+          },
+          "duration_s": {
+            "name": "Duração"
           }
         }
       },
@@ -233,6 +247,16 @@
           },
           "tested_at": {
             "name": "Testado em"
+          },
+          "ended_by": {
+            "name": "Encerrado por",
+            "state": {
+              "time": "Tempo",
+              "data_limit": "Limite de dados"
+            }
+          },
+          "duration_s": {
+            "name": "Duração"
           }
         }
       },
@@ -280,6 +304,56 @@
       },
       "speed_test_data_used": {
         "name": "Teste de velocidade: dados usados",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Testado em"
+          }
+        }
+      },
+      "speed_test_download_latency_increase": {
+        "name": "Teste de velocidade: aumento de latência no download",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Testado em"
+          }
+        }
+      },
+      "speed_test_upload_latency_increase": {
+        "name": "Teste de velocidade: aumento de latência no upload",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Servidor"
+          },
+          "tested_at": {
+            "name": "Testado em"
+          }
+        }
+      },
+      "speed_test_bufferbloat_grade": {
+        "name": "Teste de velocidade: nota de bufferbloat",
+        "state": {
+          "a_plus": "A+",
+          "a": "A",
+          "b": "B",
+          "c": "C",
+          "d": "D",
+          "f": "F"
+        },
         "state_attributes": {
           "backend": {
             "name": "Backend"

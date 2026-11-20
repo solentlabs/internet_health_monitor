@@ -25,10 +25,11 @@ The most comprehensive, easiest-to-configure network health monitoring integrati
 
 1. **Zero-config auto-detection** - Gateway, DNS, ISP hops discovered automatically
 2. **Multi-hop network path visibility** - Latency at each hop (1, 2, 3+) - unique in HA ecosystem
-3. **Bandwidth testing you control** - A nightly test at a random time from 1 to 5 am (on by default) and a button, within a data limit per test, a daily limit and an optional 30-day data budget
-4. **Pluggable backends** - User picks the speed test service; each is a drop-in module that keeps to its provider's terms (docs/SPEED_TEST_BACKENDS.md)
-5. **Unified configuration** - One integration, one options flow, done
-6. **Correlation-ready** - Stable entity ids and units, combined with other integrations in HA (ADR-002)
+3. **Bandwidth testing you control** - Whole tests over frequent ones: automatic tests spaced to fit your data budget (weekly without one), each sized from the last result, with the working shown; a button; a daily limit and an optional 30-day data budget
+4. **Bufferbloat, graded and localized** - Latency increase under load per direction and Waveform's grade from each speed test; hop latency between tests shows where a queue sits
+5. **Pluggable backends** - User picks the speed test service; each is a drop-in module that keeps to its provider's terms (docs/SPEED_TEST_BACKENDS.md)
+6. **Unified configuration** - One integration, one options flow, done
+7. **Correlation-ready** - Stable entity ids and units, combined with other integrations in HA (ADR-002)
 
 ---
 
@@ -107,11 +108,16 @@ Monitor is the reference for how each is done.
   - [x] M-Lab NDT7, with consent and its automated-client rules
   - [x] LibreSpeed
   - Fast.com: cut, Netflix's terms forbid automated access (ADR-003)
-- [x] Run speed test button, and a nightly test (on or off, at a random
-      time from 1 to 5 am; HA `appropriate-polling`, ADR-003)
-- [x] Data limit per test, daily test limit and data budget per 30 days,
-      on their own setup screen
-- [x] Speed test sensors: download, upload, idle and loaded latency, data used
+- [x] Run speed test button, and automatic tests (on or off, at a random
+      time from 1 to 5 am, spaced by the data budget; HA
+      `appropriate-polling`, ADR-003)
+- [x] Data limit per test (automatic by default), daily test limit and
+      data budget per 30 days, on their own setup screen, which shows its
+      working (README.md § How Much Data Speed Tests Use)
+- [x] Speed test sensors: download, upload (each saying what ended it),
+      idle and loaded latency, data used
+- [x] Bufferbloat: latency increase per direction and Waveform's grade
+      (R3, ADR-004 amendment)
 
 ### Phase 4: Environment Detection
 
@@ -136,6 +142,14 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 - [ ] Local testing
   - [x] Run on dev laptop (Docker HA harness, `make test-all`)
   - [ ] Deploy to a real HA instance (Path to Release stage 4)
+    - [ ] Hops 2 and 3 detected, and their hostnames redacted in the
+          diagnostics download
+    - [ ] A speed test fills the bufferbloat grade and increases; the
+          setup screen's working matches the result
+    - [ ] Passive bufferbloat field check (ADR-001 item 3): hop 2 latency
+          while the camera live view runs, against a flat gateway. If the
+          60 s poll misses the spikes (ADR-001 item 2), decide a faster
+          probe then, with the evidence
 - [ ] DevOps
   - [ ] GitHub repo under solentlabs org (stage 2)
   - [ ] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
@@ -148,7 +162,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 ## Non-Goals (Out of Scope)
 
 - **Reading other HA speed test integrations** - IHM runs its own tests (ADR-003)
-- **Composite health scores** - Each entity reports one measurement; build composites in HA (ARCHITECTURE_DECISIONS.md ADR-004)
+- **Composite health scores** - Each entity reports one measurement, or one grade on a cited scale; build composites in HA (ARCHITECTURE_DECISIONS.md ADR-004)
 - **Correlation/diagnosis** - Done in HA over entities (ADR-002)
 - **Historical storage** - HA recorder handles this
 - **Alerting/notifications** - Use HA automations
@@ -173,7 +187,7 @@ it; ADR-014 names where it would be added.
 1. Zero-config setup works on fresh HA install
 2. Every entity in README.md § Entities functional
 3. Multi-hop latency is unique differentiator
-4. Bandwidth testing is pluggable and runs nightly, from a button or from an automation
+4. Bandwidth testing is pluggable and runs automatically, from a button or from an automation
 5. Test coverage above 95% for the HA layer and 90% for Core
 6. Multi-language support (six languages)
 7. Tested on real HA instance (not just dev)

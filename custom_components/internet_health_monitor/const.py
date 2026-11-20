@@ -27,9 +27,9 @@ CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
 CONF_SPEED_TEST_BACKEND = "speed_test_backend"  # opt-in; docs/SPEED_TEST_BACKENDS.md (ADR-003, ADR-006)
-CONF_SPEED_TEST_DATA_LIMIT = "speed_test_data_limit_mb"
+CONF_SPEED_TEST_DATA_LIMIT = "speed_test_data_limit_mb"  # 0: automatic, from the last result
 CONF_SPEED_TEST_DAILY_LIMIT = "speed_test_daily_limit"
-CONF_SPEED_TEST_AUTOMATIC = "speed_test_automatic"  # one test a night (timing.SPEED_TEST_AUTO_*)
+CONF_SPEED_TEST_AUTOMATIC = "speed_test_automatic"  # tests spaced to fit the budget (Core data_plan.py)
 CONF_SPEED_TEST_BUDGET = "speed_test_budget_gb"  # data per 30 days; 0 means none
 CONF_MLAB_CONSENT = "mlab_consent"  # M-Lab publishes results with the user's IP; asked before first use
 

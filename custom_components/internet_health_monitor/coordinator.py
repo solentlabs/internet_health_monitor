@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import random
 from collections.abc import Coroutine
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Literal, override
@@ -19,10 +19,12 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from solentlabs.internet_health_monitor_core.data_plan import automatic_limit, every_days
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsResult
 from solentlabs.internet_health_monitor_core.reachability import Reachability
 from solentlabs.internet_health_monitor_core.speed_test import (
     BackendName,
+    DataLimit,
     SpeedTestError,
     SpeedTestResult,
     run_speed_test,
@@ -33,6 +35,7 @@ from solentlabs.internet_health_monitor_core.timing import (
     SPEED_TEST_AUTO_WINDOW_S,
     SPEED_TEST_BUDGET_WINDOW_S,
     SPEED_TEST_DAILY_WINDOW_S,
+    SPEED_TEST_DATA_LIMIT_MB_AUTO,
     SPEED_TEST_MLAB_AUTOMATED_DAILY,
     SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S,
 )
@@ -151,16 +154,23 @@ STORAGE_KEY = f"{DOMAIN}.speed_test"
 STORAGE_VERSION = 1  # __init__.async_remove_entry opens the same store to delete it
 
 
-def next_nightly_test(now: datetime) -> datetime:
-    """A random time in the next overnight window (timing.SPEED_TEST_AUTO_*), local time."""
+def next_automatic_test(now: datetime, last_at: float | None, days: int) -> datetime:
+    """A random time in the overnight window (timing.SPEED_TEST_AUTO_*), local time.
+
+    The night is the first still ahead that is at least *days* after the last automatic test's.
+    """
     local = dt_util.as_local(now)
+    night = dt_util.start_of_local_day(local)
+    if last_at is not None:
+        last_night = dt_util.start_of_local_day(dt_util.as_local(dt_util.utc_from_timestamp(last_at)))
+        night = max(night, last_night + timedelta(days=days))
     offset = random.randint(0, SPEED_TEST_AUTO_WINDOW_S)  # noqa: S311  # spreading load, not security
-    when = dt_util.start_of_local_day(local) + timedelta(hours=SPEED_TEST_AUTO_START_HOUR, seconds=offset)
+    when = night + timedelta(hours=SPEED_TEST_AUTO_START_HOUR, seconds=offset)
     return when if when > local else when + timedelta(days=1)
 
 
 class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
-    """Runs a speed test when asked (button or automation) and, if chosen, once a night (ADR-003)."""
+    """Runs a speed test when asked (button or automation) and, if chosen, automatically (ADR-003)."""
 
     config_entry: InternetHealthConfigEntry
 
@@ -176,7 +186,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         automatic: bool = False,
         budget_gb: int = 0,
     ) -> None:
-        """Hold the user's backend and limits; the run history and last result load from storage."""
+        """Hold the user's backend and limits (data limit 0: automatic); history and last result load from storage."""
         super().__init__(hass, _LOGGER, config_entry=entry, name=f"{DOMAIN} speed test", update_interval=None)
         self.backend: BackendName = backend
         self.data_limit_mb = data_limit_mb
@@ -191,62 +201,91 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         self._failure = ""  # Core's reason for the last failed test
         self._last_mb = 0.0  # data the last test moved, completed or failed
         self._pending: dict[int, CALLBACK_TYPE] = {}  # automated M-Lab runs waiting, by id(run)
-        self._nightly: CALLBACK_TYPE | None = None
+        self._limits: dict[int, DataLimit] = {}  # each accepted run's limit, as reserved, by id(run)
+        self._limit = DataLimit.even(0)  # the running test's limit
+        self._automatic: CALLBACK_TYPE | None = None
+        self._last_automatic: float | None = None  # when the last automatic test started
         self._unloaded = False  # a test still running at unload must not touch the entry
         entry.async_on_unload(self._cancel_pending)
 
     async def async_load(self) -> None:
-        """Restore run times (for the limits) and the last result, then schedule the nightly test if chosen."""
+        """Restore run times (for the limits), the last automatic test and result; schedule the next if chosen."""
         stored = await self._store.async_load() or {}
         self._runs = list(stored.get("runs", []))
+        self._last_automatic = stored.get("last_automatic")
         if last := stored.get("last"):
             self.data = SpeedTestResult(**last)
         if self.automatic:
-            self._schedule_nightly()
+            self._schedule_automatic()
 
-    def _schedule_nightly(self, *, after_tonight: bool = False) -> None:
-        """Schedule the next nightly test; after tonight's, from the end of tonight's window (one a night)."""
+    def data_limit(self) -> DataLimit:
+        """The next test's limit: the user's, split evenly, or automatic from the last result (data_plan.py)."""
+        if self.data_limit_mb == SPEED_TEST_DATA_LIMIT_MB_AUTO:
+            return automatic_limit(self.data, self.budget_gb)
+        return DataLimit.even(self.data_limit_mb)
+
+    def every_days(self) -> int | None:
+        """Days between automatic tests at the next test's limit; None if no test fits the budget."""
+        return every_days(self.data_limit(), self.budget_gb)
+
+    def _schedule_automatic(self, *, after_tonight: bool = False) -> None:
+        """Schedule the next automatic test; after a refusal, from the end of tonight's window (one a night)."""
+        days = self.every_days()
+        if days is None:  # the form refuses such a limit; an automatic one always fits
+            return
         now = dt_util.utcnow()
         if after_tonight:
             start = dt_util.start_of_local_day(dt_util.as_local(now))
             now = start + timedelta(hours=SPEED_TEST_AUTO_START_HOUR, seconds=SPEED_TEST_AUTO_WINDOW_S)
-        when = next_nightly_test(now)
-        job: QuickCheckJob = HassJob(self._async_run_nightly, cancel_on_shutdown=True)
-        self._nightly = async_track_point_in_utc_time(self.hass, job, dt_util.as_utc(when))
+        when = next_automatic_test(now, self._last_automatic, days)
+        job: QuickCheckJob = HassJob(self._async_run_automatic, cancel_on_shutdown=True)
+        self._automatic = async_track_point_in_utc_time(self.hass, job, dt_util.as_utc(when))
 
-    async def _async_run_nightly(self, _now: datetime) -> None:
-        """Run the nightly test unless a limit refuses it; a refusal is logged, a failure shows on the sensors."""
-        self._schedule_nightly(after_tonight=True)
+    async def _async_run_automatic(self, _now: datetime) -> None:
+        """Run an automatic test unless a limit refuses it; a refusal is logged and tried the next night."""
+        self._automatic = None
         try:
             run = self._accept(dt_util.utcnow().timestamp(), automated=True)
         except ServiceValidationError as err:
-            _LOGGER.info("Nightly speed test skipped: %s", err)
+            _LOGGER.info("Automatic speed test skipped: %s", err)
+            self._schedule_automatic(after_tonight=True)
             return
+        self._last_automatic = run["at"]
         await self._async_test(run)
+        if not self._unloaded:
+            self._schedule_automatic()  # from this test, at the spacing its result now gives
 
     async def _async_save(self) -> None:
-        """Store run times and the last result."""
-        await self._store.async_save({"runs": self._runs, "last": self.data.to_dict() if self.data else None})
+        """Store run times, the last automatic test and the last result."""
+        await self._store.async_save(
+            {
+                "runs": self._runs,
+                "last_automatic": self._last_automatic,
+                "last": asdict(self.data) if self.data else None,
+            }
+        )
 
     def _cancel_pending(self) -> None:
-        """Cancel the nightly test and automated runs still waiting (the entry is unloading)."""
+        """Cancel the automatic test and automated runs still waiting (the entry is unloading)."""
         self._unloaded = True
         for cancel in self._pending.values():
             cancel()
         self._pending.clear()
-        if self._nightly:
-            self._nightly()
-            self._nightly = None
+        if self._automatic:
+            self._automatic()
+            self._automatic = None
 
     def _accept(self, now: float, *, automated: bool) -> dict[str, Any]:
         """Check the limits, then record the run; it counts from here, failed or not."""
-        self._check_limits(now, automated)
-        run = {"at": now, "automated": automated, "mb": float(self.data_limit_mb)}
+        limit = self.data_limit()
+        self._check_limits(now, automated, limit.total_mb)
+        run = {"at": now, "automated": automated, "mb": float(limit.total_mb)}
+        self._limits[id(run)] = limit  # a run that waits still tests within what it reserved
         self._runs.append(run)
         self.usage.add_speed_test_run()
         return run
 
-    def _check_limits(self, now: float, automated: bool) -> None:
+    def _check_limits(self, now: float, automated: bool, limit_mb: int) -> None:
         """Refuse a run past Tests per day, the data budget, or, for M-Lab, its automated limit (R9)."""
         self._runs = [run for run in self._runs if now - run["at"] < SPEED_TEST_BUDGET_WINDOW_S]
         today = [run for run in self._runs if now - run["at"] < SPEED_TEST_DAILY_WINDOW_S]
@@ -258,14 +297,14 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
             )
         # A run may use up to the data limit, so it starts only if that still fits the budget.
         used_mb = sum(run.get("mb", 0.0) for run in self._runs)
-        if self.budget_gb and used_mb + self.data_limit_mb > self.budget_gb * 1000:
+        if self.budget_gb and used_mb + limit_mb > self.budget_gb * 1000:
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
                 translation_key="budget_reached",
                 translation_placeholders={
                     "used": f"{used_mb / 1000:.1f}",
                     "budget": str(self.budget_gb),
-                    "limit": str(self.data_limit_mb),
+                    "limit": str(limit_mb),
                 },
             )
         automated_runs = sum(1 for run in today if run["automated"])
@@ -304,6 +343,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
     async def _async_test(self, run: dict[str, Any]) -> None:
         """Run the test, store the history and result, and add its data to the usage totals and the budget."""
         self._last_mb = 0.0
+        self._limit = self._limits.pop(id(run))
         await self.async_refresh()
         if self._unloaded:
             return  # unloaded mid-test: HA dropped the entry's runtime data
@@ -324,9 +364,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
     async def _async_update_data(self) -> SpeedTestResult | None:
         """Run the test with HA's shared web session (inject-websession)."""
         try:
-            return await run_speed_test(
-                self.backend, async_get_clientsession(self.hass), data_limit_mb=self.data_limit_mb
-            )
+            return await run_speed_test(self.backend, async_get_clientsession(self.hass), self._limit)
         except SpeedTestError as err:
             # The data a failed test moved still counts against the user's cap.
             self.usage.add_speed_test_data(err.downloaded_mb, err.uploaded_mb)

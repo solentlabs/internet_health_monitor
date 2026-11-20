@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 import aiohttp
 
-from ..speed_test import SpeedTestError, SpeedTestResult, Transfer
+from ..speed_test import DataLimit, SpeedTestError, SpeedTestResult, Transfer
 from ._http import HEADERS, REQUEST_TIMEOUT, HttpServer, check_status, measure, probe
 
 SERVER_LIST_URL = "https://librespeed.org/backend-servers/servers.php"
@@ -80,6 +80,6 @@ class LibreSpeedBackend:
             raise SpeedTestError("no LibreSpeed server answered")
         return min(answered, key=lambda pair: pair[0])[1]
 
-    async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
+    async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
         """Run one test."""
-        return await measure(session, self.name, await self._fastest(session), max_bytes, transfer)
+        return await measure(session, self.name, await self._fastest(session), limit, transfer)

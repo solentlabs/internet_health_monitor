@@ -20,6 +20,7 @@ from solentlabs.internet_health_monitor_core.backends.librespeed import LibreSpe
 from solentlabs.internet_health_monitor_core.backends.ndt7 import PROTOCOL, Ndt7Backend
 from solentlabs.internet_health_monitor_core.speed_test import (
     USER_AGENT,
+    DataLimit,
     SpeedTestBackend,
     SpeedTestError,
     SpeedTestResult,
@@ -29,7 +30,7 @@ from solentlabs.internet_health_monitor_core.speed_test import (
 
 pytestmark = pytest.mark.enable_socket  # loopback only: in-process servers on 127.0.0.1
 
-LIMIT = 4_000_000  # bytes per direction: keeps every test fast
+LIMIT = DataLimit(4, 4)  # MB per direction: keeps every test fast
 BLOCK = b"\0" * 65536
 SLOW_BLOCK_S = 0.01
 
@@ -236,36 +237,38 @@ BACKENDS: dict[str, Callable[[str], SpeedTestBackend]] = {
     "mlab": lambda base: Ndt7Backend(f"{base}/locate", require_tls=False),
 }
 
-# ┌──────────────┬───────────────────────────────────────┬───────────────────┬─────────────────────────────────┐
-# │ backend      │ server named                          │ latency fields    │ description                     │
-# ├──────────────┼───────────────────────────────────────┼───────────────────┼─────────────────────────────────┤
-# │ cloudflare   │ speed.cloudflare.com                  │ all three         │ server-timing subtracted        │
-# │ librespeed   │ Example                               │ all three         │ dead and incomplete entries out │
-# │ mlab         │ mlab1-example (Example City)          │ all three         │ dead candidate skipped          │
-# └──────────────┴───────────────────────────────────────┴───────────────────┴─────────────────────────────────┘
+# ┌──────────────┬───────────────────────────────┬────────────────────────┬─────────────────────────────────┐
+# │ backend      │ server named                  │ ended by (down, up)    │ description                     │
+# ├──────────────┼───────────────────────────────┼────────────────────────┼─────────────────────────────────┤
+# │ cloudflare   │ speed.cloudflare.com          │ data limit, data limit │ server-timing subtracted        │
+# │ librespeed   │ Example                       │ data limit, data limit │ dead and incomplete entries out │
+# │ mlab         │ mlab1-example (Example City)  │ time, data limit       │ the server ends its download    │
+# └──────────────┴───────────────────────────────┴────────────────────────┴─────────────────────────────────┘
 # fmt: off
-RUN_CASES: list[tuple[str, str]] = [
-    ("cloudflare", "speed.cloudflare.com"),
-    ("librespeed", "Example"),
-    ("mlab",       "mlab1-example (Example City)"),
+RUN_CASES: list[tuple[str, str, tuple[str, str]]] = [
+    ("cloudflare", "speed.cloudflare.com",         ("data_limit", "data_limit")),
+    ("librespeed", "Example",                      ("data_limit", "data_limit")),
+    ("mlab",       "mlab1-example (Example City)", ("time",       "data_limit")),
 ]
 # fmt: on
 
 
-@pytest.mark.parametrize("name,server", RUN_CASES, ids=[c[0] for c in RUN_CASES])
+@pytest.mark.parametrize("name,server,ended_by", RUN_CASES, ids=[c[0] for c in RUN_CASES])
 async def test_backend_measures_both_directions(
-    fake: Fake, session: aiohttp.ClientSession, name: str, server: str
+    fake: Fake, session: aiohttp.ClientSession, name: str, server: str, ended_by: tuple[str, str]
 ) -> None:
-    """Each backend returns throughput both ways, every latency, data used, and identifies itself."""
+    """Each backend returns throughput both ways, every latency, data used, what ended each direction and when."""
     result = await BACKENDS[name](fake.base).run(session, LIMIT, Transfer())
     assert isinstance(result, SpeedTestResult)
     assert (result.backend, result.server) == (name, server)
+    assert (result.download_ended_by, result.upload_ended_by) == ended_by
+    assert result.download_s is not None and result.upload_s is not None  # loopback: well under 0.1 s
     assert result.download_mbps > 0 and result.upload_mbps > 0
     assert None not in (result.idle_latency_ms, result.download_latency_ms, result.upload_latency_ms)
     assert result.data_used_mb == pytest.approx(result.downloaded_mb + result.uploaded_mb, abs=0.11)
     assert result.downloaded_mb > 0 and result.uploaded_mb > 0
     # Download stops at the limit; upload overshoots by what moves in one 50 ms check on loopback.
-    assert 0 < result.data_used_mb <= 2 * LIMIT / 1e6 + 8
+    assert 0 < result.data_used_mb <= LIMIT.total_mb + 8
     assert fake.user_agents == {USER_AGENT}
     assert "/__results" not in fake.paths  # never reports to a results endpoint
 
@@ -288,8 +291,10 @@ async def test_time_ends_a_slow_line(
     monkeypatch.setattr(_http, "_run_until", recorded)
     loop = asyncio.get_running_loop()
     start = loop.time()
-    result = await CloudflareBackend(fake.base).run(session, 10**12, Transfer())
+    result = await CloudflareBackend(fake.base).run(session, DataLimit(10**6, 10**6), Transfer())
     assert loop.time() - start >= 2 * window  # time, not the limit, ended both directions
+    assert (result.download_ended_by, result.upload_ended_by) == ("time", "time")
+    assert result.download_s == pytest.approx(window, abs=0.1)
     assert result.download_mbps > 0 and result.upload_mbps > 0
     # Each direction: one wait for warm-up, one for the rest; throughput counts only the rest.
     (down_warm, _), (down_end, down_rest), (up_warm, _), (up_end, _) = measured
@@ -384,27 +389,27 @@ async def test_faults_raise_speed_test_error(
 
 
 async def test_run_speed_test_wraps_errors_and_timeouts(monkeypatch: pytest.MonkeyPatch) -> None:
-    """run_speed_test turns client errors and timeouts into SpeedTestError and halves the limit per direction."""
-    seen: list[int] = []
+    """run_speed_test turns client errors and timeouts into SpeedTestError and passes each direction's limit."""
+    seen: list[DataLimit] = []
 
     class Broken:
         name = "cloudflare"
 
-        async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
-            seen.append(max_bytes)
+        async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
+            seen.append(limit)
             raise aiohttp.ClientConnectionError("refused")
 
     class Slow:
         name = "cloudflare"
 
-        async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
+        async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
             await asyncio.sleep(10)
             raise AssertionError
 
     monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": Broken})
     with pytest.raises(SpeedTestError, match="refused"):
-        await run_speed_test("cloudflare", None, data_limit_mb=500)  # type: ignore[arg-type]  # rationale: unused by the stub
-    assert seen == [250_000_000]
+        await run_speed_test("cloudflare", None, DataLimit(300, 200))  # type: ignore[arg-type]  # rationale: unused by the stub
+    assert seen == [DataLimit(300, 200)]
 
     monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": Slow})
     monkeypatch.setattr(speed_test, "SPEED_TEST_TIMEOUT_S", 0.05)
@@ -431,7 +436,7 @@ async def test_request_timeout_is_not_reported_as_test_timeout(monkeypatch: pyte
     class RequestTimesOut:
         name = "cloudflare"
 
-        async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
+        async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
             raise TimeoutError
 
     monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": RequestTimesOut})
@@ -454,7 +459,7 @@ async def test_failed_test_reports_data_it_moved(
     monkeypatch.setattr(_http, "UPLOAD_REQUEST_BYTES", _http.READ_CHUNK)
     monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": lambda: CloudflareBackend(fake.base)})
     with pytest.raises(SpeedTestError) as err:
-        await run_speed_test("cloudflare", session, data_limit_mb=8)
+        await run_speed_test("cloudflare", session, DataLimit.even(8))
     # Half the limit, plus the chunk each of the four streams had in flight when it was reached.
     assert 4.0 <= err.value.downloaded_mb <= 4.0 + 4 * 65536 / 1e6 + 0.05
     # The refused uploads were still sent onto the connection, so they count too, within the limit.
@@ -467,7 +472,7 @@ async def test_failure_before_connecting_moved_nothing(monkeypatch: pytest.Monke
     class Refused:
         name = "cloudflare"
 
-        async def run(self, session: aiohttp.ClientSession, max_bytes: int, transfer: Transfer) -> SpeedTestResult:
+        async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
             raise aiohttp.ClientConnectionError("refused")
 
     monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": Refused})
@@ -488,7 +493,7 @@ async def test_redirects_are_not_followed(
     fake.redirect.add(path)
     monkeypatch.setattr(speed_test, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
     with contextlib.suppress(SpeedTestError):
-        await run_speed_test(name, session, data_limit_mb=8)  # type: ignore[arg-type]
+        await run_speed_test(name, session, DataLimit.even(8))  # type: ignore[arg-type]
     assert fake.paths.count(path) >= 1  # the redirecting endpoint was used
     assert "/elsewhere" not in fake.paths
 
@@ -503,4 +508,4 @@ async def test_malformed_server_data_is_a_speed_test_error(
     fake.malformed[path] = body
     monkeypatch.setattr(speed_test, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
     with pytest.raises(SpeedTestError):
-        await run_speed_test(name, session, data_limit_mb=8)  # type: ignore[arg-type]
+        await run_speed_test(name, session, DataLimit.even(8))  # type: ignore[arg-type]

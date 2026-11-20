@@ -62,10 +62,14 @@ Choosing a speed test service adds a second screen:
 
 | Option | Default | Description |
 | -------- | --------- | ------------- |
-| Nightly test | on | One test a night at a random time from 1 to 5 am |
-| Data limit per test | 500 MB | Most data one test may use, both directions together (100 to 10000) |
+| Automatic tests | on | At a random time from 1 to 5 am: weekly with no data budget, or as often as the budget holds every test |
+| Data limit per test | 0 (automatic) | Sized from the last test's speeds; or 100 to 10000 MB, both directions together |
 | Daily test limit | 4 | A cap, not a schedule: most tests in any 24 hours, every kind counted (1 to 40) |
-| Data budget per 30 days | 0 (none) | A test starts only if its data limit fits what is left (0 to 10000 GB) |
+| Data budget per 30 days | 0 (none) | Sets how often automatic tests run; a test starts only if its data limit fits what is left (0 to 10000 GB) |
+
+The screen shows its working: the last test's speeds, what each test may
+use, the days between automatic tests, and the most they can use in any
+30 days. See [How Much Data Speed Tests Use](#how-much-data-speed-tests-use).
 
 Turning a kind of monitoring off removes its entities and stops its
 probes: gateway monitoring off sends no pings, traceroutes or hop
@@ -138,12 +142,16 @@ Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS and two 
 | Speed test idle latency | ms | Median round trip before the test loads the line |
 | Speed test download latency, upload latency | ms | Median round trip while that direction is loaded |
 | Speed test data used | MB | Data the latest test used, both directions |
+| Speed test download latency increase, upload latency increase | ms | Loaded minus idle latency in that direction: bufferbloat. See [Bufferbloat](#bufferbloat) |
+| Speed test bufferbloat grade | | A+ to F on Waveform's scale, from the larger of the two increases |
 
 Hop sensors carry attributes: `hop_ip`, `reachable`, `packets_sent`,
 `packets_received`, `hostname` (when the hop has one) and, with hop
 ownership on, `asn` and `as_name`. Speed test sensors carry `backend`,
-`server` and `tested_at`. The measurement sensors keep long-term statistics
-only with the *Long-term statistics* option on.
+`server` and `tested_at`; download and upload also carry `ended_by`
+(`time`, or `data_limit` when the limit stopped that direction early) and
+`duration_s`, the seconds it was loaded. The measurement sensors keep
+long-term statistics only with the *Long-term statistics* option on.
 
 ### Usage Totals
 
@@ -217,11 +225,12 @@ provider's terms, which is why Fast.com and Ookla are not offered.
 IHM is not affiliated with any of these providers. Details, methods and
 the reasons: [docs/SPEED_TEST_BACKENDS.md](docs/SPEED_TEST_BACKENDS.md).
 
-**Running tests.** The *Nightly test* runs once a night at a random
-time from 1 to 5 am, when a test is least likely to slow a call or a
-game. Press **Run speed test** for one now. For other times, turn the
-nightly test off and use an automation; this one tests at 6 pm with a
-random delay, so homes don't all test at once:
+**Running tests.** *Automatic tests* run at a random time from 1 to
+5 am, when a test is least likely to slow a call or a game: weekly with
+no data budget, or as often as the budget holds every test (see below).
+Press **Run speed test** for one now. For other times, turn automatic
+tests off and use an automation; this one tests at 6 pm with a random
+delay, so homes don't all test at once:
 
 ```yaml
 alias: Evening speed test
@@ -236,23 +245,97 @@ actions:
       entity_id: button.internet_health_run_speed_test
 ```
 
-IHM cannot tell when your household is busy, so a test, nightly or
+IHM cannot tell when your household is busy, so a test, automatic or
 not, can briefly slow other traffic.
 
-**Limits.** *Data limit per test* (default 500 MB) stops each direction
-at half, so a fast line cannot eat a data cap; the setup screen shows
-what the nightly test can use in 30 days. *Daily test limit* (default
-4, up to 40) counts every run in any 24 hours. *Data budget per 30
-days* is off by default; if your plan has a data cap, set it to a small
-share of it. A test starts only if its data limit fits what is left, so
-the budget is never exceeded. With M-Lab, a run no person started (the
-nightly test or an automation) counts toward at most 4 a day, and one
-an automation started waits a random time of up to an hour, as M-Lab
-asks; a run you start yourself goes at once.
+**Limits.** *Daily test limit* (default 4, up to 40) counts every run in
+any 24 hours. *Data budget per 30 days* is off by default; if your plan
+has a data cap, set it to a small share of it. A test starts only if its
+data limit fits what is left, so the budget is never exceeded. With
+M-Lab, a run no person started (an automatic test or an automation)
+counts toward at most 4 a day, and one an automation started waits a
+random time of up to an hour, as M-Lab asks; a run you start yourself
+goes at once.
 
 A failed test makes the speed test sensors unavailable and the button
 shows why; nothing reads 0 because a test failed. The last result
 survives a restart.
+
+### How Much Data Speed Tests Use
+
+A few whole tests a month say more than many cut short, so IHM sizes
+each test to finish and spaces tests to fit your budget:
+
+1. **A full test** loads each direction for 10 seconds, so it moves
+   about 1.25 MB for every Mbit/s of download plus upload.
+2. **The automatic data limit** (*Data limit per test* 0, the default)
+   gives each direction what 10 seconds at the last test's speed used,
+   plus 25%, so a line up to a quarter faster still gets a whole test.
+   Each direction is at least 50 MB. The first test, with nothing to go
+   on, uses 500 MB, split evenly. A limit you set yourself is split
+   evenly, and on a fast line it can stop a direction early.
+3. **Never past the budget.** An automatic limit larger than the whole
+   budget is cut to fit it, keeping the slower direction whole.
+4. **Spacing.** With no budget, automatic tests run weekly. With one,
+   IHM counts how many tests at their limit the budget holds and spaces
+   them so no 30 days hold more, allowing for the 4-hour start window
+   and a clock change. So the budget never refuses an automatic test.
+5. **You see it.** The setup screen shows the working, and each
+   download and upload reading says whether time or the data limit
+   ended it (`ended_by`).
+
+<!-- Generated from Core's data_plan.py; tests/components/test_docs.py checks it. -->
+| Line (Mbit/s down/up) | A full test uses | Automatic limit | No budget | 10 GB budget | 50 GB budget |
+| --- | --- | --- | --- | --- | --- |
+| 100/10 | about 140 MB | 210 MB | weekly | daily | daily |
+| 300/20 | about 400 MB | 520 MB | weekly | every 2 days | daily |
+| 1000/40 | about 1300 MB | 1640 MB | weekly | every 6 days | every 2 days |
+| 2000/100 | about 2620 MB | 3290 MB | weekly | every 11 days | every 3 days |
+
+A 1000/40 line tested weekly uses about 1.3 GB a week; tested daily it
+would use about 39 GB in 30 days. The exact rules: [docs/SPEED_TEST_BACKENDS.md § Data Use](docs/SPEED_TEST_BACKENDS.md#data-use).
+
+### Bufferbloat
+
+Bufferbloat is delay that builds up when a busy link queues traffic: a
+video call stutters while someone uploads photos. Each speed test
+measures latency at rest and while each direction is loaded; the
+difference is the **latency increase**, one sensor per direction. The
+**bufferbloat grade** reads the larger increase on
+[Waveform's published scale](https://www.waveform.com/tools/bufferbloat),
+as Waveform grades its own test:
+
+| Grade | Latency increase |
+| ------- | ------------------ |
+| A+ | under 5 ms |
+| A | under 30 ms |
+| B | under 60 ms |
+| C | under 200 ms |
+| D | under 400 ms |
+| F | 400 ms or more |
+
+Waveform: "Anything worse than a B may affect video calls, gaming, and
+other real-time applications." IHM's loaded latency is the median of
+probes after the first 1.5 seconds of load
+([docs/SPEED_TEST_BACKENDS.md § How IHM Measures](docs/SPEED_TEST_BACKENDS.md#how-ihm-measures));
+noise can make an increase slightly negative, which grades A+. The two
+increase sensors show which direction set the grade.
+
+Between tests, hop latency shows bloat for free: hop 2 rising while the
+gateway stays flat points to a queue past your router
+([ADR-001](docs/ARCHITECTURE_DECISIONS.md#adr-001-bufferbloat-is-measured-passively-in-ihm)).
+
+```yaml
+type: entities
+title: Bufferbloat
+entities:
+  - entity: sensor.internet_health_speed_test_bufferbloat_grade
+    name: Grade
+  - entity: sensor.internet_health_speed_test_download_latency_increase
+    name: Download increase
+  - entity: sensor.internet_health_speed_test_upload_latency_increase
+    name: Upload increase
+```
 
 ## Network Path Visualization
 
@@ -275,7 +358,7 @@ the browser: it learns of the card when the page loads.
 | Latency graphs | on | Hop latency history, and DNS latency on its own graph |
 | Jitter graph | on | Hop jitter history |
 | Packet loss graph | on | Hop packet loss history |
-| Speed test | on | Each speed test reading, Run speed test, and a throughput graph. Shown only with a speed test service |
+| Speed test | on | Each speed test reading (bufferbloat grade and increases included), Run speed test, and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
 Each measurement has its own row or line; there is no combined score

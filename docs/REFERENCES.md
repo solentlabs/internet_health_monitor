@@ -41,16 +41,21 @@ Only if an active test is revisited.
 
 ## R3. Waveform bufferbloat test (grading scale only)
 
+<!-- cspell:ignore BXTVNU CNNF (hashes in Waveform's asset names) -->
+
 <https://www.waveform.com/tools/bufferbloat>. Never contacted by our code.
+IHM's bufferbloat grade uses this scale (ADR-004 amendment).
 
 | Fact | Label |
 | ------ | ------- |
-| Thresholds on latency increase: A+ < 5 ms, A < 30, B < 60, C < 200, D < 400, F ≥ 400. | [V] via Wayback capture 2026-11-07 of Waveform's production JS: <https://web.archive.org/web/20261107122556id_/https://www.waveform.com/tools/bufferbloat/assets/entry_v2-CNNFEkiB.js> |
-| Grade = worst of download and upload increase over idle. | [V] same source |
-| "Anything worse than a B may affect video calls." | [V] |
+| Thresholds on latency increase: A+ < 5 ms, A < 30, B < 60, C < 200, D < 400, F ≥ 400. In the grading code, `pe=[{until:5,grade:"A+"},{until:30,grade:"A"},{until:60,grade:"B"},{until:200,grade:"C"},{until:400,grade:"D"},{until:1/0,grade:"F"}]`; the page's own text gives the same scale ("Less than 5 ms" ... "400 ms or more"). | [V] re-read 2026-11-20 via Wayback: the page captured 2026-11-19 (<https://web.archive.org/web/20261119044114/https://www.waveform.com/tools/bufferbloat>) loads `index-BXTVNUHd.js`, which imports `entry_v2-CNNFEkiB.js` (<https://web.archive.org/web/20261116214256id_/https://www.waveform.com/tools/bufferbloat/assets/entry_v2-CNNFEkiB.js>). Page says "Last updated July 2026" |
+| "Whichever test creates the larger increase determines your final grade." | [V] same source |
+| "Anything worse than a B may affect video calls, gaming, and other real-time applications." | [V] same source |
+| Which statistic of loaded latency Waveform grades (median or another) is not stated. IHM grades its own median (SPEED_TEST_BACKENDS.md § How IHM Measures). | [V] absence, same source |
 
 **License:** proprietary site. **Cite only**, as a fact, with link.
-Wayback-only so far; a live re-read is an Open Verification Item.
+The live site refuses scripted requests (HTTP 403), so it is read via
+Wayback; a live re-read in a browser is an Open Verification Item.
 
 ## R4. DSLReports speed test grading (historical)
 
@@ -529,7 +534,8 @@ Read 2026-11-20 [V]:
    estimate, not a source (ADR-001).
 3. Field check of the passive method on the motivating household
    (ADR-001).
-4. Waveform and DSLReports figures read via Wayback only (R3, R4).
+4. Waveform and DSLReports figures read via Wayback only (R3, R4);
+   Waveform's live site refuses scripted requests.
 5. Backend survey follow-ups (R9): whether M-Lab's "contribute to the
    platform" clause applies to a free open-source integration; whether
    MSAK is open to third parties and measures latency under load;

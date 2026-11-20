@@ -17,7 +17,7 @@ from typing import Any
 import aiohttp
 
 from .. import timing
-from ..speed_test import USER_AGENT, BackendName, SpeedTestError, SpeedTestResult, Transfer, now
+from ..speed_test import USER_AGENT, BackendName, DataLimit, EndedBy, SpeedTestError, SpeedTestResult, Transfer, now
 
 HEADERS = {"User-Agent": USER_AGENT}
 STREAMS = 4
@@ -162,11 +162,22 @@ async def _run_until(tasks: list[asyncio.Task[None]], counter: _Counter, seconds
         _raise_first(done, counter)
 
 
+@dataclass(frozen=True)
+class _Direction:
+    """One direction's reading."""
+
+    mbps: float  # after warm-up
+    latency_ms: float | None  # median while loaded
+    ended_by: EndedBy
+    seconds: float  # how long it was loaded
+
+
 async def _direction(
     session: aiohttp.ClientSession, server: HttpServer, stream: StreamFn, counter: _Counter
-) -> tuple[float, float | None]:
-    """Load one direction; return (Mbit/s after warm-up, median loaded latency in ms)."""
+) -> _Direction:
+    """Load one direction until its window or data limit ends it."""
     loop = asyncio.get_running_loop()
+    start = loop.time()
     samples: list[float] = []
     tasks = [asyncio.create_task(stream(session, server, i, counter)) for i in range(STREAMS)]
     prober = asyncio.create_task(_probe_loop(session, server, samples))
@@ -178,6 +189,7 @@ async def _direction(
         measured, seconds = counter.total - warm_bytes, loop.time() - warm_time
         if measured <= 0:  # limit reached during warm-up: use the whole run
             measured, seconds = counter.total, seconds + timing.SPEED_TEST_WARMUP_S
+        loaded_s = loop.time() - start
     finally:
         for task in [*tasks, prober]:
             task.cancel()
@@ -185,7 +197,12 @@ async def _direction(
     if measured <= 0:
         raise SpeedTestError(f"{server.name} sent or accepted no data")
     loaded = samples[warm_samples:] or samples
-    return measured * 8 / 1e6 / seconds, statistics.median(loaded) if loaded else None
+    return _Direction(
+        mbps=measured * 8 / 1e6 / seconds,
+        latency_ms=statistics.median(loaded) if loaded else None,
+        ended_by="data_limit" if counter.full else "time",
+        seconds=loaded_s,
+    )
 
 
 def _raise_first(done: set[asyncio.Task[None]], counter: _Counter) -> None:
@@ -196,25 +213,35 @@ def _raise_first(done: set[asyncio.Task[None]], counter: _Counter) -> None:
             raise SpeedTestError("a load stream ended early")
 
 
+def _round(value: float | None) -> float | None:
+    """Round a latency to 0.1 ms, keeping None."""
+    return round(value, 1) if value is not None else None
+
+
 async def measure(
-    session: aiohttp.ClientSession, backend: BackendName, server: HttpServer, max_bytes: int, transfer: Transfer
+    session: aiohttp.ClientSession, backend: BackendName, server: HttpServer, limit: DataLimit, transfer: Transfer
 ) -> SpeedTestResult:
-    """Idle latency, then download, then upload, against one server; each direction within *max_bytes*."""
+    """Idle latency, then download, then upload, against one server; each direction within its *limit*."""
     started = now()
     idle = await _idle_latency(session, server)
-    down, up = _Counter(max_bytes, transfer, "downloaded"), _Counter(max_bytes, transfer, "uploaded")
-    download_mbps, download_latency = await _direction(session, server, _download_stream, down)
-    upload_mbps, upload_latency = await _direction(session, server, _upload_stream, up)
+    down = _Counter(limit.download_mb * 1_000_000, transfer, "downloaded")
+    up = _Counter(limit.upload_mb * 1_000_000, transfer, "uploaded")
+    download = await _direction(session, server, _download_stream, down)
+    upload = await _direction(session, server, _upload_stream, up)
     return SpeedTestResult(
         backend=backend,
         server=server.name,
-        download_mbps=round(download_mbps, 2),
-        upload_mbps=round(upload_mbps, 2),
+        download_mbps=round(download.mbps, 2),
+        upload_mbps=round(upload.mbps, 2),
         idle_latency_ms=round(idle, 1),
-        download_latency_ms=round(download_latency, 1) if download_latency is not None else None,
-        upload_latency_ms=round(upload_latency, 1) if upload_latency is not None else None,
+        download_latency_ms=_round(download.latency_ms),
+        upload_latency_ms=_round(upload.latency_ms),
         data_used_mb=round((down.total + up.total) / 1e6, 1),
         started_at=started,
         downloaded_mb=round(down.total / 1e6, 1),
         uploaded_mb=round(up.total / 1e6, 1),
+        download_ended_by=download.ended_by,
+        upload_ended_by=upload.ended_by,
+        download_s=round(download.seconds, 1),
+        upload_s=round(upload.seconds, 1),
     )

@@ -331,6 +331,9 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
         {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
         {"entity": "button.internet_health_run_speed_test", "name": "Run speed test"},
     )
+    assert {"entity": "sensor.internet_health_speed_test_bufferbloat_grade", "name": "Bufferbloat grade"} in (
+        speed["entities"]
+    )
     assert throughput["entities"] == [
         {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
         {"entity": "sensor.internet_health_speed_test_upload", "name": "Upload"},

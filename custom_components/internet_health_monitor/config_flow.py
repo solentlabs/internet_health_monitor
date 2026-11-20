@@ -25,6 +25,8 @@ from homeassistant.helpers.selector import (
 )
 
 from solentlabs.internet_health_monitor_core import timing
+from solentlabs.internet_health_monitor_core.data_plan import automatic_limit, every_days, most_tests
+from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedTestResult
 
 from .const import (
     CONF_DNS_SERVER,
@@ -66,7 +68,7 @@ DEFAULTS: dict[str, Any] = {
 # The second screen, shown only when a speed test service is chosen.
 SPEED_TEST_DEFAULTS: dict[str, Any] = {
     CONF_SPEED_TEST_AUTOMATIC: True,
-    CONF_SPEED_TEST_DATA_LIMIT: timing.SPEED_TEST_DATA_LIMIT_MB_DEFAULT,
+    CONF_SPEED_TEST_DATA_LIMIT: timing.SPEED_TEST_DATA_LIMIT_MB_AUTO,
     CONF_SPEED_TEST_DAILY_LIMIT: timing.SPEED_TEST_DAILY_DEFAULT,
     CONF_SPEED_TEST_BUDGET: timing.SPEED_TEST_BUDGET_GB_DEFAULT,
 }
@@ -137,8 +139,9 @@ def build_speed_test_schema(current: Mapping[str, Any]) -> probatio.Schema:
     return probatio.Schema(
         {
             probatio.Required(CONF_SPEED_TEST_AUTOMATIC, default=default(CONF_SPEED_TEST_AUTOMATIC)): BooleanSelector(),
+            # 0 (automatic) or MIN to MAX; speed_test_errors refuses the gap between.
             probatio.Required(CONF_SPEED_TEST_DATA_LIMIT, default=default(CONF_SPEED_TEST_DATA_LIMIT)): _box(
-                timing.SPEED_TEST_DATA_LIMIT_MB_MIN, timing.SPEED_TEST_DATA_LIMIT_MB_MAX, 100, "MB"
+                timing.SPEED_TEST_DATA_LIMIT_MB_AUTO, timing.SPEED_TEST_DATA_LIMIT_MB_MAX, 100, "MB"
             ),
             probatio.Required(CONF_SPEED_TEST_DAILY_LIMIT, default=default(CONF_SPEED_TEST_DAILY_LIMIT)): _box(
                 timing.SPEED_TEST_DAILY_MIN, timing.SPEED_TEST_DAILY_MAX, 1
@@ -150,11 +153,44 @@ def build_speed_test_schema(current: Mapping[str, Any]) -> probatio.Schema:
     )
 
 
-def speed_test_placeholders(current: Mapping[str, Any]) -> dict[str, str]:
-    """Advice on the speed test screen: the most the nightly test can use in 30 days at the current limit."""
+def _number(value: float) -> str:
+    """To 0.1, without a trailing .0."""
+    return f"{round(value, 1):g}"
+
+
+def speed_test_placeholders(current: Mapping[str, Any], last: SpeedTestResult | None) -> dict[str, str]:
+    """The speed test screen's working (Core data_plan.py): from the last result, the limit per test,
+    the days between automatic tests and the most they can use in 30 days."""
     limit_mb = current.get(CONF_SPEED_TEST_DATA_LIMIT, SPEED_TEST_DEFAULTS[CONF_SPEED_TEST_DATA_LIMIT])
-    days = timing.SPEED_TEST_BUDGET_WINDOW_S // 86400
-    return {"limit_mb": str(limit_mb), "monthly_gb": f"{days * limit_mb / 1000:g}"}
+    budget_gb = current.get(CONF_SPEED_TEST_BUDGET, SPEED_TEST_DEFAULTS[CONF_SPEED_TEST_BUDGET])
+    if limit_mb == timing.SPEED_TEST_DATA_LIMIT_MB_AUTO:
+        limit = automatic_limit(last, budget_gb)
+    else:
+        limit = DataLimit.even(limit_mb)
+    days = every_days(limit, budget_gb)
+    return {
+        "last_test": f"{_number(last.download_mbps)}/{_number(last.upload_mbps)} Mbit/s" if last else "-",
+        "limit_mb": str(limit.total_mb),
+        "every_days": str(days) if days else "-",
+        "monthly_gb": _number(most_tests(days) * limit.total_mb / 1000) if days else "-",
+    }
+
+
+def speed_test_errors(options: Mapping[str, Any]) -> dict[str, str]:
+    """A data limit tests could never use: between automatic and the minimum, or larger than the budget."""
+    limit_mb, budget_gb = options[CONF_SPEED_TEST_DATA_LIMIT], options[CONF_SPEED_TEST_BUDGET]
+    if timing.SPEED_TEST_DATA_LIMIT_MB_AUTO < limit_mb < timing.SPEED_TEST_DATA_LIMIT_MB_MIN:
+        return {CONF_SPEED_TEST_DATA_LIMIT: "data_limit_too_small"}
+    if budget_gb and limit_mb > budget_gb * 1000:
+        return {CONF_SPEED_TEST_DATA_LIMIT: "data_limit_over_budget"}
+    return {}
+
+
+def last_result(entry: ConfigEntry | None) -> SpeedTestResult | None:
+    """The loaded entry's last speed test result, if it has one."""
+    runtime = getattr(entry, "runtime_data", None) if entry else None
+    speed_test = getattr(runtime, "speed_test", None)
+    return speed_test.data if speed_test else None
 
 
 def needs_consent(options: Mapping[str, Any]) -> bool:
@@ -191,15 +227,19 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_speed_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """When tests run and how much data they may use."""
+        errors: dict[str, str] = {}
         if user_input is not None:
             self._options.update(user_input)
-            if needs_consent(self._options):
-                return await self.async_step_mlab_consent()
-            return self._async_finish()
+            if not (errors := speed_test_errors(self._options)):
+                if needs_consent(self._options):
+                    return await self.async_step_mlab_consent()
+                return self._async_finish()
+        entry = self._get_reconfigure_entry() if self.source == SOURCE_RECONFIGURE else None
         return self.async_show_form(
             step_id="speed_test",
             data_schema=build_speed_test_schema(self._options),
-            description_placeholders=speed_test_placeholders(self._options),
+            description_placeholders=speed_test_placeholders(self._options, last_result(entry)),
+            errors=errors,
         )
 
     async def async_step_mlab_consent(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -250,15 +290,18 @@ class InternetHealthOptionsFlow(OptionsFlowWithReload):
 
     async def async_step_speed_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """When tests run and how much data they may use."""
+        errors: dict[str, str] = {}
         if user_input is not None:
             self._options.update(user_input)
-            if needs_consent(self._options):
-                return await self.async_step_mlab_consent()
-            return self.async_create_entry(data=self._options)
+            if not (errors := speed_test_errors(self._options)):
+                if needs_consent(self._options):
+                    return await self.async_step_mlab_consent()
+                return self.async_create_entry(data=self._options)
         return self.async_show_form(
             step_id="speed_test",
             data_schema=build_speed_test_schema(self._options),
-            description_placeholders=speed_test_placeholders(self._options),
+            description_placeholders=speed_test_placeholders(self._options, last_result(self.config_entry)),
+            errors=errors,
         )
 
     async def async_step_mlab_consent(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

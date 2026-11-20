@@ -7,10 +7,10 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 
 | ADR | Topic | Status |
 | ----- | ------- | -------- |
-| [001](#adr-001-bufferbloat-is-measured-passively-in-ihm) | Bufferbloat is measured passively in IHM | Accepted 2026-11-18 |
+| [001](#adr-001-bufferbloat-is-measured-passively-in-ihm) | Bufferbloat is measured passively in IHM | Accepted 2026-11-18; rationale refreshed, Open |
 | [002](#adr-002-ihm-stays-a-standalone-integration) | IHM stays a standalone integration | Accepted 2026-11-18 |
 | [003](#adr-003-speed-testing-with-user-selected-backends) | Speed testing with user-selected backends | Open |
-| [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18 |
+| [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18; amendment Open |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
 | [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
@@ -26,27 +26,28 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 
 ## ADR-001: Bufferbloat is measured passively in IHM
 
-**Status:** Accepted 2026-11-18
+**Status:** Accepted 2026-11-18. The rationale below was refreshed on
+2026-11-20, once ADR-003's active tests graded bufferbloat; the decision
+and constraints are unchanged. The refresh awaits the developer's Accept.
 
 **Context:** A separate Solent Labs project, BufferBloat, was designed
 (never built or committed) as an active latency-under-load test
 following the IETF responsiveness draft (R1). It is folded into IHM and
 its repo retired. This ADR is the surviving record.
 
-**Why not a standalone active test** (IHM's own opt-in speed tests are
-ADR-003):
+**Why passive, alongside active tests** (IHM's opt-in speed tests,
+ADR-003, measure the latency increase under load and grade it on
+Waveform's scale, R3):
 
-- soulripper13/hass-speedtest-ookla (HACS default) already reports
-  loaded latency per direction and a "Bufferbloat Grade" (R8). A
-  standalone active test would add only the IETF method, a
-  Waveform-matching grade (R3), a busy-line pre-check and LAN testing.
-- No permitted internet load server. Cloudflare's speed test endpoints
-  have no published permission for scheduled automated use and none was
-  obtained (R5); Apple's has none either (R2). Self-hosted servers need
-  setup most users won't do.
-- An active test causes the bloat it measures and costs data: about
-  145 MB per run on a 100/10 line [C], 1.4 to 2.8% of a 1.25 TB cap at
-  one run every 6 h.
+- An active test causes the bloat it measures and costs data, about
+  140 MB on a 100/10 line (README.md § How Much Data Speed Tests Use),
+  so IHM runs one at most nightly, overnight. Bloat from household
+  traffic comes and goes during the day; only an always-on signal sees
+  it.
+- The passive signal needs no outside service and no setup; active
+  tests need a provider the user chooses (ADR-006).
+- A standalone active test of its own (the IETF method, R1) would add
+  little over ADR-003's tests and hass-speedtest-ookla's (R8).
 
 **Decision:** IHM detects bufferbloat **passively**, from latency it
 already measures. Household traffic (the motivating case: camera video
@@ -132,27 +133,36 @@ already ships throughput, loaded latency and a bloat grade?
   LibreSpeed, or none (the default).
 - **IHM runs its own tests.** No backend reads another HA integration's
   sensors.
-- **Bufferbloat included,** complementing ADR-001's passive signal.
+- **Bufferbloat included:** the latency increase under load per
+  direction, and a grade of the larger on Waveform's scale (R3; ADR-004
+  amendment), complementing ADR-001's passive signal.
 - **No server to run,** by the user or Solent Labs.
-- **When tests run:** a nightly test, on by default once a service is
+- **When tests run:** automatic tests, on by default once a service is
   chosen, at a random time from 1 to 5 am local; plus the Run speed test
   button and automations that press it. The schedule is IHM's, not the
   user's: HA's `appropriate-polling` rule (R16) bars a user-set
-  interval, so the nightly test is only on or off, and other times go
-  through an automation. Overnight, a test is least likely to slow a
-  call or a game; random, homes don't all test at once (R9). No test
-  runs at startup.
+  interval, so automatic tests are only on or off. IHM derives the
+  spacing from the data budget: weekly with none, else as often as the
+  budget holds every test at its limit (SPEED_TEST_BACKENDS.md § Data
+  Use). Other times go through an automation. Overnight, a test is least
+  likely to slow a call or a game; random, homes don't all test at once
+  (R9). No test runs at startup.
+- **Whole tests over frequent ones.** A test the data limit cuts short
+  measures less well, so the data limit defaults to automatic: each
+  direction gets 10 s at the last test's speed plus 25%, within the
+  budget. Each throughput reading says whether time or the limit ended
+  it. The setup screen shows the working.
 - **No busy-line check.** The FCC's units skip a test while household
   traffic passes 200 kbps (R21), but they sit between modem and router;
   IHM on the HA host cannot see other devices' traffic, so it does not
   guess.
 - **Three limits bound the cost,** counting every run, failed ones
-  included: a data limit per test (default 500 MB; each direction stops
-  at half), a daily test limit (default 4, up to 40), and an optional
-  data budget per 30 days. A test starts only if its data limit fits
-  what is left of the budget, so the budget is never exceeded. Setup
-  shows what the nightly test can use in 30 days and advises keeping
-  the budget to a small share of any plan cap (R22).
+  included: a data limit per test (default automatic; one set by hand
+  stops each direction at half), a daily test limit (default 4, up to
+  40), and an optional data budget per 30 days. A test starts only if
+  its data limit fits what is left of the budget, so the budget is never
+  exceeded. Setup advises keeping the budget to a small share of any
+  plan cap (R22).
 - **A failed test is visible:** the sensors go unavailable and the
   button gives the reason; nothing reads 0. A failure still reports the
   data it moved.
@@ -173,8 +183,8 @@ already ships throughput, loaded latency and a bloat grade?
   limits apply, requests identify IHM (User-Agent or client name), and
   the docs state IHM is not affiliated.
 - **M-Lab:** the user consents before first use, since M-Lab publishes
-  results with the user's IP address; a run no person started (the
-  nightly test included) counts toward at most 4 a day; one an
+  results with the user's IP address; a run no person started (an
+  automatic test included) counts toward at most 4 a day; one an
   automation started waits a random time of up to an hour (R9).
 - **Not offered:** Fast.com, because Netflix's Terms of Use forbid "any
   robot, spider, scraper or other automated means to access the Netflix
@@ -208,8 +218,25 @@ already ships throughput, loaded latency and a bloat grade?
   template.
 
 **Constraint:** Every IHM entity reports one observed measurement or
-state. `gateway_reachable` and `internet_reachable` stay: each reports
-one directly observed state.
+state, or a grade under the amendment below. `gateway_reachable` and
+`internet_reachable` stay: each reports one directly observed state.
+
+**Amendment: grades on a published scale** (Open, 2026-11-20; awaits
+the developer's Accept). A grade that reads one measured quantity
+against a published, cited scale is a reading, not a composite: it
+hides no signal and invents no cutoff. Allowed when:
+
+- the input is one measured quantity, with its own entities, so the
+  grade never hides what moved;
+- the scale is the source's, cited in REFERENCES.md with a [V] label,
+  never IHM's own;
+- the grade follows the source's own rule for choosing the input.
+
+First use: the speed test bufferbloat grade, Waveform's scale applied
+to the larger latency increase under load, as Waveform grades (R3); the
+download and upload increases are sensors of their own.
+hass-speedtest-ookla's grade uses a scale of its own above B (R8); IHM
+keeps to the source's.
 
 ---
 

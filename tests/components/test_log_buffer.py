@@ -48,12 +48,12 @@ def _buffer(hass: HomeAssistant) -> LogBuffer:
 async def test_captures_both_loggers_in_order(hass: HomeAssistant) -> None:
     """Records from the integration and from Core, oldest first, with level, logger and message."""
     buffer = _buffer(hass)
-    logging.getLogger(f"{HA_LOGGER}.coordinator").info("Nightly speed test skipped: %s", "daily limit")
+    logging.getLogger(f"{HA_LOGGER}.coordinator").info("Automatic speed test skipped: %s", "daily limit")
     logging.getLogger(f"{CORE_LOGGER}.network_diagnostics").warning("No hops detected")
     logging.getLogger("homeassistant.core").warning("not ours")
     records = buffer.records()
     assert [(r["level"], r["logger"], r["message"]) for r in records] == [
-        ("INFO", f"{HA_LOGGER}.coordinator", "Nightly speed test skipped: daily limit"),
+        ("INFO", f"{HA_LOGGER}.coordinator", "Automatic speed test skipped: daily limit"),
         ("WARNING", f"{CORE_LOGGER}.network_diagnostics", "No hops detected"),
     ]
     assert all(r["time"].endswith("+00:00") for r in records)

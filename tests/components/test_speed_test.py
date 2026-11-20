@@ -1,4 +1,4 @@
-"""Speed tests in HA: options and M-Lab consent, sensors, the button, the nightly test, limits and persistence."""
+"""Speed tests in HA: options and M-Lab consent, sensors, the button, automatic tests, limits and persistence."""
 
 from __future__ import annotations
 
@@ -29,9 +29,9 @@ from custom_components.internet_health_monitor.const import (
     CONF_SPEED_TEST_DATA_LIMIT,
     DOMAIN,
 )
-from custom_components.internet_health_monitor.coordinator import STORAGE_KEY, next_nightly_test
+from custom_components.internet_health_monitor.coordinator import STORAGE_KEY, next_automatic_test
 from custom_components.internet_health_monitor.diagnostics import async_get_config_entry_diagnostics
-from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
+from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedTestError, SpeedTestResult
 
 from .conftest import SetupEntry, entity_id, set_options
 
@@ -45,8 +45,12 @@ RESULT = SpeedTestResult(
     upload_latency_ms=310.0,
     data_used_mb=330.4,
     started_at=1_795_000_000.0,
+    download_ended_by="time",
+    upload_ended_by="data_limit",
+    download_s=10.0,
+    upload_s=6.2,
 )
-# The nightly test is off unless a test is about it, so time moving never starts one by accident.
+# Automatic tests are off unless a test is about them, so time moving never starts one by accident.
 CLOUDFLARE = {CONF_SPEED_TEST_BACKEND: "cloudflare", CONF_SPEED_TEST_AUTOMATIC: False}
 SPEED_SENSORS = [
     "speed_test_download",
@@ -55,26 +59,37 @@ SPEED_SENSORS = [
     "speed_test_download_latency",
     "speed_test_upload_latency",
     "speed_test_data_used",
+    "speed_test_download_latency_increase",
+    "speed_test_upload_latency_increase",
+    "speed_test_bufferbloat_grade",
 ]
 
 
-# Nightly test times (HA's test time zone is US/Pacific): now, random offset -> next test.
-# ┌────────────────────┬────────────┬──────────────────────┐
-# │ now (local)        │ offset (s) │ next test (local)    │
-# ├────────────────────┼────────────┼──────────────────────┤
-# │ 00:30              │ 3600       │ today 02:00          │
-# │ 02:30              │ 3600       │ tomorrow 02:00       │
-# │ 02:30              │ 7200       │ today 03:00          │
-# │ 12:00              │ 0          │ tomorrow 01:00       │
-# │ 12:00              │ 14400      │ tomorrow 05:00       │
-# └────────────────────┴────────────┴──────────────────────┘
+# Automatic test times (HA's test time zone is US/Pacific): now, the last automatic test, days
+# between tests, random offset -> next test. The earliest night is the last test's plus the
+# spacing, or tonight if that has passed; the test is at the offset into that night's 1 to 5 am.
+# ┌──────────────┬──────────────────┬──────┬────────┬──────────────────┐
+# │ now (local)  │ last test        │ days │ offset │ next test        │
+# ├──────────────┼──────────────────┼──────┼────────┼──────────────────┤
+# │ 11-19 00:30  │ none             │ 7    │ 3600   │ 11-19 02:00      │
+# │ 11-19 02:30  │ none             │ 7    │ 3600   │ 11-20 02:00      │
+# │ 11-19 02:30  │ none             │ 7    │ 7200   │ 11-19 03:00      │
+# │ 11-19 12:00  │ none             │ 1    │ 0      │ 11-20 01:00      │
+# │ 11-19 12:00  │ 11-19 03:00      │ 7    │ 0      │ 11-26 01:00      │
+# │ 11-19 12:00  │ 11-19 03:00      │ 1    │ 14400  │ 11-20 05:00      │
+# │ 11-19 12:00  │ 11-01 03:00      │ 7    │ 0      │ 11-20 01:00      │ overdue: next night
+# │ 11-19 00:30  │ 11-12 04:00      │ 7    │ 3600   │ 11-19 02:00      │ due tonight
+# └──────────────┴──────────────────┴──────┴────────┴──────────────────┘
 # fmt: off
-NIGHTLY_CASES: list[tuple[str, int, str]] = [
-    ("2026-11-19 00:30:00", 3600,  "2026-11-19 02:00:00"),
-    ("2026-11-19 02:30:00", 3600,  "2026-11-20 02:00:00"),
-    ("2026-11-19 02:30:00", 7200,  "2026-11-19 03:00:00"),
-    ("2026-11-19 12:00:00", 0,     "2026-11-20 01:00:00"),
-    ("2026-11-19 12:00:00", 14400, "2026-11-20 05:00:00"),
+NEXT_CASES: list[tuple[str, str | None, int, int, str]] = [
+    ("2026-11-19 00:30:00", None,                  7, 3600,  "2026-11-19 02:00:00"),
+    ("2026-11-19 02:30:00", None,                  7, 3600,  "2026-11-20 02:00:00"),
+    ("2026-11-19 02:30:00", None,                  7, 7200,  "2026-11-19 03:00:00"),
+    ("2026-11-19 12:00:00", None,                  1, 0,     "2026-11-20 01:00:00"),
+    ("2026-11-19 12:00:00", "2026-11-19 03:00:00", 7, 0,     "2026-11-26 01:00:00"),
+    ("2026-11-19 12:00:00", "2026-11-19 03:00:00", 1, 14400, "2026-11-20 05:00:00"),
+    ("2026-11-19 12:00:00", "2026-11-01 03:00:00", 7, 0,     "2026-11-20 01:00:00"),
+    ("2026-11-19 00:30:00", "2026-11-12 04:00:00", 7, 3600,  "2026-11-19 02:00:00"),
 ]
 # fmt: on
 
@@ -114,7 +129,7 @@ async def test_off_by_default_creates_nothing(hass: HomeAssistant, setup_entry: 
 
 
 async def test_never_runs_on_its_own(hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock) -> None:
-    """With the nightly test off, setup and time passing never start a test; sensors read unknown until one runs."""
+    """With automatic tests off, setup and time passing never start a test; sensors read unknown until one runs."""
     entry = await setup_entry(**CLOUDFLARE)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(days=2))
     await hass.async_block_till_done()
@@ -131,6 +146,9 @@ async def test_never_runs_on_its_own(hass: HomeAssistant, setup_entry: SetupEntr
 # │ download latency             │ 48.5     │
 # │ upload latency               │ 310.0    │
 # │ data used                    │ 330.4    │
+# │ download latency increase    │ 36.5     │
+# │ upload latency increase      │ 298.0    │
+# │ bufferbloat grade            │ d (D)    │
 # └──────────────────────────────┴──────────┘
 # fmt: off
 STATE_CASES: list[tuple[str, str]] = [
@@ -140,6 +158,9 @@ STATE_CASES: list[tuple[str, str]] = [
     ("speed_test_download_latency", "48.5"),
     ("speed_test_upload_latency",   "310.0"),
     ("speed_test_data_used",        "330.4"),
+    ("speed_test_download_latency_increase", "36.5"),
+    ("speed_test_upload_latency_increase",   "298.0"),
+    ("speed_test_bufferbloat_grade",         "d"),
 ]
 # fmt: on
 
@@ -148,16 +169,48 @@ STATE_CASES: list[tuple[str, str]] = [
 async def test_press_runs_and_fills_sensors(
     hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, key: str, expected: str
 ) -> None:
-    """A press runs one test with the chosen backend and data limit; each sensor shows its field."""
+    """A press runs one test with the chosen backend and data limit, split evenly; each sensor shows its field."""
     entry = await setup_entry(**CLOUDFLARE, **{CONF_SPEED_TEST_DATA_LIMIT: 500})
     await _press(hass, entry)
     assert speed_test.call_args.args[0] == "cloudflare"
-    assert speed_test.call_args.kwargs["data_limit_mb"] == 500
+    assert speed_test.call_args.args[2] == DataLimit(250, 250)
     assert _state(hass, entry, key) == expected
     attrs = hass.states.get(entity_id(hass, "sensor", entry, key) or "")
     assert attrs is not None
     assert (attrs.attributes["backend"], attrs.attributes["server"]) == ("cloudflare", "speed.cloudflare.com")
     assert "tested_at" in attrs.attributes
+
+
+# sensor -> (ended_by, duration_s) attributes: whether each direction ran its whole window.
+# fmt: off
+QUALITY_CASES: list[tuple[str, dict[str, Any]]] = [
+    ("speed_test_download", {"ended_by": "time",       "duration_s": 10.0}),
+    ("speed_test_upload",   {"ended_by": "data_limit", "duration_s": 6.2}),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize("key,expected", QUALITY_CASES)
+async def test_throughput_says_what_ended_it(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, key: str, expected: dict[str, Any]
+) -> None:
+    """Download and upload say whether time or the data limit ended them, and after how long."""
+    entry = await setup_entry(**CLOUDFLARE)
+    await _press(hass, entry)
+    state = hass.states.get(entity_id(hass, "sensor", entry, key) or "")
+    assert state is not None
+    assert {k: state.attributes[k] for k in expected} == expected
+
+
+async def test_automatic_data_limit_follows_the_last_test(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """With the data limit at 0, the first test calibrates at 500 MB; later ones fit the last test's speeds."""
+    entry = await setup_entry(**CLOUDFLARE, **{CONF_SPEED_TEST_DATA_LIMIT: 0})
+    await _press(hass, entry)
+    assert speed_test.call_args.args[2] == DataLimit(250, 250)
+    await _press(hass, entry)  # 245.6 / 11.2 Mbit/s: 10 s each, plus 25%, upload at the 50 MB floor
+    assert speed_test.call_args.args[2] == DataLimit(390, 50)
 
 
 async def test_failed_test_is_visible(hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock) -> None:
@@ -369,8 +422,8 @@ async def test_pending_automated_run_is_cancelled_on_unload(
     speed_test.assert_not_called()
 
 
-# Nightly test: a random time from 1 to 5 am local. HA's test time zone is US/Pacific.
-NIGHTLY = {**CLOUDFLARE, CONF_SPEED_TEST_AUTOMATIC: True}
+# Automatic tests: a random time from 1 to 5 am local, weekly without a budget. HA's test time zone is US/Pacific.
+AUTOMATIC = {**CLOUDFLARE, CONF_SPEED_TEST_AUTOMATIC: True}
 OFFSET = "custom_components.internet_health_monitor.coordinator.random.randint"
 
 
@@ -381,59 +434,92 @@ def _local(text: str) -> datetime:
     return parsed.replace(tzinfo=dt_util.get_default_time_zone())
 
 
-@pytest.mark.parametrize(("now", "offset", "expected"), NIGHTLY_CASES)
-async def test_next_nightly_test(hass: HomeAssistant, now: str, offset: int, expected: str) -> None:
-    """The next test is in the next 1 to 5 am window still ahead, at the random offset."""
+@pytest.mark.parametrize(("now", "last", "days", "offset", "expected"), NEXT_CASES)
+async def test_next_automatic_test(
+    hass: HomeAssistant, now: str, last: str | None, days: int, offset: int, expected: str
+) -> None:
+    """The next test is in the first 1 to 5 am window that is still ahead and the spacing allows."""
+    last_at = _local(last).timestamp() if last else None
     with patch(OFFSET, return_value=offset) as randint:
-        assert next_nightly_test(_local(now)) == _local(expected)
+        assert next_automatic_test(_local(now), last_at, days) == _local(expected)
     assert randint.call_args.args == (0, 4 * 3600)
 
 
-async def test_nightly_test_runs_once_a_night(
+async def _tick(hass: HomeAssistant, freezer: FrozenDateTimeFactory, at: str) -> None:
+    """Move to a local time and let anything due run."""
+    freezer.move_to(_local(at))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
+async def test_automatic_tests_weekly_without_a_budget(
     hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
 ) -> None:
-    """On by default: one automated test a night at the random time, and none in between."""
+    """On by default: the first test tonight, then one a week at the random time, and none in between."""
     freezer.move_to(_local("2026-11-19 12:00:00"))
     with patch(OFFSET, return_value=3600):
-        entry = await setup_entry(**NIGHTLY)
+        entry = await setup_entry(**AUTOMATIC)
         for at, runs in (
             ("2026-11-20 01:59:00", 0),
             ("2026-11-20 02:00:01", 1),
-            ("2026-11-20 23:00:00", 1),
-            ("2026-11-21 02:00:01", 2),
+            ("2026-11-21 02:00:01", 1),
+            ("2026-11-26 02:00:01", 1),
+            ("2026-11-27 02:00:01", 2),
         ):
-            freezer.move_to(_local(at))
-            async_fire_time_changed(hass)
-            await hass.async_block_till_done()
+            await _tick(hass, freezer, at)
             assert speed_test.call_count == runs, at
     assert _state(hass, entry, "speed_test_download") == "245.6"
 
 
-async def test_nightly_test_runs_once_when_offsets_differ(
+async def test_budget_sets_the_spacing(
     hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
 ) -> None:
-    """After a night's test, the next is tomorrow, even when the new random time is later tonight."""
+    """With a budget, tests run as often as it holds them: 2 GB holds 4 tests of 500 MB, so every 8 days."""
     freezer.move_to(_local("2026-11-19 12:00:00"))
-    # 01:00 for the first night; then 04:00, which is still ahead tonight when the first test runs.
-    with patch(OFFSET, side_effect=[0, 3 * 3600, 3 * 3600, 3 * 3600]):
-        await setup_entry(**NIGHTLY)
-        for at, runs in (("2026-11-20 01:00:01", 1), ("2026-11-20 04:00:01", 1), ("2026-11-21 04:00:01", 2)):
-            freezer.move_to(_local(at))
-            async_fire_time_changed(hass)
-            await hass.async_block_till_done()
+    with patch(OFFSET, return_value=0):
+        await setup_entry(**AUTOMATIC, **{CONF_SPEED_TEST_BUDGET: 2, CONF_SPEED_TEST_DATA_LIMIT: 500})
+        for at, runs in (("2026-11-20 01:00:01", 1), ("2026-11-27 01:00:01", 1), ("2026-11-28 01:00:01", 2)):
+            await _tick(hass, freezer, at)
             assert speed_test.call_count == runs, at
 
 
-async def test_nightly_test_counts_as_automated(
+async def test_large_budget_tests_nightly(
     hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
 ) -> None:
-    """With M-Lab, the nightly test starts at its random time (no extra wait) and counts toward M-Lab's 4."""
+    """A budget that holds a test every night runs one a night, even when the new random time is later tonight."""
+    freezer.move_to(_local("2026-11-19 12:00:00"))
+    # 01:00 for the first night; then 04:00, which is still ahead tonight when the first test runs.
+    with patch(OFFSET, side_effect=[0, 3 * 3600, 3 * 3600, 3 * 3600]):
+        await setup_entry(**AUTOMATIC, **{CONF_SPEED_TEST_BUDGET: 50})
+        for at, runs in (("2026-11-20 01:00:01", 1), ("2026-11-20 04:00:01", 1), ("2026-11-21 04:00:01", 2)):
+            await _tick(hass, freezer, at)
+            assert speed_test.call_count == runs, at
+
+
+async def test_spacing_survives_restart(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """The last automatic test is stored: after a reload the next is still a week after it."""
+    freezer.move_to(_local("2026-11-19 12:00:00"))
+    with patch(OFFSET, return_value=0):
+        entry = await setup_entry(**AUTOMATIC)
+        await _tick(hass, freezer, "2026-11-20 01:00:01")
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        await _tick(hass, freezer, "2026-11-21 01:00:01")
+        assert speed_test.call_count == 1
+        await _tick(hass, freezer, "2026-11-27 01:00:01")
+    assert speed_test.call_count == 2
+
+
+async def test_automatic_test_counts_as_automated(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """With M-Lab, an automatic test starts at its random time (no extra wait) and counts toward M-Lab's 4."""
     freezer.move_to(_local("2026-11-19 12:00:00"))
     with patch(OFFSET, return_value=0), patch(WAIT, return_value=0.0) as wait:
         entry = await setup_entry(**{**MLAB, CONF_SPEED_TEST_AUTOMATIC: True})
-        freezer.move_to(_local("2026-11-20 01:00:01"))
-        async_fire_time_changed(hass)
-        await hass.async_block_till_done()
+        await _tick(hass, freezer, "2026-11-20 01:00:01")
         speed_test.assert_called_once()
         wait.assert_not_called()
         for _ in range(3):
@@ -443,39 +529,33 @@ async def test_nightly_test_counts_as_automated(
     assert err.value.translation_key == "mlab_automated_limit"
 
 
-async def test_nightly_test_skipped_at_a_limit(
+async def test_automatic_test_skipped_at_a_limit(
     hass: HomeAssistant,
     setup_entry: SetupEntry,
     speed_test: AsyncMock,
     freezer: FrozenDateTimeFactory,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A night past a limit is skipped and logged, and the next night is still scheduled."""
+    """A test refused by a limit is logged and tried again the next night."""
     freezer.move_to(_local("2026-11-20 00:30:00"))
     with patch(OFFSET, return_value=3600):
-        entry = await setup_entry(**NIGHTLY, **{CONF_SPEED_TEST_DAILY_LIMIT: 1})
+        entry = await setup_entry(**AUTOMATIC, **{CONF_SPEED_TEST_DAILY_LIMIT: 1})
         await _press(hass, entry)
-        freezer.move_to(_local("2026-11-20 02:00:01"))
-        async_fire_time_changed(hass)
-        await hass.async_block_till_done()
+        await _tick(hass, freezer, "2026-11-20 02:00:01")
         assert speed_test.call_count == 1
-        assert "Nightly speed test skipped" in caplog.text
-        freezer.move_to(_local("2026-11-21 02:00:01"))
-        async_fire_time_changed(hass)
-        await hass.async_block_till_done()
+        assert "Automatic speed test skipped" in caplog.text
+        await _tick(hass, freezer, "2026-11-21 02:00:01")
     assert speed_test.call_count == 2
 
 
-async def test_unload_cancels_nightly_test(
+async def test_unload_cancels_automatic_test(
     hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
 ) -> None:
-    """After unload the nightly test never runs."""
+    """After unload no automatic test runs."""
     freezer.move_to(_local("2026-11-19 12:00:00"))
-    entry = await setup_entry(**NIGHTLY)
+    entry = await setup_entry(**AUTOMATIC)
     assert await hass.config_entries.async_unload(entry.entry_id)
-    freezer.move_to(_local("2026-11-21 12:00:00"))
-    async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    await _tick(hass, freezer, "2026-11-21 12:00:00")
     speed_test.assert_not_called()
 
 
@@ -563,3 +643,16 @@ async def test_speed_test_in_flight_at_unload(
     await press
     await hass.async_block_till_done()
     assert usage.totals.downloaded_mb == 0.0
+
+
+async def test_waiting_run_uses_the_limit_it_reserved(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """An automated M-Lab run waits; a test in between changes the automatic limit, but it keeps the one it reserved."""
+    entry = await setup_entry(**MLAB, **{CONF_SPEED_TEST_DATA_LIMIT: 0})
+    with patch(WAIT, return_value=100.0):
+        await _press(hass, entry, by_person=False)  # reserves 500 MB, split evenly: no result yet
+    await _press(hass, entry)  # a person's test now: its result sizes the next limit at 390 / 50
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=101))
+    await hass.async_block_till_done()
+    assert [c.args[2] for c in speed_test.call_args_list] == [DataLimit(250, 250), DataLimit(250, 250)]

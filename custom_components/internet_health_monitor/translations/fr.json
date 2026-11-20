@@ -50,18 +50,18 @@
       },
       "speed_test": {
         "title": "Tests de débit",
-        "description": "Lancer un test de débit et les automatisations démarrent un test à tout moment. À {limit_mb} Mo par test, le test nocturne seul utilise jusqu'à {monthly_gb} Go sur 30 jours ; la plupart des tests en utilisent moins.",
+        "description": "Lancer un test de débit et les automatisations démarrent un test à tout moment. Dernier test : {last_test}. Chaque test peut utiliser jusqu'à {limit_mb} Mo, donc les tests automatiques ont lieu tous les {every_days} jour(s) et utilisent au plus {monthly_gb} Go sur 30 jours. Avant le premier test, la limite automatique est de 500 Mo. Les règles : README, « How much data speed tests use ».",
         "data": {
-          "speed_test_automatic": "Test nocturne",
+          "speed_test_automatic": "Tests automatiques",
           "speed_test_data_limit_mb": "Limite de données par test",
           "speed_test_daily_limit": "Limite quotidienne de tests",
           "speed_test_budget_gb": "Budget de données sur 30 jours"
         },
         "data_description": {
-          "speed_test_automatic": "Un test par nuit à une heure aléatoire entre 1 h et 5 h, quand la ligne est généralement libre. Désactivé : les tests ne s'exécutent que par Lancer un test de débit ou une automatisation.",
-          "speed_test_data_limit_mb": "Données maximales qu'un test peut utiliser, deux sens confondus (100 à 10000 Mo) ; chaque sens s'arrête à la moitié. Sur une ligne rapide, une limite plus basse donne un test plus court et moins précis.",
-          "speed_test_daily_limit": "Un plafond, pas un horaire : une fois ce nombre de tests atteint sur les dernières 24 heures, les suivants sont refusés jusqu'à ce que le plus ancien ait un jour (1 à 40). Compte le test nocturne, le bouton et les automatisations. M-Lab demande que les tests automatiques restent à 4 ou moins.",
-          "speed_test_budget_gb": "0 pour aucun. Un test ne démarre que s'il tient dans ce qui reste de ce budget après les tests des 30 derniers jours. Si votre forfait a un plafond de données, gardez ceci à une petite part de celui-ci."
+          "speed_test_automatic": "À une heure aléatoire entre 1 h et 5 h, quand la ligne est généralement libre : chaque semaine sans budget de données ; avec un budget, aussi souvent que celui-ci contient chaque test. Désactivé : les tests ne s'exécutent que par Lancer un test de débit ou une automatisation.",
+          "speed_test_data_limit_mb": "0 pour automatique : chaque sens reçoit ce qu'ont utilisé 10 s au débit du dernier test, plus 25 %, dans les limites du budget. Ou 100 à 10000 Mo, deux sens confondus ; chaque sens s'arrête à la moitié. Un test arrêté par la limite est plus court et moins précis.",
+          "speed_test_daily_limit": "Un plafond, pas un horaire : une fois ce nombre de tests atteint sur les dernières 24 heures, les suivants sont refusés jusqu'à ce que le plus ancien ait un jour (1 à 40). Compte les tests automatiques, le bouton et les automatisations. M-Lab demande que les tests automatiques restent à 4 ou moins.",
+          "speed_test_budget_gb": "0 pour aucun. Fixe la fréquence des tests automatiques, et un test ne démarre que s'il tient dans ce qui reste de ce budget après les tests des 30 derniers jours. Si votre forfait a un plafond de données, gardez ceci à une petite part de celui-ci."
         }
       },
       "mlab_consent": {
@@ -77,7 +77,9 @@
       "reconfigure_successful": "Les paramètres ont été mis à jour."
     },
     "error": {
-      "mlab_consent_required": "Confirmez pour utiliser M-Lab, ou fermez cette fenêtre et choisissez un autre service."
+      "mlab_consent_required": "Confirmez pour utiliser M-Lab, ou fermez cette fenêtre et choisissez un autre service.",
+      "data_limit_too_small": "Utilisez 0 pour automatique, ou 100 Mo ou plus.",
+      "data_limit_over_budget": "Un test pourrait utiliser plus que tout le budget de données. Baissez la limite de données, utilisez 0 pour automatique ou augmentez le budget."
     }
   },
   "options": {
@@ -107,18 +109,18 @@
       },
       "speed_test": {
         "title": "Tests de débit",
-        "description": "Lancer un test de débit et les automatisations démarrent un test à tout moment. À {limit_mb} Mo par test, le test nocturne seul utilise jusqu'à {monthly_gb} Go sur 30 jours ; la plupart des tests en utilisent moins.",
+        "description": "Lancer un test de débit et les automatisations démarrent un test à tout moment. Dernier test : {last_test}. Chaque test peut utiliser jusqu'à {limit_mb} Mo, donc les tests automatiques ont lieu tous les {every_days} jour(s) et utilisent au plus {monthly_gb} Go sur 30 jours. Avant le premier test, la limite automatique est de 500 Mo. Les règles : README, « How much data speed tests use ».",
         "data": {
-          "speed_test_automatic": "Test nocturne",
+          "speed_test_automatic": "Tests automatiques",
           "speed_test_data_limit_mb": "Limite de données par test",
           "speed_test_daily_limit": "Limite quotidienne de tests",
           "speed_test_budget_gb": "Budget de données sur 30 jours"
         },
         "data_description": {
-          "speed_test_automatic": "Un test par nuit à une heure aléatoire entre 1 h et 5 h, quand la ligne est généralement libre. Désactivé : les tests ne s'exécutent que par Lancer un test de débit ou une automatisation.",
-          "speed_test_data_limit_mb": "Données maximales qu'un test peut utiliser, deux sens confondus (100 à 10000 Mo) ; chaque sens s'arrête à la moitié. Sur une ligne rapide, une limite plus basse donne un test plus court et moins précis.",
-          "speed_test_daily_limit": "Un plafond, pas un horaire : une fois ce nombre de tests atteint sur les dernières 24 heures, les suivants sont refusés jusqu'à ce que le plus ancien ait un jour (1 à 40). Compte le test nocturne, le bouton et les automatisations. M-Lab demande que les tests automatiques restent à 4 ou moins.",
-          "speed_test_budget_gb": "0 pour aucun. Un test ne démarre que s'il tient dans ce qui reste de ce budget après les tests des 30 derniers jours. Si votre forfait a un plafond de données, gardez ceci à une petite part de celui-ci."
+          "speed_test_automatic": "À une heure aléatoire entre 1 h et 5 h, quand la ligne est généralement libre : chaque semaine sans budget de données ; avec un budget, aussi souvent que celui-ci contient chaque test. Désactivé : les tests ne s'exécutent que par Lancer un test de débit ou une automatisation.",
+          "speed_test_data_limit_mb": "0 pour automatique : chaque sens reçoit ce qu'ont utilisé 10 s au débit du dernier test, plus 25 %, dans les limites du budget. Ou 100 à 10000 Mo, deux sens confondus ; chaque sens s'arrête à la moitié. Un test arrêté par la limite est plus court et moins précis.",
+          "speed_test_daily_limit": "Un plafond, pas un horaire : une fois ce nombre de tests atteint sur les dernières 24 heures, les suivants sont refusés jusqu'à ce que le plus ancien ait un jour (1 à 40). Compte les tests automatiques, le bouton et les automatisations. M-Lab demande que les tests automatiques restent à 4 ou moins.",
+          "speed_test_budget_gb": "0 pour aucun. Fixe la fréquence des tests automatiques, et un test ne démarre que s'il tient dans ce qui reste de ce budget après les tests des 30 derniers jours. Si votre forfait a un plafond de données, gardez ceci à une petite part de celui-ci."
         }
       },
       "mlab_consent": {
@@ -130,7 +132,9 @@
       }
     },
     "error": {
-      "mlab_consent_required": "Confirmez pour utiliser M-Lab, ou fermez cette fenêtre et choisissez un autre service."
+      "mlab_consent_required": "Confirmez pour utiliser M-Lab, ou fermez cette fenêtre et choisissez un autre service.",
+      "data_limit_too_small": "Utilisez 0 pour automatique, ou 100 Mo ou plus.",
+      "data_limit_over_budget": "Un test pourrait utiliser plus que tout le budget de données. Baissez la limite de données, utilisez 0 pour automatique ou augmentez le budget."
     }
   },
   "selector": {
@@ -219,6 +223,16 @@
           },
           "tested_at": {
             "name": "Testé le"
+          },
+          "ended_by": {
+            "name": "Arrêté par",
+            "state": {
+              "time": "Durée écoulée",
+              "data_limit": "Limite de données"
+            }
+          },
+          "duration_s": {
+            "name": "Durée"
           }
         }
       },
@@ -233,6 +247,16 @@
           },
           "tested_at": {
             "name": "Testé le"
+          },
+          "ended_by": {
+            "name": "Arrêté par",
+            "state": {
+              "time": "Durée écoulée",
+              "data_limit": "Limite de données"
+            }
+          },
+          "duration_s": {
+            "name": "Durée"
           }
         }
       },
@@ -280,6 +304,56 @@
       },
       "speed_test_data_used": {
         "name": "Test de débit : données utilisées",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Serveur"
+          },
+          "tested_at": {
+            "name": "Testé le"
+          }
+        }
+      },
+      "speed_test_download_latency_increase": {
+        "name": "Test de débit : hausse de latence en téléchargement",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Serveur"
+          },
+          "tested_at": {
+            "name": "Testé le"
+          }
+        }
+      },
+      "speed_test_upload_latency_increase": {
+        "name": "Test de débit : hausse de latence en envoi",
+        "state_attributes": {
+          "backend": {
+            "name": "Backend"
+          },
+          "server": {
+            "name": "Serveur"
+          },
+          "tested_at": {
+            "name": "Testé le"
+          }
+        }
+      },
+      "speed_test_bufferbloat_grade": {
+        "name": "Test de débit : note de bufferbloat",
+        "state": {
+          "a_plus": "A+",
+          "a": "A",
+          "b": "B",
+          "c": "C",
+          "d": "D",
+          "f": "F"
+        },
         "state_attributes": {
           "backend": {
             "name": "Backend"
