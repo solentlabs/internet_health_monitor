@@ -67,8 +67,11 @@ Choosing a speed test service adds a second screen:
 | Daily test limit | 4 | A cap, not a schedule: most tests in any 24 hours, every kind counted (1 to 40) |
 | Data budget per 30 days | 0 (none) | A test starts only if its data limit fits what is left (0 to 10000 GB) |
 
-Turning a kind of monitoring off removes its entities; turning it back
-on recreates them with the same ids, and their history returns.
+Turning a kind of monitoring off removes its entities and stops its
+probes: gateway monitoring off sends no pings, traceroutes or hop
+lookups, and DNS monitoring off sends no DNS latency query. Turning it
+back on recreates the entities with the same ids, and their history
+returns.
 
 ### Polling
 

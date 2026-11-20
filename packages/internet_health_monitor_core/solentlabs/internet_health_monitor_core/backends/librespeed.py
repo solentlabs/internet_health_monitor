@@ -13,7 +13,7 @@ from typing import Any, Literal
 import aiohttp
 
 from ..speed_test import SpeedTestError, SpeedTestResult, Transfer
-from ._http import HEADERS, REQUEST_TIMEOUT, HttpServer, measure, probe
+from ._http import HEADERS, REQUEST_TIMEOUT, HttpServer, check_status, measure, probe
 
 SERVER_LIST_URL = "https://librespeed.org/backend-servers/servers.php"
 # garbage.php sends this many 1 MiB chunks per request (the official client's size, R20).
@@ -68,8 +68,8 @@ class LibreSpeedBackend:
 
     async def _fastest(self, session: aiohttp.ClientSession) -> HttpServer:
         """Probe every listed server once, concurrently; return the quickest to answer."""
-        async with session.get(self._list_url, headers=HEADERS, timeout=REQUEST_TIMEOUT) as resp:
-            resp.raise_for_status()
+        async with session.get(self._list_url, headers=HEADERS, timeout=REQUEST_TIMEOUT, allow_redirects=False) as resp:
+            check_status(resp)
             entries = await resp.json(content_type=None)
         servers = [_server(e) for e in entries if usable(e, self._require_tls)]
         if not servers:

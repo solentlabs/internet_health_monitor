@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Iterator
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -523,3 +524,42 @@ async def test_budget_survives_restart(hass: HomeAssistant, setup_entry: SetupEn
     await hass.async_block_till_done()
     with pytest.raises(ServiceValidationError):
         await _press(hass, entry)
+
+
+async def test_unload_cancels_every_waiting_mlab_run(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """Waits are random, so runs finish waiting out of order; unload still cancels the one left."""
+    entry = await setup_entry(**MLAB)
+    with patch(WAIT, side_effect=[500.0, 100.0]):
+        await _press(hass, entry, by_person=False)  # A waits 500 s
+        await _press(hass, entry, by_person=False)  # B waits 100 s
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=101))
+    await hass.async_block_till_done()
+    assert speed_test.call_count == 1  # B ran
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=501))
+    await hass.async_block_till_done()
+    assert speed_test.call_count == 1  # A never runs after unload
+
+
+async def test_speed_test_in_flight_at_unload(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """A test that finishes after the entry unloaded neither crashes nor counts its data again."""
+    entry = await setup_entry(**CLOUDFLARE)
+    release = asyncio.Event()
+
+    async def slow_test(*_: Any, **__: Any) -> SpeedTestResult:
+        await release.wait()
+        return RESULT
+
+    speed_test.side_effect = slow_test
+    usage = entry.runtime_data.coordinator.usage
+    press = hass.async_create_task(_press(hass, entry))
+    await asyncio.sleep(0.01)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    release.set()
+    await press
+    await hass.async_block_till_done()
+    assert usage.totals.downloaded_mb == 0.0

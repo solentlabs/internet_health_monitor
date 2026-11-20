@@ -95,16 +95,20 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
         # Confirm before off, re-check fast while off (ADR-012); quick checks run only then.
         self.reachability: dict[ReachabilityTarget, Reachability] = {t: Reachability() for t in targets}
         self._pending: dict[ReachabilityTarget, CALLBACK_TYPE] = {}
+        self._unloaded = False  # a check or poll still running at unload must not schedule another
         entry.async_on_unload(self._cancel_checks)
 
     def _cancel_checks(self) -> None:
         """Cancel quick checks still waiting (the entry is unloading)."""
+        self._unloaded = True
         for cancel in self._pending.values():
             cancel()
         self._pending.clear()
 
     def _observe(self, target: ReachabilityTarget, ok: bool) -> None:
         """Feed one result to *target*; schedule the quick check it asks for, or cancel one no longer needed."""
+        if self._unloaded:
+            return
         delay = self.reachability[target].observe(ok)
         if delay is None:
             if cancel := self._pending.pop(target, None):
@@ -117,7 +121,10 @@ class InternetHealthCoordinator(DataUpdateCoordinator[NetworkDiagnosticsResult])
         """One gateway ping or one DNS query, then show the result."""
         self._pending.pop(target, None)
         check = self.diagnostics.check_gateway if target == "gateway" else self.diagnostics.check_internet
-        self._observe(target, await check())
+        ok = await check()
+        if self._unloaded:
+            return  # unloaded while the check ran
+        self._observe(target, ok)
         self.usage.add_probes(self.diagnostics.counts)
         self.async_update_listeners()
 
@@ -183,8 +190,9 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         self._runs: list[dict[str, Any]] = []
         self._failure = ""  # Core's reason for the last failed test
         self._last_mb = 0.0  # data the last test moved, completed or failed
-        self._pending: list[CALLBACK_TYPE] = []  # automated M-Lab runs waiting to start
+        self._pending: dict[int, CALLBACK_TYPE] = {}  # automated M-Lab runs waiting, by id(run)
         self._nightly: CALLBACK_TYPE | None = None
+        self._unloaded = False  # a test still running at unload must not touch the entry
         entry.async_on_unload(self._cancel_pending)
 
     async def async_load(self) -> None:
@@ -222,7 +230,8 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
 
     def _cancel_pending(self) -> None:
         """Cancel the nightly test and automated runs still waiting (the entry is unloading)."""
-        for cancel in self._pending:
+        self._unloaded = True
+        for cancel in self._pending.values():
             cancel()
         self._pending.clear()
         if self._nightly:
@@ -282,7 +291,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
                 0, SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S
             )  # noqa: S311  # spreading load, not security
             job: QuickCheckJob = HassJob(partial(self._async_run_waiting, run), cancel_on_shutdown=True)
-            self._pending.append(async_call_later(self.hass, delay, job))
+            self._pending[id(run)] = async_call_later(self.hass, delay, job)
             return
         await self._async_test(run)
         if not self.last_update_success:
@@ -296,6 +305,8 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         """Run the test, store the history and result, and add its data to the usage totals and the budget."""
         self._last_mb = 0.0
         await self.async_refresh()
+        if self._unloaded:
+            return  # unloaded mid-test: HA dropped the entry's runtime data
         if self.last_update_success and self.data:
             self.usage.add_speed_test_data(self.data.downloaded_mb, self.data.uploaded_mb)
             self._last_mb = self.data.downloaded_mb + self.data.uploaded_mb
@@ -306,7 +317,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
 
     async def _async_run_waiting(self, run: dict[str, Any], _now: datetime) -> None:
         """Start an automated run whose random wait is over; a failure shows on the sensors."""
-        self._pending = self._pending[1:]
+        self._pending.pop(id(run), None)  # waits are random: runs finish waiting in any order
         await self._async_test(run)
 
     @override

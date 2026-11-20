@@ -16,7 +16,7 @@ import aiohttp
 
 from .. import timing
 from ..speed_test import CLIENT_NAME, CLIENT_VERSION, SpeedTestError, SpeedTestResult, Transfer, now
-from ._http import HEADERS, REQUEST_TIMEOUT
+from ._http import HEADERS, REQUEST_TIMEOUT, check_status
 
 LOCATE_URL = "https://locate.measurementlab.net/v2/nearest/ndt/ndt7"
 PROTOCOL = "net.measurementlab.ndt.v7"
@@ -79,10 +79,12 @@ class Ndt7Backend:
     async def _locate_servers(self, session: aiohttp.ClientSession) -> list[dict[str, Any]]:
         """Candidate servers, nearest first; 204 is M-Lab's rate-limit or no-capacity reply."""
         params = {"client_name": CLIENT_NAME, "client_version": CLIENT_VERSION}
-        async with session.get(self._locate, params=params, headers=HEADERS, timeout=REQUEST_TIMEOUT) as resp:
+        async with session.get(
+            self._locate, params=params, headers=HEADERS, timeout=REQUEST_TIMEOUT, allow_redirects=False
+        ) as resp:
             if resp.status == 204:
                 raise SpeedTestError("M-Lab declined the test: daily limit reached or no capacity; try later")
-            resp.raise_for_status()
+            check_status(resp)
             reply = await resp.json(content_type=None)
         results = [r for r in reply.get("results") or [] if DOWNLOAD_KEY in r.get("urls", {})]
         if not results:

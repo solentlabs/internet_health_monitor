@@ -126,7 +126,8 @@ async def run_speed_test(
         else:
             message = f"{backend} test failed: a request timed out"
         cause = err
-    except (aiohttp.ClientError, OSError, ValueError, KeyError) as err:
+    # ValueError to IndexError: a server's JSON of an unexpected shape, which nothing can trust.
+    except (aiohttp.ClientError, OSError, ValueError, KeyError, TypeError, AttributeError, IndexError) as err:
         message, cause = f"{backend} test failed: {err or type(err).__name__}", err
     # Every failure leaves here, carrying the data the test moved before it failed.
     downloaded_mb, uploaded_mb = transfer.mb()

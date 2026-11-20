@@ -150,8 +150,9 @@ Reviewed 2026-11-19 (ROADMAP Phase 5); `packages/internet_health_monitor_core/te
   command line exists.
 - **Provider-supplied URLs need TLS.** LibreSpeed's server list and
   M-Lab's Locate reply name the hosts a test loads. IHM uses only
-  `https://` and `wss://` URLs from them, with certificate checks, so a
-  tampered list cannot aim test traffic at a device on the LAN.
+  `https://` and `wss://` URLs from them, with certificate checks, and
+  follows no redirects, so a tampered list or a server cannot aim test
+  traffic at a device on the LAN.
 - **Nothing secret is held.** IHM stores no credentials. The public IP
   address is never read or stored; diagnostics hold options, detected
   hops and the last results.

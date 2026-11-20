@@ -231,6 +231,9 @@ class NetworkDiagnosticsConfig:
     dns_timeout: int = DEFAULT_DNS_TIMEOUT
     # Opt-in: send public hop IPs to Team Cymru to learn their owner (ADR-006)
     hop_ownership: bool = False
+    # Off sends nothing for that kind: no pings, traceroutes or hop lookups; no DNS latency query
+    monitor_gateway: bool = True
+    monitor_dns: bool = True
 
 
 class NetworkDiagnostics:
@@ -357,10 +360,11 @@ class NetworkDiagnostics:
             self._trace_target = self._resolve_trace_target()
             self._dns_server_resolved = True
 
-        await self._refresh_path()
+        if self.config.monitor_gateway:
+            await self._refresh_path()
 
         # Look up hop hostnames on first run (or after a cache reset)
-        if self._hop_ips and not self._hostnames_collected:
+        if self.config.monitor_gateway and self._hop_ips and not self._hostnames_collected:
             await self._collect_hostnames()
             self._hostnames_collected = True
 
@@ -368,11 +372,14 @@ class NetworkDiagnostics:
         if not self._host_environment:
             self._host_environment = await self._detect_host_environment()
 
-        # Run checks in parallel
-        gateway_task = self._check_gateway()
-        hops_task = self._check_all_hops() if self._hop_ips else self._empty_hops()
-        self.counts.dns_queries += 1
-        dns_task = self._check_dns()
+        # Run checks in parallel; monitoring switched off sends nothing
+        gateway_task = self._check_gateway() if self.config.monitor_gateway else self._not_monitored_gateway()
+        hops_task = self._check_all_hops() if self.config.monitor_gateway and self._hop_ips else self._empty_hops()
+        if self.config.monitor_dns:
+            self.counts.dns_queries += 1
+            dns_task = self._check_dns()
+        else:
+            dns_task = self._not_monitored_dns()
 
         results = await asyncio.gather(gateway_task, hops_task, dns_task, return_exceptions=True)
 
@@ -455,6 +462,14 @@ class NetworkDiagnostics:
     async def _empty_hops(self) -> list[HopInfo]:
         """Return empty hops list."""
         return []
+
+    async def _not_monitored_gateway(self) -> dict[str, Any]:
+        """Gateway monitoring is off: nothing was sent, so nothing was lost."""
+        return {"reachable": False, "latency_ms": None, "jitter_ms": None, "packets_sent": 0, "packets_received": 0}
+
+    async def _not_monitored_dns(self) -> dict[str, Any]:
+        """DNS monitoring is off: no query was sent."""
+        return {"success": False, "latency_ms": None}
 
     async def _refresh_path(self) -> None:
         """Read the gateway (local and cheap) every poll; trace until all hops are known.

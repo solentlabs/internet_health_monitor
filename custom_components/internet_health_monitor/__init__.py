@@ -94,6 +94,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
         ping_count=options.get(CONF_PING_COUNT, DEFAULT_PING_COUNT),
         dns_server=dns_server_address(options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER)),
         hop_ownership=options.get(CONF_HOP_OWNERSHIP, False),
+        monitor_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
+        monitor_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
     )
 
     try:

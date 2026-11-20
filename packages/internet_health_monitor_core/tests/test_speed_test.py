@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator, Callable
 from typing import Any
@@ -31,6 +32,26 @@ pytestmark = pytest.mark.enable_socket  # loopback only: in-process servers on 1
 LIMIT = 4_000_000  # bytes per direction: keeps every test fast
 BLOCK = b"\0" * 65536
 
+# A server answers a load or probe request with a redirect -> the test fails; the target gets nothing.
+# A server answers with JSON of the wrong shape -> SpeedTestError, as every failure.
+# fmt: off
+MALFORMED_CASES: list[tuple[str, str, Any]] = [
+    ("mlab",       "/locate",      ["not", "an", "object"]),
+    ("mlab",       "/locate",      {"results": [{"urls": []}]}),
+    ("librespeed", "/servers.php", {"not": "a list"}),
+    ("librespeed", "/servers.php", [["not", "an", "object"]]),
+]
+# fmt: on
+
+# fmt: off
+REDIRECT_CASES: list[tuple[str, str]] = [
+    ("cloudflare", "/__down"),               # download stream
+    ("cloudflare", "/__up"),                 # upload stream
+    ("librespeed", "/backend/garbage.php"),  # download stream
+    ("librespeed", "/backend/empty.php"),    # probe and upload
+]
+# fmt: on
+
 
 class Fake:
     """Every provider's endpoints on one loopback server; records what it was sent."""
@@ -39,6 +60,8 @@ class Fake:
         self.user_agents: set[str] = set()
         self.paths: list[str] = []
         self.fail: set[str] = set()  # paths that answer 500
+        self.malformed: dict[str, Any] = {}  # path -> JSON body of the wrong shape
+        self.redirect: set[str] = set()  # paths that answer 302 to /elsewhere (a server pointing load at a LAN device)
         self.locate_status = 200
         self.base = ""
 
@@ -49,6 +72,10 @@ class Fake:
         self.paths.append(request.path)
         if request.path in self.fail:
             raise web.HTTPInternalServerError
+        if request.path in self.redirect:
+            raise web.HTTPFound("/elsewhere")
+        if request.path in self.malformed:
+            return web.json_response(self.malformed[request.path])
         result: web.StreamResponse = await handler(request)
         return result
 
@@ -142,6 +169,7 @@ class Fake:
         app.router.add_get("/locate", self.locate)
         app.router.add_get("/ndt/v7/download", self.ndt_download)
         app.router.add_get("/ndt/v7/upload", self.ndt_upload)
+        app.router.add_route("*", "/elsewhere", self.sink)
         return app
 
 
@@ -385,3 +413,33 @@ async def test_failure_before_connecting_moved_nothing(monkeypatch: pytest.Monke
     with pytest.raises(SpeedTestError) as err:
         await run_speed_test("cloudflare", None)  # type: ignore[arg-type]  # rationale: unused by the stub
     assert (err.value.downloaded_mb, err.value.uploaded_mb) == (0.0, 0.0)
+
+
+@pytest.mark.parametrize("name,path", REDIRECT_CASES, ids=[f"{c[0]} {c[1]}" for c in REDIRECT_CASES])
+async def test_redirects_are_not_followed(
+    fake: Fake, session: aiohttp.ClientSession, monkeypatch: pytest.MonkeyPatch, name: str, path: str
+) -> None:
+    """A redirect is refused, so a server cannot point the test's load at another address.
+
+    Whether the run then fails depends on timing (an upload's window can close before any
+    reply arrives); what must hold is that the redirect target gets nothing.
+    """
+    fake.redirect.add(path)
+    monkeypatch.setattr(speed_test, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
+    with contextlib.suppress(SpeedTestError):
+        await run_speed_test(name, session, data_limit_mb=8)  # type: ignore[arg-type]
+    assert fake.paths.count(path) >= 1  # the redirecting endpoint was used
+    assert "/elsewhere" not in fake.paths
+
+
+@pytest.mark.parametrize(
+    "name,path,body", MALFORMED_CASES, ids=[f"{c[0]} {c[1]} {i}" for i, c in enumerate(MALFORMED_CASES)]
+)
+async def test_malformed_server_data_is_a_speed_test_error(
+    fake: Fake, session: aiohttp.ClientSession, monkeypatch: pytest.MonkeyPatch, name: str, path: str, body: Any
+) -> None:
+    """Whatever shape a server's JSON takes, the test fails with SpeedTestError, never another exception."""
+    fake.malformed[path] = body
+    monkeypatch.setattr(speed_test, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
+    with pytest.raises(SpeedTestError):
+        await run_speed_test(name, session, data_limit_mb=8)  # type: ignore[arg-type]

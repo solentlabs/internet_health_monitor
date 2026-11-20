@@ -190,3 +190,10 @@ async def test_migration(
     loaded = await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert (loaded, entry.options.get("long_term_statistics")) == expected
+
+
+async def test_monitoring_switches_reach_core(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Gateway and DNS monitoring off are passed to Core, which then sends nothing for them."""
+    entry = await setup_entry(**{CONF_ENABLE_GATEWAY_MONITORING: False, CONF_ENABLE_DNS_MONITORING: False})
+    config = entry.runtime_data.diagnostics.config
+    assert (config.monitor_gateway, config.monitor_dns) == (False, False)

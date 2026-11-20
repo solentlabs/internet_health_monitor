@@ -72,14 +72,23 @@ class _Counter:
         setattr(self._transfer, self._direction, getattr(self._transfer, self._direction) + count)
 
 
+def check_status(resp: aiohttp.ClientResponse) -> None:
+    """Refuse an error or a redirect: requests never follow one, so a server cannot point the load elsewhere."""
+    resp.raise_for_status()
+    if resp.status >= 300:
+        raise aiohttp.ClientResponseError(
+            resp.request_info, resp.history, status=resp.status, message="redirect refused"
+        )
+
+
 async def probe(session: aiohttp.ClientSession, server: HttpServer) -> float:
     """One round trip in ms: time to response headers, minus the server's own processing time."""
     loop = asyncio.get_running_loop()
     start = loop.time()
     headers = {**HEADERS, **server.probe_headers}
-    async with session.get(server.probe_url(), headers=headers, timeout=REQUEST_TIMEOUT) as resp:
+    async with session.get(server.probe_url(), headers=headers, timeout=REQUEST_TIMEOUT, allow_redirects=False) as resp:
         elapsed_ms = (loop.time() - start) * 1000
-        resp.raise_for_status()
+        check_status(resp)
         await resp.read()
         return max(0.0, elapsed_ms - server.server_time_ms(resp))
 
@@ -93,8 +102,10 @@ async def _idle_latency(session: aiohttp.ClientSession, server: HttpServer) -> f
 async def _download_stream(session: aiohttp.ClientSession, server: HttpServer, index: int, counter: _Counter) -> None:
     """Fetch large bodies back to back until cancelled."""
     while True:
-        async with session.get(server.download_url(index), headers=HEADERS, timeout=STREAM_TIMEOUT) as resp:
-            resp.raise_for_status()
+        async with session.get(
+            server.download_url(index), headers=HEADERS, timeout=STREAM_TIMEOUT, allow_redirects=False
+        ) as resp:
+            check_status(resp)
             async for chunk in resp.content.iter_chunked(READ_CHUNK):
                 counter.add(len(chunk))
                 if counter.full:
@@ -123,8 +134,9 @@ async def _upload_stream(session: aiohttp.ClientSession, server: HttpServer, ind
             data=_upload_body(counter, server.upload_bytes or UPLOAD_REQUEST_BYTES),
             headers=headers,
             timeout=UPLOAD_TIMEOUT,
+            allow_redirects=False,
         ) as resp:
-            resp.raise_for_status()
+            check_status(resp)
             await resp.read()
 
 

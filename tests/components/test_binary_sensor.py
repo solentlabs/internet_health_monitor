@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock, patch
@@ -172,3 +173,56 @@ async def test_successful_poll_cancels_waiting_check(
         await _advance(hass, 0)
     check.assert_not_called()
     assert _states(hass, entry)[0] == STATE_ON
+
+
+async def test_check_in_flight_at_unload_schedules_nothing(
+    hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """A quick check still running when the entry unloads does not start the next one."""
+    entry = await setup_entry()
+    release = asyncio.Event()
+
+    async def slow_check() -> bool:
+        await release.wait()
+        return False
+
+    check = AsyncMock(side_effect=slow_check)
+    with patch.object(NetworkDiagnostics, "check_gateway", check):
+        poll.return_value = make_result(gateway_reachable=False)
+        await entry.runtime_data.coordinator.async_refresh()
+        freezer.tick(5)
+        async_fire_time_changed(hass)
+        await asyncio.sleep(0)  # the check starts and waits
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        release.set()
+        await hass.async_block_till_done()
+        for _ in range(3):
+            freezer.tick(10)
+            await _advance(hass, 0)
+    assert check.call_count == 1
+
+
+async def test_poll_in_flight_at_unload_schedules_nothing(
+    hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """A poll that fails after the entry unloaded does not start quick checks."""
+    entry = await setup_entry()
+    release = asyncio.Event()
+
+    async def slow_poll() -> Any:
+        await release.wait()
+        return make_result(gateway_reachable=False)
+
+    check = AsyncMock(return_value=False)
+    with patch.object(NetworkDiagnostics, "check_gateway", check):
+        poll.side_effect = slow_poll
+        refresh = hass.async_create_task(entry.runtime_data.coordinator.async_refresh())
+        await asyncio.sleep(0)
+        coordinator = entry.runtime_data.coordinator
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        release.set()
+        await refresh
+        freezer.tick(30)
+        await _advance(hass, 0)
+    check.assert_not_called()
+    assert coordinator._pending == {}  # noqa: SLF001

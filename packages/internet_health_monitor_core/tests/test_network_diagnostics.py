@@ -37,6 +37,18 @@ REDETECT_CASES: list[tuple[str, dict, dict, float, int, str | None]] = [
 ]
 # fmt: on
 
+
+# Monitoring switched off sends nothing for it (README.md § Configuration).
+# fmt: off
+MONITOR_OFF_CASES: list[tuple[str, dict[str, bool], tuple[int, int, int]]] = [
+    # (description,   config,                      (pings, traceroutes, DNS queries) in one poll)
+    ("both on",       {},                          (8, 1, 4)),  # 3 hop hostname lookups + 1 latency query
+    ("gateway off",   {"monitor_gateway": False},  (0, 0, 1)),
+    ("dns off",       {"monitor_dns": False},      (8, 1, 3)),  # hostnames belong to hop monitoring
+    ("both off",      {"monitor_gateway": False, "monitor_dns": False}, (0, 0, 0)),
+]
+# fmt: on
+
 JITTER_CASES = [
     ("steady", [5.0, 5.0, 5.0], 0.0),
     ("one swing", [1.0, 3.0, 2.0], 1.5),
@@ -714,3 +726,19 @@ async def test_redetects_without_reset(
         result = await diag.run_diagnostics()
     assert platform.trace_calls == traces  # type: ignore[attr-defined]
     assert result.gateway_ip == gateway
+
+
+@pytest.mark.parametrize(("description", "config", "sent"), MONITOR_OFF_CASES, ids=[c[0] for c in MONITOR_OFF_CASES])
+async def test_monitoring_off_sends_nothing(
+    description: str, config: dict[str, bool], sent: tuple[int, int, int]
+) -> None:
+    """Gateway monitoring off sends no pings or traceroutes; DNS monitoring off sends no DNS query."""
+    diag = _diag()
+    for key, value in config.items():
+        setattr(diag.config, key, value)
+    platform = diag._platform
+    result = await diag.run_diagnostics()
+    assert (platform.ping_calls, platform.trace_calls, diag.counts.dns_queries) == sent  # type: ignore[attr-defined]
+    assert diag._check_dns.await_count == int(diag.config.monitor_dns)  # type: ignore[attr-defined]
+    if not diag.config.monitor_gateway:
+        assert (result.gateway_reachable, result.hops, result.packet_loss_percent) == (False, [], None)
