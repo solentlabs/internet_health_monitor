@@ -94,3 +94,10 @@ async def setup_entry(hass: HomeAssistant) -> AsyncIterator[SetupEntry]:
 def entity_id(hass: HomeAssistant, platform: str, entry: MockConfigEntry, key: str) -> str | None:
     """Entity id registered for an entity key, or None if not created."""
     return er.async_get(hass).async_get_entity_id(platform, DOMAIN, f"{entry.entry_id}_{key}")
+
+
+async def set_options(hass: HomeAssistant, entry: MockConfigEntry, options: dict[str, Any]) -> None:
+    """Save options and reload, as the options flow does (OptionsFlowWithReload)."""
+    hass.config_entries.async_update_entry(entry, options=options)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()

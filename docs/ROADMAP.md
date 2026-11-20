@@ -83,7 +83,8 @@ Monitor is the reference for how each is done.
 ### Phase 2: Multi-Hop & Polish
 
 - [x] Multi-hop: hops 1 to 3, each with latency, jitter and loss sensors;
-      hop IPs cached and re-detected on reset
+      hop IPs cached; re-traced when the gateway changes and every 10
+      minutes while hops are missing
 - [x] Config toggles (gateway, DNS)
 - [x] Binary sensors (gateway reachable, internet reachable)
 - [x] Solent Labs branding in device info and integration icon

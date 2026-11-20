@@ -135,7 +135,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
     _show_hidden_usage_sensors(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _remove_stale_entities(hass, entry)
-    entry.async_on_unload(entry.add_update_listener(_async_reload_on_options_change))
     return True
 
 
@@ -214,11 +213,6 @@ async def async_remove_entry(hass: HomeAssistant, entry: InternetHealthConfigEnt
 def dns_server_address(choice: str) -> str:
     """The server for a DNS choice; a stored address (older entries) passes through."""
     return DNS_SERVERS.get(choice, choice)
-
-
-async def _async_reload_on_options_change(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:
-    """Apply changed options by reloading the entry."""
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:

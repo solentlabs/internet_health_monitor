@@ -61,7 +61,7 @@ scheduling. It contains no measurement logic.
 
 | File | Role |
 | ------ | ------ |
-| `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`; reloads when options change. |
+| `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`. The options flow and Reconfigure reload the entry. |
 | `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test when the button is pressed and, if the nightly test is on, once a night; enforces the data limit, daily limit, 30-day data budget and M-Lab's automated-client rules; and stores each run's time and data and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
 | `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
 | `config_flow.py` | Setup and options, two screens: `build_schema` (gateway and DNS monitoring, DNS server, pings per target 1 to 10, hop ownership, usage totals, speed test service), then, with a service chosen, `build_speed_test_schema` (nightly test, data limit, daily test limit, data budget, with the nightly test's 30-day cost shown); an M-Lab consent step. One entry per HA. |

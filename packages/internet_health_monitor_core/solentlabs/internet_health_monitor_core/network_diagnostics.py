@@ -19,6 +19,7 @@ import logging
 import socket
 import time
 from dataclasses import dataclass, field
+from time import monotonic
 from typing import Any
 
 from . import dns_probe
@@ -30,6 +31,7 @@ from .timing import (
     DEFAULT_PING_COUNT,
     DEFAULT_PING_TIMEOUT,
     REVERSE_DNS_TIMEOUT_S,
+    TRACE_RETRY_S,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -269,13 +271,12 @@ class NetworkDiagnostics:
         if ping_count is not None:
             self.config.ping_count = ping_count
 
-        # Cached gateway
+        # Gateway: read every poll, so a router that comes up late or changes is noticed
         self._gateway_ip: str | None = None
-        self._gateway_detection_failed = False
 
-        # Cached hop info (hop_number -> ip)
+        # Hop info (hop_number -> ip); traced again every TRACE_RETRY_S while incomplete
         self._hop_ips: dict[int, str] = {}
-        self._hop_detection_failed = False
+        self._last_trace: float | None = None  # monotonic time of the last traceroute
 
         # Cached reverse DNS names (hop_number -> hostname)
         self._hop_hostnames: dict[int, str] = {}
@@ -356,13 +357,7 @@ class NetworkDiagnostics:
             self._trace_target = self._resolve_trace_target()
             self._dns_server_resolved = True
 
-        # Detect gateway if not cached
-        if not self._gateway_ip and not self._gateway_detection_failed:
-            self._gateway_ip = await self._detect_gateway()
-
-        # Detect 3 hops if not cached
-        if self._gateway_ip and not self._hop_ips and not self._hop_detection_failed:
-            self._hop_ips = await self._detect_hops()
+        await self._refresh_path()
 
         # Look up hop hostnames on first run (or after a cache reset)
         if self._hop_ips and not self._hostnames_collected:
@@ -461,17 +456,33 @@ class NetworkDiagnostics:
         """Return empty hops list."""
         return []
 
-    async def _detect_gateway(self) -> str | None:
-        """Detect the default gateway; a failure is cached until the next reset."""
+    async def _refresh_path(self) -> None:
+        """Read the gateway (local and cheap) every poll; trace until all hops are known.
+
+        A new gateway means a new path, so its hops are traced again. Missing hops
+        are retried every TRACE_RETRY_S: after a power cut the host often boots
+        before the router or modem is ready.
+        """
         gateway = await self._platform.default_gateway()
-        if not gateway:
-            self._gateway_detection_failed = True
-        return gateway
+        if gateway != self._gateway_ip:
+            _LOGGER.info("Gateway is now %s (was %s)", gateway, self._gateway_ip)
+            self._gateway_ip = gateway
+            self.reset_hops()
+        if self._gateway_ip and len(self._hop_ips) < NUM_HOPS and self._trace_due():
+            hops = await self._detect_hops()
+            if hops != self._hop_ips:
+                self._hop_ips = hops
+                self._hop_hostnames, self._hop_owners, self._hostnames_collected = {}, {}, False
+
+    def _trace_due(self) -> bool:
+        """No trace yet for this gateway, or TRACE_RETRY_S since the last one."""
+        return self._last_trace is None or monotonic() - self._last_trace >= TRACE_RETRY_S
 
     async def _detect_hops(self) -> dict[int, str]:
-        """Trace hops 1 to NUM_HOPS toward the trace target; a failure is cached until reset."""
+        """Trace hops 1 to NUM_HOPS toward the trace target."""
         trace_target = self._trace_target or DEFAULT_TRACE_TARGET
         self.counts.traceroutes += 1
+        self._last_trace = monotonic()
         hops = await self._platform.trace(trace_target, NUM_HOPS)
         if hops:
             _LOGGER.info(
@@ -481,8 +492,7 @@ class NetworkDiagnostics:
                 ", ".join(f"hop{k}={v}" for k, v in sorted(hops.items())),
             )
         else:
-            _LOGGER.warning("No hops detected toward %s", trace_target)
-            self._hop_detection_failed = True
+            _LOGGER.warning("No hops detected toward %s; retrying in %d s", trace_target, TRACE_RETRY_S)
         return hops
 
     async def _check_all_hops(self) -> list[HopInfo]:
@@ -642,7 +652,6 @@ class NetworkDiagnostics:
         Call this if you suspect the network configuration has changed.
         """
         self._gateway_ip = None
-        self._gateway_detection_failed = False
 
     def reset_hops(self) -> None:
         """Reset cached hop information to force re-detection.
@@ -650,14 +659,14 @@ class NetworkDiagnostics:
         Call this if you suspect the network configuration has changed.
         """
         self._hop_ips = {}
-        self._hop_detection_failed = False
+        self._last_trace = None
 
     def detection_state(self) -> dict[str, Any]:
         """What has been detected and cached, for troubleshooting output."""
         return {
             "platform": self._platform.name,
-            "gateway_detection_failed": self._gateway_detection_failed,
-            "hop_detection_failed": self._hop_detection_failed,
+            "gateway_detected": self._gateway_ip is not None,
+            "hops_detected": len(self._hop_ips),
             "hostnames_collected": self._hostnames_collected,
             "trace_target": self._trace_target,
         }
@@ -670,13 +679,11 @@ class NetworkDiagnostics:
         self._host_environment = None
 
     def reset_all(self) -> None:
-        """Reset all cached network information.
-
-        Clears gateway, hops and hostnames.
-        """
+        """Forget the gateway, hops, hostnames and DNS server, so the next poll detects all of them."""
         self.reset_gateway()
         self.reset_hops()
         self.reset_hostnames()
+        self._dns_server_resolved = False
 
     # =========================================================================
     # Hop Hostnames

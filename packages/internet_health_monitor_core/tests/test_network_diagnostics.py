@@ -20,13 +20,30 @@ from solentlabs.internet_health_monitor_core.platforms.base import HostEnvironme
 # Round-trip times in sending order -> jitter: mean |difference| of consecutive
 # samples (RFC 3550 consecutive form, Cloudflare's speed test; ADR-009).
 # fmt: off
+
+# Re-detection without a reset (a router or modem that came up after the host, a new router).
+# First poll on one platform, then the platform changes and a later poll runs.
+# fmt: off
+ALL_HOPS = {1: "192.168.1.1", 2: "10.0.0.1", 3: "198.51.100.1"}
+REDETECT_CASES: list[tuple[str, dict, dict, float, int, str | None]] = [
+    # (description,               first poll,                  then,                         s later, traces, gateway)
+    ("gateway appears later",     {"gateway": None},           {"gateway": "192.168.1.1"},   60,   1, "192.168.1.1"),
+    ("gateway changes",           {},                          {"gateway": "192.168.0.1"},   60,   2, "192.168.0.1"),
+    ("gateway gone",              {},                          {"gateway": None},            60,   1, None),
+    ("hops incomplete, too soon", {"hops": {1: "192.168.1.1"}}, {"hops": ALL_HOPS},          60,   1, "192.168.1.1"),
+    ("hops incomplete, retried",  {"hops": {1: "192.168.1.1"}}, {"hops": ALL_HOPS},          600,  2, "192.168.1.1"),
+    ("no hops, retried",          {"hops": {}},                {"hops": ALL_HOPS},           600,  2, "192.168.1.1"),
+    ("complete hops kept",        {},                          {},                           3600, 1, "192.168.1.1"),
+]
+# fmt: on
+
 JITTER_CASES = [
-    ("steady",            [5.0, 5.0, 5.0],       0.0),
-    ("one swing",         [1.0, 3.0, 2.0],       1.5),
-    ("order matters",     [1.0, 2.0, 3.0],       1.0),  # same values, spread smaller than the swing above
-    ("two samples",       [10.0, 14.0],          4.0),
-    ("one sample",        [10.0],                None),
-    ("no replies",        [],                    None),
+    ("steady", [5.0, 5.0, 5.0], 0.0),
+    ("one swing", [1.0, 3.0, 2.0], 1.5),
+    ("order matters", [1.0, 2.0, 3.0], 1.0),  # same values, spread smaller than the swing above
+    ("two samples", [10.0, 14.0], 4.0),
+    ("one sample", [10.0], None),
+    ("no replies", [], None),
 ]
 # fmt: on
 
@@ -107,11 +124,9 @@ class TestNetworkDiagnostics:
         """Test resetting cached gateway."""
         diag = NetworkDiagnostics()
         diag._gateway_ip = "192.168.1.1"
-        diag._gateway_detection_failed = True
 
         diag.reset_gateway()
         assert diag._gateway_ip is None
-        assert diag._gateway_detection_failed is False
 
     def test_reset_all(self):
         """Test resetting all cached data."""
@@ -613,7 +628,7 @@ async def test_detection_state_reports_cache() -> None:
     await diag.run_diagnostics()
     state = diag.detection_state()
     assert state["platform"] == "fake"
-    assert state["hop_detection_failed"] is False
+    assert (state["gateway_detected"], state["hops_detected"]) == (True, 3)
     assert state["trace_target"] == "8.8.8.8"
 
 
@@ -679,3 +694,23 @@ async def test_quick_internet_check() -> None:
     diag._check_dns = AsyncMock(return_value={"success": False, "latency_ms": None})  # type: ignore[method-assign]
     assert await diag.check_internet() is False
     assert diag.counts.dns_queries - before == 2
+
+
+@pytest.mark.parametrize(
+    ("description", "first", "then", "later", "traces", "gateway"), REDETECT_CASES, ids=[c[0] for c in REDETECT_CASES]
+)
+async def test_redetects_without_reset(
+    description: str, first: dict, then: dict, later: float, traces: int, gateway: str | None
+) -> None:
+    """The gateway is read every poll and a changed one re-traces; missing hops are re-traced every TRACE_RETRY_S."""
+    diag = _diag(**first)
+    platform = diag._platform
+    clock = "solentlabs.internet_health_monitor_core.network_diagnostics.monotonic"
+    with patch(clock, return_value=1000.0):
+        await diag.run_diagnostics()
+    for key, value in then.items():
+        setattr(platform, key, value)
+    with patch(clock, return_value=1000.0 + later):
+        result = await diag.run_diagnostics()
+    assert platform.trace_calls == traces  # type: ignore[attr-defined]
+    assert result.gateway_ip == gateway

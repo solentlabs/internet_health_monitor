@@ -170,7 +170,7 @@ recorder:
 | Sensor | Unit | Counts |
 | -------- | ------ | -------- |
 | Pings sent | | Every ping to the gateway and hops |
-| Traceroutes run | | Each hop detection (first poll, and after a cache reset) |
+| Traceroutes run | | Each hop detection: at start, when the gateway changes, every 10 minutes while hops are missing, and after a cache reset |
 | DNS queries sent | | Latency probes, reverse lookups of hops, and hop ownership queries |
 | Speed tests run | | Every speed test started, failed ones included |
 | Speed test data downloaded, uploaded | MB | Data moved by every speed test, including data a failed test moved before it stopped |
@@ -192,7 +192,7 @@ everything answers, nothing extra runs between polls.
 | Button | Description |
 | -------- | ------------- |
 | Refresh diagnostics | Poll now instead of waiting for the next poll |
-| Reset network cache | Forget the detected gateway, hops and hostnames and detect them again. Disabled by default; enable it when troubleshooting |
+| Reset network cache | Forget the detected gateway, hops, hostnames and DNS server and detect them again. IHM re-detects on its own when the gateway changes or hops are missing; this forces it. Disabled by default |
 | Run speed test | Run one speed test now. With a speed test service only |
 
 ## Speed Testing
@@ -400,13 +400,14 @@ then reload the integration. HA OS and the official container include them.
 - Home Assistant runs in Docker Desktop (Windows or macOS): it hides the
   hops past its own bridge. Run HA on the real network (HA OS, a bridged VM,
   or Docker with host networking on Linux).
-- Some routers do not answer traceroute. Press Reset network cache (enable it
-  first) to detect the hops again.
+- Some routers do not answer traceroute. While hops are missing, IHM traces
+  again every 10 minutes, so hops that start answering appear on their own.
 
 ### Gateway reachable is off, or no gateway is detected
 
-IHM uses the host's default route. Check that the host has one
-(`ip route show default`), then press Reset network cache.
+IHM reads the host's default route every poll, so a router that comes up
+after Home Assistant, or a new one, is found within a minute. Check that the
+host has one (`ip route show default`).
 
 ## Quality Scale
 

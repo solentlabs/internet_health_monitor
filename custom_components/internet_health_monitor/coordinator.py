@@ -196,15 +196,19 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         if self.automatic:
             self._schedule_nightly()
 
-    def _schedule_nightly(self) -> None:
-        """Schedule the next nightly test."""
-        when = next_nightly_test(dt_util.utcnow())
+    def _schedule_nightly(self, *, after_tonight: bool = False) -> None:
+        """Schedule the next nightly test; after tonight's, from the end of tonight's window (one a night)."""
+        now = dt_util.utcnow()
+        if after_tonight:
+            start = dt_util.start_of_local_day(dt_util.as_local(now))
+            now = start + timedelta(hours=SPEED_TEST_AUTO_START_HOUR, seconds=SPEED_TEST_AUTO_WINDOW_S)
+        when = next_nightly_test(now)
         job: QuickCheckJob = HassJob(self._async_run_nightly, cancel_on_shutdown=True)
         self._nightly = async_track_point_in_utc_time(self.hass, job, dt_util.as_utc(when))
 
     async def _async_run_nightly(self, _now: datetime) -> None:
         """Run the nightly test unless a limit refuses it; a refusal is logged, a failure shows on the sensors."""
-        self._schedule_nightly()
+        self._schedule_nightly(after_tonight=True)
         try:
             run = self._accept(dt_util.utcnow().timestamp(), automated=True)
         except ServiceValidationError as err:

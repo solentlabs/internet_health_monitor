@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import time
 from dataclasses import asdict, dataclass, fields
+from time import monotonic
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -59,7 +59,7 @@ class UsageTracker:
         self.totals.dns_queries = self._base.dns_queries + counts.dns_queries
         # HA's delayed save slides its deadline on every call; a poll calls this every
         # minute, so a sliding delay would never write. Keep one fixed deadline.
-        now = time.monotonic()  # the clock HA's event loop and Store use
+        now = monotonic()  # the clock HA's event loop and Store use
         if now >= self._save_at:
             self._save_at = now + USAGE_SAVE_DELAY_S
         self._store.async_delay_save(self.totals.to_dict, self._save_at - now)

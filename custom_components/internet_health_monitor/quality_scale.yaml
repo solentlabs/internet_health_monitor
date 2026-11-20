@@ -72,7 +72,7 @@ rules:
     comment: Buttons raise HomeAssistantError (refresh_failed, speed_test_failed) when the poll or test they trigger fails, and ServiceValidationError (daily_limit_reached, mlab_automated_limit) when a speed test is refused (button.py, coordinator.py); generate_dashboard_card raises ServiceValidationError (not_set_up, nothing_to_show; dashboard.py).
   config-entry-unloading:
     status: done
-    comment: async_unload_entry unloads platforms and pops hass.data; update listener uses entry.async_on_unload (__init__.py).
+    comment: async_unload_entry saves the usage totals and unloads platforms; timers are cancelled through entry.async_on_unload (__init__.py, coordinator.py). The options flow reloads the entry (OptionsFlowWithReload).
   docs-configuration-parameters:
     status: done
     comment: README.md Configuration and Hop Ownership cover every options-flow field (same fields as setup).

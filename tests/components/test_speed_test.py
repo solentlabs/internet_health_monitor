@@ -32,7 +32,7 @@ from custom_components.internet_health_monitor.coordinator import STORAGE_KEY, n
 from custom_components.internet_health_monitor.diagnostics import async_get_config_entry_diagnostics
 from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
 
-from .conftest import SetupEntry, entity_id
+from .conftest import SetupEntry, entity_id, set_options
 
 RESULT = SpeedTestResult(
     backend="cloudflare",
@@ -267,8 +267,7 @@ async def test_turning_speed_tests_off_removes_entities(
     """Choosing Off removes the speed test entities (stale-entity cleanup)."""
     entry = await setup_entry(**CLOUDFLARE)
     assert entity_id(hass, "button", entry, "run_speed_test")
-    hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_SPEED_TEST_BACKEND: "none"})
-    await hass.async_block_till_done()
+    await set_options(hass, entry, {**entry.options, CONF_SPEED_TEST_BACKEND: "none"})
     assert entity_id(hass, "button", entry, "run_speed_test") is None
     assert entity_id(hass, "sensor", entry, "speed_test_download") is None
 
@@ -407,6 +406,21 @@ async def test_nightly_test_runs_once_a_night(
             await hass.async_block_till_done()
             assert speed_test.call_count == runs, at
     assert _state(hass, entry, "speed_test_download") == "245.6"
+
+
+async def test_nightly_test_runs_once_when_offsets_differ(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """After a night's test, the next is tomorrow, even when the new random time is later tonight."""
+    freezer.move_to(_local("2026-11-19 12:00:00"))
+    # 01:00 for the first night; then 04:00, which is still ahead tonight when the first test runs.
+    with patch(OFFSET, side_effect=[0, 3 * 3600, 3 * 3600, 3 * 3600]):
+        await setup_entry(**NIGHTLY)
+        for at, runs in (("2026-11-20 01:00:01", 1), ("2026-11-20 04:00:01", 1), ("2026-11-21 04:00:01", 2)):
+            freezer.move_to(_local(at))
+            async_fire_time_changed(hass)
+            await hass.async_block_till_done()
+            assert speed_test.call_count == runs, at
 
 
 async def test_nightly_test_counts_as_automated(

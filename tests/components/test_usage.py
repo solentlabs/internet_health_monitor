@@ -21,7 +21,7 @@ from custom_components.internet_health_monitor.usage import STORAGE_KEY, UsageTo
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, ProbeCounts
 from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
 
-from .conftest import SetupEntry, entity_id, make_result
+from .conftest import SetupEntry, entity_id, make_result, set_options
 
 RESULT = SpeedTestResult("cloudflare", "speed.cloudflare.com", 100.0, 20.0, 10.0, 30.0, 40.0, 80.3, 1.0, 50.1, 30.2)
 
@@ -82,15 +82,13 @@ async def test_usage_sensors_follow_the_option(hass: HomeAssistant, setup_entry:
     entry.runtime_data.diagnostics.counts = ProbeCounts(pings=4)
     await entry.runtime_data.coordinator.async_refresh()
 
-    hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_USAGE_TOTALS: True})
-    await hass.async_block_till_done()
+    await set_options(hass, entry, {**entry.options, CONF_USAGE_TOTALS: True})
     entry.runtime_data.diagnostics.counts = ProbeCounts(pings=1)
     await entry.runtime_data.coordinator.async_refresh()
     await hass.async_block_till_done()
     assert _value(hass, entry, "usage_pings") == "5"
 
-    hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_USAGE_TOTALS: False})
-    await hass.async_block_till_done()
+    await set_options(hass, entry, {**entry.options, CONF_USAGE_TOTALS: False})
     assert all(entity_id(hass, "sensor", entry, key) is None for key, _, _ in SENSOR_CASES)
 
 
@@ -228,7 +226,7 @@ async def test_probe_save_deadline_does_not_slide(hass: HomeAssistant, setup_ent
     usage = entry.runtime_data.coordinator.usage
     usage._save_at = 0.0  # noqa: SLF001  # forget setup's deadline, set on the real clock
     with (
-        patch("custom_components.internet_health_monitor.usage.time.monotonic") as clock,
+        patch("custom_components.internet_health_monitor.usage.monotonic") as clock,
         patch.object(usage._store, "async_delay_save") as delay_save,  # noqa: SLF001
     ):
         for minute in range(7):

@@ -90,3 +90,7 @@ USAGE_SAVE_DELAY_S = 300
 REACHABILITY_CONFIRM_CHECKS = 2
 REACHABILITY_CONFIRM_INTERVAL_S = 5.0
 REACHABILITY_DOWN_RECHECK_S = 10.0
+
+# Seconds between traceroutes while fewer than three hops are known. IHM's choice:
+# a modem can take minutes to sync after a power cut, and one trace is a few packets.
+TRACE_RETRY_S = 600

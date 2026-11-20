@@ -22,7 +22,7 @@ from custom_components.internet_health_monitor.const import (
 from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
 from solentlabs.internet_health_monitor_core.platforms.linux import LinuxPlatform
 
-from .conftest import SetupEntry, entity_id
+from .conftest import SetupEntry, entity_id, set_options
 
 # options -> what reaches the core's config
 # fmt: off
@@ -91,9 +91,10 @@ async def test_failed_first_poll_retries(setup_entry: SetupEntry, poll: AsyncMoc
 
 
 async def test_options_change_reloads(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """Saving options rebuilds the core with the new settings."""
+    """Saving the options form reloads the entry, so the core runs with the new settings."""
     entry = await setup_entry()
-    hass.config_entries.async_update_entry(entry, options={CONF_PING_COUNT: 7})
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {CONF_PING_COUNT: 7})
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.diagnostics.config.ping_count == 7
@@ -163,13 +164,11 @@ async def test_entities_no_longer_created_are_removed(
     before = {key: entity_id(hass, platform, entry, key) for platform, key in removed}
     disabled_button = entity_id(hass, "button", entry, "reset_cache")
 
-    hass.config_entries.async_update_entry(entry, options={**entry.options, **changed})
-    await hass.async_block_till_done()
+    await set_options(hass, entry, {**entry.options, **changed})
     assert all(entity_id(hass, platform, entry, key) is None for platform, key in removed), desc
     assert entity_id(hass, "button", entry, "reset_cache") == disabled_button  # disabled by default, still created
 
-    hass.config_entries.async_update_entry(entry, options={})
-    await hass.async_block_till_done()
+    await set_options(hass, entry, {})
     assert {key: entity_id(hass, platform, entry, key) for platform, key in removed} == before
 
 

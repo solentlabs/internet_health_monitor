@@ -138,7 +138,9 @@ def test_ping_count_range(value: int, valid: bool) -> None:
             schema(data)
 
 
-async def test_reconfigure_updates_and_reloads(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+async def test_reconfigure_updates_and_reloads(
+    hass: HomeAssistant, setup_entry: SetupEntry, caplog: pytest.LogCaptureFixture
+) -> None:
     """Reconfigure shows the current settings, saves the new ones and reloads."""
     entry = await setup_entry(**{CONF_PING_COUNT: 2})
     result = await entry.start_reconfigure_flow(hass)
@@ -152,6 +154,8 @@ async def test_reconfigure_updates_and_reloads(hass: HomeAssistant, setup_entry:
     assert result.get("reason") == "reconfigure_successful"
     assert dict(entry.options) == SAVED
     assert entry.runtime_data.diagnostics.config.ping_count == 5
+    # HA 2026.12 stops reloading an entry that also has an update listener; IHM must not rely on one.
+    assert "update listener" not in caplog.text
 
 
 # ┌──────────────────────────┬────────┬──────────────────────────┐

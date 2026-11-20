@@ -6,7 +6,13 @@ from collections.abc import Mapping
 from typing import Any, override
 
 import probatio
-from homeassistant.config_entries import SOURCE_RECONFIGURE, ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     BooleanSelector,
@@ -228,8 +234,8 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
         return InternetHealthOptionsFlow()
 
 
-class InternetHealthOptionsFlow(OptionsFlow):
-    """Change settings; HA supplies self.config_entry (2024.11+)."""
+class InternetHealthOptionsFlow(OptionsFlowWithReload):
+    """Change settings; HA supplies self.config_entry and reloads the entry on save."""
 
     def __init__(self) -> None:
         """Nothing is pending until the first screen is submitted."""
