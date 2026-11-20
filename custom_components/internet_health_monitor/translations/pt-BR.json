@@ -449,7 +449,7 @@
   "services": {
     "generate_dashboard_card": {
       "name": "Gerar cartão de painel",
-      "description": "Retorna o YAML de um cartão de painel com alcançabilidade, latência, jitter e perda de pacotes. O cartão Internet Health em Adicionar cartão mostra o mesmo sem YAML.",
+      "description": "Retorna o YAML de um cartão de painel com alcançabilidade, latência, jitter e perda de pacotes. O cartão Internet Health em Adicionar cartão mostra o mesmo sem YAML. Use-a para sua própria ordem ou layout: cole o YAML em um cartão Manual e mova as seções.",
       "fields": {
         "include_status": {
           "name": "Status da rede",

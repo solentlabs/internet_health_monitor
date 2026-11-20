@@ -362,6 +362,11 @@ the browser: it learns of the card when the page loads.
 | Speed test | on | Each speed test reading and Run speed test; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it); and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
+**Want a different order or layout?** The card's form shows and hides
+parts but keeps their order. To reorder sections or change anything
+else, generate the card as YAML and edit it: see
+[Your Own Order or Layout](#your-own-order-or-layout).
+
 Each measurement has its own row or line; there is no combined score
 ([ADR-004](docs/ARCHITECTURE_DECISIONS.md#adr-004-no-composite-health-sensors)).
 Disabled entities, and those of monitoring you turned off, are left out.
@@ -376,14 +381,30 @@ green, add this to your [theme](https://www.home-assistant.io/integrations/front
 state-binary_sensor-connectivity-on-color: var(--green-color)
 ```
 
-### Generate Dashboard Card Action
+### Your Own Order or Layout
 
-`internet_health_monitor.generate_dashboard_card` returns the same card
-as YAML, for pasting into a dashboard's code editor. It takes the
-options above (`include_status`, `include_hops`, `include_latency`, `include_jitter`,
-`include_packet_loss`, `include_speed_test`, `graph_hours`) and responds with `yaml`. Run it
-from Developer tools > Actions with **Return response** on. It fails
-with a message when IHM is not set up or every part is off.
+The **Generate dashboard card** action gives you the card as YAML, which
+you can rearrange freely:
+
+1. Go to **Developer tools > Actions** and choose **Internet Health
+   Monitor: Generate dashboard card**.
+2. Set the options as you would on the card, then select **Perform
+   action**. The response appears below.
+3. Copy everything under `yaml: |`. Its indentation is fine as it is.
+4. Edit a dashboard, choose **Add card > Manual**, paste, and move the
+   sections into the order you want, or delete, retitle and restyle
+   them. Each section is one HA card, starting at a `- type:` line.
+
+A pasted card is yours: it keeps its layout when IHM updates, so it will
+not pick up new sections or changes from a later release. Generate it
+again after an update to see what changed. The Internet Health card from
+**Add card** always shows the current layout.
+
+The action is `internet_health_monitor.generate_dashboard_card`. It takes
+the options above (`include_status`, `include_hops`, `include_latency`,
+`include_jitter`, `include_packet_loss`, `include_speed_test`,
+`graph_hours`) and responds with `yaml`. It fails with a message when
+IHM is not set up or every part is off.
 
 ## Dashboard Examples
 

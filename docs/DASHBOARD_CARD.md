@@ -92,6 +92,11 @@ hook for a custom integration's card.
 `internet_health_monitor.generate_dashboard_card` takes the options and
 returns `{"yaml": <card>}` (response only), for users who paste YAML
 into a dashboard instead of using the card. Registered in `async_setup`.
+It is also how a user reorders the card's sections: the card's form has
+no reordering, since HA's form selectors cannot reorder a list of
+options and a custom editor was cut (ARCHITECTURE_DECISIONS.md §
+ADR-011). README.md § Your Own Order or Layout gives the steps, and the
+README's card section and the action's description point to them.
 
 ## Card
 

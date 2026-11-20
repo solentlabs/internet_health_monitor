@@ -449,7 +449,7 @@
   "services": {
     "generate_dashboard_card": {
       "name": "生成仪表板卡片",
-      "description": "返回一张显示可达性、延迟、抖动和丢包的仪表板卡片的 YAML。“添加卡片”中的 Internet Health 卡片无需 YAML 即可显示相同内容。",
+      "description": "返回一张显示可达性、延迟、抖动和丢包的仪表板卡片的 YAML。“添加卡片”中的 Internet Health 卡片无需 YAML 即可显示相同内容。 如需自定义顺序或布局：将 YAML 粘贴到“手动”卡片中，再移动各部分。",
       "fields": {
         "include_status": {
           "name": "网络状态",

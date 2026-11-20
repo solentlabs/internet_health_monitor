@@ -449,7 +449,7 @@
   "services": {
     "generate_dashboard_card": {
       "name": "Dashboard-Karte erzeugen",
-      "description": "Gibt das YAML für eine Dashboard-Karte mit Erreichbarkeit, Latenz, Jitter und Paketverlust zurück. Die Karte „Internet Health“ unter „Karte hinzufügen“ zeigt dasselbe ohne YAML.",
+      "description": "Gibt das YAML für eine Dashboard-Karte mit Erreichbarkeit, Latenz, Jitter und Paketverlust zurück. Die Karte „Internet Health“ unter „Karte hinzufügen“ zeigt dasselbe ohne YAML. Nutze sie für eine eigene Reihenfolge oder ein eigenes Layout: Füge das YAML in eine manuelle Karte ein und verschiebe die Abschnitte.",
       "fields": {
         "include_status": {
           "name": "Netzwerkstatus",

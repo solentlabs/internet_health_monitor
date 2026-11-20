@@ -449,7 +449,7 @@
   "services": {
     "generate_dashboard_card": {
       "name": "Generate dashboard card",
-      "description": "Returns the YAML for a dashboard card showing reachability, latency, jitter and packet loss. The Internet Health card in Add card shows the same layout without YAML.",
+      "description": "Returns the YAML for a dashboard card showing reachability, latency, jitter and packet loss. The Internet Health card in Add card shows the same layout without YAML. Use it for your own order or layout: paste the YAML into a Manual card and move the sections.",
       "fields": {
         "include_status": {
           "name": "Network status",

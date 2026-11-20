@@ -449,7 +449,7 @@
   "services": {
     "generate_dashboard_card": {
       "name": "Générer une carte de tableau de bord",
-      "description": "Renvoie le YAML d'une carte de tableau de bord affichant l'accessibilité, la latence, la gigue et la perte de paquets. La carte Internet Health dans Ajouter une carte affiche la même chose sans YAML.",
+      "description": "Renvoie le YAML d'une carte de tableau de bord affichant l'accessibilité, la latence, la gigue et la perte de paquets. La carte Internet Health dans Ajouter une carte affiche la même chose sans YAML. Utilisez-la pour votre propre ordre ou disposition : collez le YAML dans une carte Manuelle et déplacez les sections.",
       "fields": {
         "include_status": {
           "name": "État du réseau",

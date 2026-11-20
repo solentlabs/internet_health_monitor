@@ -449,7 +449,7 @@
   "services": {
     "generate_dashboard_card": {
       "name": "Generar tarjeta de panel",
-      "description": "Devuelve el YAML de una tarjeta de panel con accesibilidad, latencia, jitter y pérdida de paquetes. La tarjeta Internet Health en Añadir tarjeta muestra lo mismo sin YAML.",
+      "description": "Devuelve el YAML de una tarjeta de panel con accesibilidad, latencia, jitter y pérdida de paquetes. La tarjeta Internet Health en Añadir tarjeta muestra lo mismo sin YAML. Úsala para tu propio orden o diseño: pega el YAML en una tarjeta Manual y mueve las secciones.",
       "fields": {
         "include_status": {
           "name": "Estado de la red",

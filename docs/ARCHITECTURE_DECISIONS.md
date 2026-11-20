@@ -17,7 +17,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
 | [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Accepted 2026-11-19 |
 | [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
-| [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19 |
+| [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19; one row added, Open |
 | [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Accepted 2026-11-19 |
 | [013](#adr-013-long-term-statistics-only-where-they-serve-a-use) | Long-term statistics only where they serve a use | Open |
 | [014](#adr-014-ipv4-path-ready-for-ipv6) | IPv4 path, ready for IPv6 | Open |
@@ -453,7 +453,8 @@ rename the entity ids to match (README.md § Renaming).
 
 ## ADR-011: Roadmap features not built
 
-**Status:** Accepted 2026-11-19
+**Status:** Accepted 2026-11-19. The card reordering row was added
+2026-11-20 and awaits the developer's Accept.
 
 **Context:** The ROADMAP listed five "Future Considerations (Post-v1.0)".
 The project does not defer work: each is built or cut with a reason.
@@ -467,6 +468,7 @@ The project does not defer work: each is built or cut with a reason.
 | Interface selection on multi-interface hosts | IHM follows the default route, the path the host's own internet traffic takes. Measuring another interface would report a path HA does not use |
 | SNMP router counters | Reading the router is a different job from measuring the path, and needs a credential; IHM stores none. HA's SNMP integration exposes router counters as entities to combine with IHM's (as ADR-002 does with Cable Modem Monitor) |
 | Solent Aggregator hook | ADR-002: combining happens in HA over entities, and any telemetry is a separate opt-in consumer. IHM owes an aggregator only its stable entity ids and units (ADR-001, ADR-002) |
+| Reordering the dashboard card's sections in its form | HA's select selector has no reorder option (only the entity selector reorders, home-assistant.io/docs/blueprint/selectors, read 2026-11-20 [V]). A custom editor would be the card's first code CI cannot test, against the card's design as a thin layer over HA's own cards (DASHBOARD_CARD.md). `generate_dashboard_card` gives the card as YAML to reorder freely (README.md § Your Own Order or Layout) |
 
 **Constraint:** Building any of these needs a use case in USE_CASES.md
 and a new decision here.
