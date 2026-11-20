@@ -102,10 +102,11 @@ jobs:
         run: |
           python scripts/check_release.py "$GITHUB_REF_NAME" --notes > "$RUNNER_TEMP/notes.md"
           echo "prerelease=$(python scripts/check_release.py "$GITHUB_REF_NAME" --prerelease)" >> "$GITHUB_OUTPUT"
-      - name: Zip the integration, the file hacs.json names
+      - name: Zip the integration, the file hacs.json names, with the MIT notice
         run: |
           cd custom_components/internet_health_monitor
           zip -r "$GITHUB_WORKSPACE/internet_health_monitor.zip" . -x "*__pycache__*"
+          zip -j "$GITHUB_WORKSPACE/internet_health_monitor.zip" "$GITHUB_WORKSPACE/LICENSE"
       - uses: softprops/action-gh-release@v2
         with:
           body_path: ${{ runner.temp }}/notes.md
