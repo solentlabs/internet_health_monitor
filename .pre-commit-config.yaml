@@ -19,6 +19,16 @@ repos:
         args: [--fix]
         files: \.py$
 
+  # Commit message format (Conventional Commits): the rules CI's
+  # commit-lint workflow enforces, from commitlint.config.js, caught at
+  # commit time. Install with: pre-commit install --hook-type commit-msg
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.27.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ["@commitlint/config-conventional"]
+
   # Type checking with mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2

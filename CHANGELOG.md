@@ -7,212 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Overview
 
-- **Long-term statistics option** (off by default): hourly statistics
-  of latency, jitter, packet loss, DNS latency and speed tests, for
-  trends over months. Off, Home Assistant keeps 10 days of history and
-  nothing that is never deleted.
-- **Usage totals** (diagnostic sensors, one option, off by default, no
-  long-term statistics): pings sent,
-  traceroutes run, DNS queries sent, speed tests run, and the MB speed
-  tests downloaded and uploaded (failed tests included), counted since
-  install.
-- **Speed tests (optional, off by default)** with Cloudflare, M-Lab NDT7
-  or LibreSpeed: download, upload, latency at rest and under load each
-  way, and the data used. A nightly test (on by default once a service
-  is chosen, at a random time from 1 to 5 am), the Run speed test
-  button and automations run them; a data limit per test, a daily test
-  limit and an optional data budget per 30 days bound the cost, on
-  their own setup screen. Each option says what the service sees; M-Lab asks for your
-  consent first because it publishes results with your IP address.
-  Fast.com is not offered: Netflix's terms forbid automated access.
-  Also `--speed-test` on the command line.
-- **Connection type and Install type sensors** (diagnostic): Ethernet or
-  Wi-Fi from the default route's interface, and how Home Assistant is
-  installed, as HA reports it.
-- **Dashboard card.** Pick **Internet Health** in Add card and set it up
-  in a form: reachability, each hop's latency, and latency, jitter and
-  packet loss graphs. The `generate_dashboard_card` action returns the
-  same card as YAML.
-- **Reconfigure** in the integration's menu, alongside Configure.
-- **Repair issue when `traceroute` is missing**, saying how to install it;
-  it clears itself once installed.
-- **Known limitations** section in the README.
-
-- **Hop ownership (optional, off by default).** Hop sensors can show the
-  network operator (`asn`, `as_name`) of each public hop, looked up from
-  Team Cymru over DNS. The option says what is sent before you turn it on;
-  private and shared ISP addresses are never sent. Also `--hop-ownership`
-  on the command line.
-
-- **Windows support for Core.** The measurement engine runs on Windows as
-  well as Linux, through Windows' own network functions, so it works in any
-  display language without admin rights. Windows round-trip times are whole
-  milliseconds.
-- **Command line.** `internet-health-monitor` runs one poll and prints the
-  result as JSON; `--interval` keeps polling, one JSON line per poll.
-- **Integration icon.** A sonar ping: a green home node and three arcs for
-  the three hops, with a light-mode and a dark-mode version. Ships in `brand/`, which Home Assistant
-  2026.3 and later shows without a brands-repo submission.
-
-### Changed
-
-- **Reachability reacts faster without extra traffic.** A failed check is
-  confirmed by two quick re-checks before Gateway or Internet reachable
-  turns off, so one lost packet no longer shows a minute-long outage;
-  while off, IHM re-checks every 10 s, so recovery shows within seconds.
-  Nothing extra runs while everything answers (ADR-012).
-- **Dashboard card grouped by hop**, with short row names and DNS latency
-  on its own graph.
-- **Security hardening.** Probes refuse any target that is not an IP
-  address, so no outside text can become a `ping` or `traceroute`
-  option; speed tests use only `https`/`wss` URLs that a provider
-  supplies.
-- **Core no longer guesses the HA install type** from marker files; the
-  `ha_install_type` field is gone from its host environment output. The
-  integration reads HA's own value instead.
-- **Entities follow your options.** Turning gateway or DNS monitoring off
-  now removes those entities instead of leaving them "no longer
-  provided"; turning it back on restores them with the same ids.
-- **Shorter entity ids.** The device is now "Internet Health", so new
-  installs get ids like `sensor.internet_health_hop_2_latency_isp`. Rename
-  the device for your own prefix (README.md § Renaming, ADR-010); existing
-  installs keep their ids.
-
-- **Jitter now means what speed tests mean by it** (ADR-009): the average
-  change between consecutive ping round-trip times within each poll, as in
-  RFC 3550 and Cloudflare's speed test. It was the spread of per-poll
-  averages over 30 minutes, which hid packet-to-packet variation. Each poll
-  now reports its own jitter; no history is kept.
-
-- **Home Assistant 2026.10.0 is now the minimum** (ADR-008). IHM uses
-  probatio, HA's validation library since 2026.9, and is strictly typed
-  with HA core's own type-checking settings. Development and CI run on
-  Python 3.14; Core's command line still supports Python 3.12.
-- **The dev start script keeps the test HA supported.** HA: Start pulls a
-  fresh image when the local one is older than IHM's minimum (read from
-  `hacs.json`), and recreates the container when its image changed.
-- **Spell checking.** `cspell.config.yaml` holds the project dictionary,
-  so VS Code's spell checker shows only real mistakes; `make spell-check`
-  and a CI job keep it at zero. Docs use US spelling throughout.
-- **One way to set up development:** `make setup` and `make setup-current`.
-  The `scripts/setup.py`, `setup.sh` and `setup.ps1` scripts are gone: they
-  duplicated it, and would have installed the wrong Home Assistant for the
-  minimum environment.
-
-- **Built to Home Assistant's quality scale**: Silver and Gold rules met,
-  Bronze except publishing Core to PyPI (README.md § Quality Scale). Setup now
-  stops with a clear error when the host cannot measure (unsupported OS,
-  missing `ip` or `ping`) and retries when the first poll fails. The forms
-  use proper controls with a help line on every field. Entity names, errors
-  and icons are translated. The device shows IHM's version.
-- **The scan interval setting is gone.** IHM polls every 60 seconds, as Home
-  Assistant asks of integrations and in line with comparable monitors
-  (ADR-007); README.md § Polling shows how to poll at another interval with
-  an automation. Every interval and timeout now lives in Core's `timing.py`.
-- **CLI `--interval`** must be at least as long as a poll can take for the
-  chosen `--ping-count`, so polls never overlap.
-- **Reset network cache is disabled by default**, and both buttons are now
-  diagnostic entities. A press whose poll fails now reports an error.
-- **Docs use real entity ids.** The README and dashboard examples named
-  sensors IHM never created; a test now checks every id they use.
-
-- **Core is its own package**, `solentlabs-internet-health-monitor-core`
-  (module `solentlabs.internet_health_monitor_core`), so it can run outside
-  Home Assistant. The integration requires it; HA installs it from PyPI.
-- **No more third-party lookups.** Hop IPs are no longer sent to ip-api.com
-  and the gateway's MAC address is no longer sent to macvendors.com, so the
-  hop ISP, ASN, location and MAC vendor attributes are gone. Hostnames still
-  come from reverse DNS.
-- **Removed the Refresh Network Info button.** Reset Network Cache also
-  re-reads hostnames.
-- **Tests run on the oldest and newest supported Home Assistant.**
-  `make test` uses Python 3.12 (HA 2025.1.x), `make test-current` Python 3.14
-  (newest HA), and CI runs both. Development dependencies are listed only in
-  `requirements-dev.txt`.
-- **Home Assistant 2025.1.0 is now the minimum**, so the options flow can
-  rely on HA providing `config_entry`.
-
-### Fixed
-
-- **The device showed version 0.3.0**; it now matches the manifest (0.1.0),
-  and a test keeps them equal.
-
-- **DNS latency is accurate everywhere.** Core sends its own uncached query
-  to the chosen DNS server instead of running `dig`. Without `dig` (all of
-  Windows, and Linux hosts without it), the old fallback timed the system's
-  own lookup, which could answer from a local cache.
-
-- **Options open on current Home Assistant.** Opening options failed with
-  `AttributeError: property 'config_entry' ... has no setter` because the
-  flow set `config_entry` itself, which HA stopped allowing after 2025.12.
-
-- **Latency is the round-trip time ping reports.** It was the wall-clock
-  time to start and finish the `ping` process, which added process
-  start-up to every reading and could swamp a 1 ms gateway round trip.
-  Both iputils and BusyBox output are read. A reply whose output has no
-  round-trip time still counts as received for packet loss.
-
-## [0.1.0] - 2025-12-XX
+The first release of Internet Health Monitor: latency, jitter and packet
+loss along the path from Home Assistant to the internet (the gateway and
+the next two hops), DNS latency, reachability, and optional speed tests.
+Comparing hops shows where a problem starts, including bufferbloat past
+the router. Requires Home Assistant 2026.10.0 or later on Linux (HA OS,
+Container, Supervised or Core) with `ip` and `ping`; `traceroute` adds
+hops 2 and 3. Core, the measurement engine, is its own package on PyPI
+(`solentlabs-internet-health-monitor-core`) and runs on Linux and Windows
+with Python 3.12 or later.
 
 ### Added
 
-- **Command line.** `internet-health-monitor` runs one poll and prints the
-  result as JSON; `--interval` keeps polling, one JSON line per poll.
-- **Initial Release** - Internet Health Monitor for Home Assistant
-
-#### Sensors
-
-- **Gateway Latency** - Round-trip time to your router/modem (ms)
-- **Gateway Jitter** - Standard deviation of recent latency measurements (ms)
-- **Packet Loss** - Percentage of dropped packets to gateway (%)
-- **ISP Latency** - Round-trip time to ISP's first hop router (ms)
-- **DNS Latency** - Time to resolve DNS queries (ms)
-
-#### Binary Sensors
-
-- **Gateway Reachable** - Connectivity status to local gateway
-- **Internet Reachable** - DNS resolution success indicator
-
-#### Buttons
-
-- **Refresh Diagnostics** - Trigger immediate network check
-- **Reset Network Cache** - Clear cached gateway/ISP hop detection
-
-#### Configuration
-
-- **Zero-config setup** - Auto-detects gateway via `ip route`
-- **Auto DNS detection** - Reads system DNS from `/etc/resolv.conf`
-- **Configurable scan interval** - 10-3600 seconds (default: 60)
-- **Configurable ping count** - 1-10 pings per check (default: 3)
-- **DNS server selection** - Auto, Cloudflare, Google, Quad9, OpenDNS
-
-#### Infrastructure
-
-- **HA Diagnostics** - Download diagnostics for troubleshooting
-- **Multi-language support** - English, German, Spanish, French, Portuguese (BR)
-- **Modern HA patterns** - SensorEntityDescription, CoordinatorEntity
-- **Full test coverage** - Unit and integration tests
-
-#### Technical Details
-
-- **Gateway detection** - Uses `ip route show default` on Linux
-- **ISP hop detection** - Uses `traceroute` to find first external hop
-- **DNS timing** - Uses `dig` for accurate measurement, falls back to socket
-- **Jitter calculation** - Rolling standard deviation of last 30 measurements
-
-### Requirements
-
-- Home Assistant 2024.1.0+
-- Python 3.12+
-- Linux host (for gateway detection)
-- Optional: `traceroute` for ISP latency
-- Optional: `dig` for accurate DNS latency
-
----
-
-**Part of the Solent Labs Network Suite**
-
-- [Cable Modem Monitor](https://github.com/solentlabs/cable_modem_monitor) - Monitor cable modem signal quality
-- [Internet Health Monitor](https://github.com/solentlabs/internet-health-monitor) - Track network latency and health
+- **Path sensors.** Latency, jitter and packet loss for hops 1 to 3, and
+  DNS latency, every 60 seconds. The gateway, hops and system DNS are
+  detected, and detected again when the gateway changes or a hop was
+  missing. Jitter is the average change between consecutive round trips
+  in a poll (RFC 3550, as Cloudflare's speed test measures it).
+- **Gateway reachable and Internet reachable.** A failed check is
+  confirmed by two quick re-checks before either turns off, and while off
+  IHM re-checks every 10 seconds, so recovery shows within seconds.
+  Nothing extra runs while everything answers.
+- **Speed tests (off by default)** with Cloudflare, M-Lab NDT7 or
+  LibreSpeed: download, upload, latency at rest and under load each way,
+  and the data used. A nightly test at a random time from 1 to 5 am, the
+  Run speed test button and automations run them, within a data limit per
+  test, a daily test limit and an optional 30-day data budget. Each
+  option says what the service sees; M-Lab asks for consent first because
+  it publishes results with your IP address.
+- **Hop ownership (off by default):** the network operator of each public
+  hop, from Team Cymru over DNS.
+- **Usage totals:** pings, traceroutes, DNS queries, speed tests and their
+  data, counted since install, always in the diagnostics download and as
+  six optional sensors.
+- **Long-term statistics (off by default)** for latency, jitter, packet
+  loss, DNS latency and speed tests, for trends over months.
+- **Connection type and Install type** diagnostic sensors.
+- **Dashboard card:** pick Internet Health in Add card and set it up in a
+  form; the `generate_dashboard_card` action returns the same card as
+  YAML.
+- **Diagnostics download** with IHM's recent log records; hop hostnames
+  and public IP addresses are redacted.
+- **Repair issue** when `traceroute` is missing, saying how to install it.
+- **Command line:** `internet-health-monitor` prints each poll as a JSON
+  line; `--speed-test` runs one speed test, keeping to M-Lab's limits for
+  automated clients.
+- **Translations:** German, Spanish, French, Brazilian Portuguese and
+  Simplified Chinese, plus English.

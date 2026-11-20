@@ -15,6 +15,11 @@ release and PyPA's publishing guide.
 
 ## Versions
 
+Semantic Versioning, from 0.1.0. Core is a library others can import, so
+its version says when an upgrade breaks something, which a date cannot;
+IHM releases when there is something to ship, not on a calendar as Home
+Assistant does. 0.x until ROADMAP.md's v1.0.0 criteria are met.
+
 One version, in four places that must agree:
 
 - Core's `packages/internet_health_monitor_core/pyproject.toml`
@@ -72,3 +77,49 @@ one workflow file by name, so each entry names `release.yml`
 
 A project that moves publishing into another workflow file must change
 its PyPI publisher in the same step, or its next upload is refused.
+
+## Repository Checks
+
+Workflows ported from Cable Modem Monitor: commit messages
+(`commit-lint.yml`, rules in `commitlint.config.js`), CHANGELOG structure
+and an entry for code changed into `main` (`changelog-check.yml`,
+`scripts/check_changelog.py`), a note to contributors whose commits carry
+a personal email (`check-commit-email.yml`; it names the commit, never the
+address), HACS validation (`validate.yaml`), and the devcontainer build
+(`devcontainer.yml`). Set up once on GitHub:
+
+- [ ] **CodeQL default setup** (Settings, Advanced Security, CodeQL
+      analysis, Set up, Default): GitHub's recommended setup, with no
+      workflow file to keep.
+- [ ] **What HACS checks** (hacs.xyz, "Include default repositories"): a
+      repository description, topics, issues on, and a full GitHub
+      release; `validate.yaml` and `hassfest.yml` pass with no errors or
+      ignores.
+- [ ] **The email check on a throwaway PR** with a `test@example.com`
+      commit: the comment names the commit, and the address appears in
+      neither the comment nor the run log.
+- [ ] **Your own pushes:** GitHub's "Block command line pushes that expose
+      my email" is on.
+
+## Metrics
+
+Collected nightly by leadline-metrics, on the pattern of Cable Modem
+Monitor's. Each entry goes into leadline's config only once its target
+exists, since a missing repo, package or integration fails the nightly
+run; a leadline session adds them.
+
+- [ ] **Push day:** the nightly job's GitHub token covers this repository,
+      with push access (traffic needs it).
+- [ ] **Within 14 days of the push:** a leadline session adds the GitHub
+      entries (traffic, issues, response times, releases, contributor
+      locations; discussions if Discussions is on) and the trends page
+      `internet_health_monitor_trends.html`. GitHub keeps traffic for 14
+      days.
+- [ ] **Push day:** tell a leadline session the repository is pushed, and
+      whether Discussions is on. That starts leadline's 14-day window, and
+      leadline passes it to the operations session, which adds IHM to the
+      morning briefing.
+- [ ] **Release day:** tell a leadline session the version is released.
+- [ ] **After the first PyPI publish:** Core in leadline's `pypi` list.
+- [ ] **After the HACS listing, or a forum thread:** leadline's
+      `ha_integration` and `discourse_topics` entries.

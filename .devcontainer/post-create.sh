@@ -11,7 +11,7 @@ echo "📦 Installing pre-commit..."
 pip install --root-user-action=ignore pre-commit
 
 echo "📦 Installing pre-commit hooks..."
-pre-commit install || true
+pre-commit install --hook-type pre-commit --hook-type commit-msg || true
 
 echo ""
 echo "✅ Dev environment ready!"

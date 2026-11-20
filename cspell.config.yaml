@@ -30,6 +30,10 @@ words:
   - delenv # pytest fixture method
   - LOCALAPPDATA # Windows per-user state directory
   - leadline # Solent Labs metrics project (leadline-metrics)
+  - commitlint # commit message linter (commit-lint.yml)
+  - pipefail # bash option
+  - retarget # GitHub PR base change
+  - upgrader # CHANGELOG narrative section wording
   - clientsession # async_get_clientsession
   - pytestmark
   - pyrightconfig # pyright config file

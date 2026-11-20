@@ -1,0 +1,45 @@
+name: Changelog Verification
+
+on:
+  pull_request:
+    # "edited" covers a base-branch retarget, which changes which steps apply.
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-changelog:
+    name: Changelog Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Reports only on lines this PR touches. Entries published before
+      # these rules existed are read for context, never flagged.
+      - name: Validate CHANGELOG.md structure
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          python scripts/check_changelog.py --base origin/${{ github.base_ref }}
+
+      # A PR into main that changes code ships with a CHANGELOG entry, since
+      # the version's section becomes the release notes (docs/RELEASING.md).
+      - name: Require a CHANGELOG entry for code changes (PRs into main)
+        if: github.base_ref == 'main'
+        run: |
+          changed=$(git diff --name-only origin/main...HEAD)
+          code=$(echo "$changed" | grep -E '^(custom_components|packages)/.*\.py$' | grep -v '/tests/' || true)
+          if [ -n "$code" ] && ! echo "$changed" | grep -qx 'CHANGELOG.md'; then
+            echo "This PR into main changes code but CHANGELOG.md was not updated."
+            echo "Reconcile [Unreleased] before the version bump (docs/RELEASING.md)."
+            exit 1
+          fi
+          echo "CHANGELOG.md entry present, or no code changes."

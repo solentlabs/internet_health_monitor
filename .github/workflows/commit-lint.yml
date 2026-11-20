@@ -1,0 +1,102 @@
+name: Commit Message Validation
+
+# Runs on push as well as pull_request. A bad message caught on push is
+# fixed with `git commit --amend`; the same message caught at PR time can
+# sit six commits deep and need a history rewrite. CI is the gate here,
+# not the local commit-msg hook, which is opt-in and so cannot be relied
+# on across dev environments.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  commitlint:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev @commitlint/cli @commitlint/config-conventional
+
+      # Config lives at repo root in commitlint.config.js — same file
+      # the local pre-commit `commit-msg` hook uses, so CI and local
+      # validate against the same rules.
+
+      - name: Validate commits
+        env:
+          # base_ref is set only on pull_request; on push it is empty, so
+          # fall back to the default branch. Without the fallback the range
+          # would read `origin/` and silently compare against nothing.
+          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+        run: |
+          git fetch origin "$BASE_REF"
+
+          # Every commit in the range is checked, not just the tip. The
+          # output is kept so the failure summary can replay it; pipefail
+          # keeps the tee from masking commitlint's exit code.
+          set -o pipefail
+          npx commitlint --from "origin/$BASE_REF" --to HEAD --verbose 2>&1 | tee commitlint.log
+
+      # Reported through the run summary rather than a PR comment: a fork's
+      # token is read-only, so createComment 403s and the contributor sees a
+      # red check with no explanation of what to change.
+      - name: Explain the expected format
+        if: failure()
+        run: |
+          {
+            echo "## Commit message validation failed"
+            echo ""
+            echo "Every commit on the branch is checked, not just the latest. commitlint reported:"
+            echo ""
+            echo '```'
+            if [ -f commitlint.log ]; then cat commitlint.log; fi
+            echo '```'
+            echo ""
+            echo "Commits follow Conventional Commits:"
+            echo ""
+            echo '```'
+            echo "<type>(<optional scope>): <description>"
+            echo '```'
+            echo ""
+            echo "Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, deps"
+            echo ""
+            echo "Examples:"
+            echo ""
+            echo '```'
+            echo "fix: monitoring off sends nothing"
+            echo "feat(speed-test): nightly test at a random time"
+            echo '```'
+            echo ""
+            echo "If only the latest commit failed: \`git commit --amend\`, then push with \`--force-with-lease\`."
+            echo ""
+            echo "If an earlier commit failed (an AI agent's scaffolding commit, for example), squash the branch to one commit:"
+            echo ""
+            echo '```'
+            echo "git reset --soft HEAD~<n>   # n = commits on the branch"
+            echo 'git commit -m "type(scope): description"'
+            echo "git push --force-with-lease"
+            echo '```'
+            echo ""
+            echo "Fix the commits, not this workflow. The rules are in commitlint.config.js."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Success message
+        if: success()
+        run: |
+          echo "All commit messages are valid."
