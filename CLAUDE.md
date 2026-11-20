@@ -62,8 +62,9 @@ Hard constraints. When in doubt, the principle wins over convenience.
 - **KISS.** The simplest design that meets the use case. No options,
   flags or infrastructure until a use case needs them.
 - **Measure what we observe; don't infer.** Each entity reports one
-  measured value or observed state. No composite scores, confidence
-  scores or multi-signal voting (ADR-004).
+  measured value or observed state, or a grade of one measured value on
+  a published, cited scale. No composite scores, confidence scores or
+  multi-signal voting (ADR-004).
 - **Don't load what we may not load.** Speed test backends follow
   ADR-003's conditions. Never accept a license or terms on the user's
   behalf.

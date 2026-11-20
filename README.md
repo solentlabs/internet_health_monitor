@@ -12,6 +12,8 @@ Part of the **Solent Networks Suite** - tools for comprehensive home network vis
 - **Network path, hop by hop** - Latency, jitter and packet loss for hop 1 (your gateway), hop 2 (usually your ISP's first router) and hop 3, so you can see where a problem starts
 - **DNS latency** - One uncached lookup per poll at the DNS server you choose
 - **Reachability** - Gateway reachable and internet reachable binary sensors
+- **Speed tests you control** (optional) - Cloudflare, M-Lab or LibreSpeed; whole tests spaced to fit your data budget, with the working shown
+- **Bufferbloat** - Graded A+ to F on Waveform's scale from each speed test, and visible between tests as hop 2 rising over a flat gateway
 - **Zero configuration** - Gateway, hops and DNS server are detected automatically
 - **Dashboard card** - Pick Internet Health in Add card; set it up in a form, no YAML
 

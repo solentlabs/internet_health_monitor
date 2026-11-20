@@ -25,7 +25,7 @@ rules:
     comment: "config_flow.py 100%; tests/components/test_config_flow.py runs the flows through HA's flow manager: created entry's unique_id, already_configured abort, options save, defaults, ping range."
   dependency-transparency:
     status: todo
-    comment: "Core is MIT with .github/workflows/release.yml (trusted publishing after CI and a version check against manifest.json; docs/RELEASING.md), but not yet on PyPI: first publish is ROADMAP Path to Release stage 3."
+    comment: "Core is MIT with .github/workflows/release.yml (trusted publishing after CI and a version check against manifest.json; docs/RELEASING.md), but not yet on PyPI: first publish is ROADMAP Path to Release stage 4."
   docs-actions:
     status: done
     comment: README.md Generate Dashboard Card Action; fields and descriptions in services.yaml, strings.json and all translations.

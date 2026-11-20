@@ -7,28 +7,28 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 
 | ADR | Topic | Status |
 | ----- | ------- | -------- |
-| [001](#adr-001-bufferbloat-is-measured-passively-in-ihm) | Bufferbloat is measured passively in IHM | Accepted 2026-11-18; rationale refreshed, Open |
+| [001](#adr-001-bufferbloat-is-measured-passively-in-ihm) | Bufferbloat is measured passively in IHM | Accepted 2026-11-18; rationale refreshed 2026-11-20 |
 | [002](#adr-002-ihm-stays-a-standalone-integration) | IHM stays a standalone integration | Accepted 2026-11-18 |
-| [003](#adr-003-speed-testing-with-user-selected-backends) | Speed testing with user-selected backends | Open |
-| [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18; amendment Open |
+| [003](#adr-003-speed-testing-with-user-selected-backends) | Speed testing with user-selected backends | Accepted 2026-11-20 |
+| [004](#adr-004-no-composite-health-sensors) | No composite health sensors | Accepted 2026-11-18; amended 2026-11-20 |
 | [005](#adr-005-core-runs-anywhere) | Core runs anywhere | Accepted 2026-11-18 |
 | [006](#adr-006-outside-services-only-by-user-choice) | Outside services only by user choice | Accepted 2026-11-19 |
 | [007](#adr-007-fixed-60-second-polling) | Fixed 60-second polling | Accepted 2026-11-19 |
 | [008](#adr-008-minimum-home-assistant-202610) | Minimum Home Assistant 2026.10 | Accepted 2026-11-19 |
 | [009](#adr-009-jitter-is-consecutive-delay-variation) | Jitter is consecutive delay variation | Accepted 2026-11-19 |
 | [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
-| [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19; one row added, Open |
+| [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19; row added 2026-11-20 |
 | [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Accepted 2026-11-19 |
-| [013](#adr-013-long-term-statistics-only-where-they-serve-a-use) | Long-term statistics only where they serve a use | Open |
-| [014](#adr-014-ipv4-path-ready-for-ipv6) | IPv4 path, ready for IPv6 | Open |
+| [013](#adr-013-long-term-statistics-only-where-they-serve-a-use) | Long-term statistics only where they serve a use | Accepted 2026-11-20 |
+| [014](#adr-014-ipv4-path-ready-for-ipv6) | IPv4 path, ready for IPv6 | Accepted 2026-11-20 |
 
 ---
 
 ## ADR-001: Bufferbloat is measured passively in IHM
 
-**Status:** Accepted 2026-11-18. The rationale below was refreshed on
+**Status:** Accepted 2026-11-18. Rationale refreshed and accepted
 2026-11-20, once ADR-003's active tests graded bufferbloat; the decision
-and constraints are unchanged. The refresh awaits the developer's Accept.
+and constraints are unchanged.
 
 **Context:** A separate Solent Labs project, BufferBloat, was designed
 (never built or committed) as an active latency-under-load test
@@ -118,7 +118,7 @@ REFERENCES.md):
 
 ## ADR-003: Speed testing with user-selected backends
 
-**Status:** Open. Rewritten to state the current decision; awaiting the developer's Accept.
+**Status:** Accepted 2026-11-20
 
 **Question:** Offer active speed tests, given hass-speedtest-ookla (R8)
 already ships throughput, loaded latency and a bloat grade?
@@ -221,8 +221,7 @@ already ships throughput, loaded latency and a bloat grade?
 state, or a grade under the amendment below. `gateway_reachable` and
 `internet_reachable` stay: each reports one directly observed state.
 
-**Amendment: grades on a published scale** (Open, 2026-11-20; awaits
-the developer's Accept). A grade that reads one measured quantity
+**Amendment: grades on a published scale** (accepted 2026-11-20). A grade that reads one measured quantity
 against a published, cited scale is a reading, not a composite: it
 hides no signal and invents no cutoff. Allowed when:
 
@@ -359,8 +358,10 @@ the interval and users do not get a field for it, in setup or options
 - A regular poll's worst case (`steady_poll_bound_s`) must stay under
   `POLL_INTERVAL_S` at the maximum ping count; a test enforces it. The CLI
   refuses an `--interval` shorter than that bound for the chosen ping count.
-- Passive bufferbloat (ADR-001) needs about one probe per second, which no
-  poll interval provides; it gets its own cadence when it is built.
+- Passive bufferbloat (ADR-001) reads the 60 s poll. Whether that catches
+  short bloat spikes is ADR-001's verification item 2, settled by the
+  field check (ROADMAP § Phase 5, Local testing); a faster probe would
+  need that evidence and a new decision (ADR-012's constraint).
 
 ---
 
@@ -393,7 +394,8 @@ directly, as HA core does (R17).
   `make setup-current` and the "newest" job install the newest HA the test
   harness supports. Both run Python 3.14 and HA core's mypy settings
   (`pyproject.toml [tool.mypy]`).
-- Core alone still supports Python 3.12 (its CLI); a CI job tests it there.
+- Core alone still supports Python 3.12 (its CLI); a CI job tests it there,
+  on Linux and on Windows (ADR-005).
 - Raising the floor again needs a reason recorded here.
 
 ---
@@ -453,8 +455,8 @@ rename the entity ids to match (README.md § Renaming).
 
 ## ADR-011: Roadmap features not built
 
-**Status:** Accepted 2026-11-19. The card reordering row was added
-2026-11-20 and awaits the developer's Accept.
+**Status:** Accepted 2026-11-19. The card reordering row was added and
+accepted 2026-11-20.
 
 **Context:** The ROADMAP listed five "Future Considerations (Post-v1.0)".
 The project does not defer work: each is built or cut with a reason.
@@ -506,14 +508,14 @@ totals. During an outage the internet check costs one DNS query every
 10 s.
 
 **Constraint:** Nothing is added to the healthy path; a faster constant
-cadence needs a new decision (ADR-001's passive bufferbloat probe would
-be one).
+cadence, such as a passive bufferbloat probe (ADR-007), needs a new
+decision.
 
 ---
 
 ## ADR-013: Long-term statistics only where they serve a use
 
-**Status:** Open.
+**Status:** Accepted 2026-11-20
 
 **Context:** Home Assistant keeps two kinds of history (R23). State
 history records every change of every sensor and is purged after 10
@@ -532,7 +534,8 @@ keep a sensor's state out of state history, which only the user's
 - **Measurement sensors carry one only by user choice.** A *Long-term
   statistics* option, off by default, sets `state_class: measurement` on
   hop latency, jitter and packet loss, DNS latency and the speed test
-  readings. A before-and-after trend over months (UC-6) needs it; the
+  readings. The bufferbloat grade, a letter, has none: HA keeps no
+  statistics for text states. A before-and-after trend over months (UC-6) needs it; the
   10 days of state history serves the rest, and the card's graphs (at
   most 168 hours) never need it.
 
@@ -550,7 +553,7 @@ decision here.
 
 ## ADR-014: IPv4 path, ready for IPv6
 
-**Status:** Open.
+**Status:** Accepted 2026-11-20
 
 **Context:** IHM measures the IPv4 path (ADR-011). Hosts with IPv6 can
 still hand it an IPv6 address: `/etc/resolv.conf` may name an IPv6

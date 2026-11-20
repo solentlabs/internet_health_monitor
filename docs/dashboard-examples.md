@@ -272,7 +272,8 @@ cards:
 ## Build Your Own Health Check
 
 IHM reports each measurement separately and does not combine them into
-a score
+a score (its bufferbloat grade reads one measurement on Waveform's
+published scale)
 ([ARCHITECTURE_DECISIONS.md § ADR-004](ARCHITECTURE_DECISIONS.md#adr-004-no-composite-health-sensors)).
 If you want one on/off "healthy" signal, define it with your own
 thresholds as a template binary sensor in `configuration.yaml`. The

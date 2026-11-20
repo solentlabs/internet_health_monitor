@@ -58,13 +58,16 @@ Monitor is the reference for how each is done.
    coverage gates, icon, configuration UX, names changed by renaming the
    device (ADR-010), sensor history (long-term statistics by choice,
    ADR-013), metrics.
-2. **GitHub.** Push to `solentlabs/internet-health-monitor` with CI.
-3. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
-   version `manifest.json` pins (ADR-005). HA installs it from there.
-4. **Live HA.** Update the deployed HA to at least IHM's minimum (ADR-008),
-   then install from GitHub and
-   verify on a real network path (hops 2 and 3 cannot be seen from
-   Docker Desktop: ARCHITECTURE.md).
+2. **GitHub.** Push to `solentlabs/internet-health-monitor`, public,
+   with CI and branch protection.
+3. **Live HA.** Update the deployed HA to at least IHM's minimum
+   (ADR-008), then install IHM with Core fetched from a pushed commit
+   (docs/RELEASING.md § Testing Before the First Release) and verify on a
+   real network path (hops 2 and 3 cannot be seen from Docker Desktop:
+   ARCHITECTURE.md).
+4. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
+   version `manifest.json` pins (ADR-005), with the GitHub release.
+   From here HA installs Core from PyPI.
 5. **Publish.** Release zip installs, then HACS submission.
 
 ---
@@ -141,7 +144,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
   - [x] Troubleshooting guide (README.md § Troubleshooting)
 - [ ] Local testing
   - [x] Run on dev laptop (Docker HA harness, `make test-all`)
-  - [ ] Deploy to a real HA instance (Path to Release stage 4)
+  - [ ] Deploy to a real HA instance (Path to Release stage 3)
     - [ ] Hops 2 and 3 detected, and their hostnames redacted in the
           diagnostics download
     - [ ] A speed test fills the bufferbloat grade and increases; the
@@ -154,7 +157,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
   - [ ] GitHub repo under solentlabs org (stage 2)
   - [ ] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
   - [ ] Branch protection (stage 2)
-  - [ ] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stages 2 and 3
+  - [ ] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stages 2 and 4
 - [ ] HACS submission (stage 5)
 
 ---
