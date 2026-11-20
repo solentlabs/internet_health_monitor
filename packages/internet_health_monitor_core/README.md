@@ -30,6 +30,13 @@ internet-health-monitor --speed-test cloudflare   # one speed test, one JSON lin
 | `--data-limit` | 500 | Most MB one speed test may use, both directions together (100 to 10000) |
 | `--mlab-consent` | off | Required with `--speed-test mlab`: M-Lab publishes every result with your public IP address, permanently |
 
+M-Lab asks each client for at most 40 tests a day, and at most 4 automated
+ones at random times. Run from cron or a script (no terminal on standard
+input), `--speed-test mlab` counts as automated and first waits a random time
+of up to an hour; runs past either limit are refused. Runs are recorded in
+`internet-health-monitor/mlab_runs.json` in your state directory
+(`~/.local/state`, or `%LOCALAPPDATA%` on Windows).
+
 Jitter is the mean change between consecutive ping round trips within a
 poll, so it needs `--ping-count` of 2 or more. Speed test services and
 their terms: [docs/SPEED_TEST_BACKENDS.md](https://github.com/solentlabs/internet-health-monitor/blob/main/docs/SPEED_TEST_BACKENDS.md).

@@ -10,7 +10,7 @@ rules:
     comment: "generate_dashboard_card is registered in async_setup (services.py async_setup_services), so it exists before any entry loads; it raises a translated ServiceValidationError when no entry exists (tests/components/test_dashboard.py)."
   appropriate-polling:
     status: done
-    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route. Speed tests never poll: update_interval None, run only by the Run speed test button (README.md Speed Testing shows the automation)."
+    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route. Speed tests never poll: update_interval None; they run on a Run speed test press and, with the nightly test on, once a night at a random time from 1 to 5 am, within the daily limit and data budget (coordinator.py SpeedTestCoordinator)."
   brands:
     status: done
     comment: brand/icon.png, icon.svg, logo.png and dark variants in the integration directory.
@@ -69,7 +69,7 @@ rules:
   # Silver
   action-exceptions:
     status: done
-    comment: Buttons raise HomeAssistantError (refresh_failed, speed_test_failed) when the poll or test they trigger fails, and ServiceValidationError (daily_limit_reached, mlab_automated_limit) when a speed test is refused (button.py, coordinator.py); generate_dashboard_card raises ServiceValidationError (not_set_up, nothing_to_show; dashboard.py).
+    comment: Buttons raise HomeAssistantError (refresh_failed, speed_test_failed) when the poll or test they trigger fails, and ServiceValidationError when a speed test is refused (daily_limit_reached, budget_reached, mlab_automated_limit; button.py, coordinator.py); generate_dashboard_card raises ServiceValidationError (not_set_up, nothing_to_show; dashboard.py).
   config-entry-unloading:
     status: done
     comment: async_unload_entry saves the usage totals and unloads platforms; timers are cancelled through entry.async_on_unload (__init__.py, coordinator.py). The options flow reloads the entry (OptionsFlowWithReload).
@@ -96,7 +96,7 @@ rules:
     comment: The integration needs no authentication.
   test-coverage:
     status: done
-    comment: Every integration module at 100% (make test); gates in Makefile and CI.
+    comment: Every integration module at 100% (make test); the HA layer must stay above 95%, HA's threshold, in Makefile and CI (tests.yml).
 
   # Gold
   devices:
@@ -128,7 +128,7 @@ rules:
     comment: README.md Entities lists every sensor, binary sensor, button and attribute.
   docs-troubleshooting:
     status: done
-    comment: "README.md Troubleshooting: missing tools, unknown hops (traceroute, Docker Desktop, silent routers), gateway not detected."
+    comment: "README.md Troubleshooting: missing tools, unknown hops (traceroute, Docker Desktop, silent routers), gateway not detected, reporting a problem with the diagnostics download."
   docs-use-cases:
     status: done
     comment: README.md Features and What Makes This Different; docs/USE_CASES.md.
@@ -143,13 +143,13 @@ rules:
     comment: Latency and jitter DURATION, Connection type and Install type ENUM (sensor.py), reachability CONNECTIVITY (binary_sensor.py); packet loss % has no fitting class.
   entity-disabled-by-default:
     status: done
-    comment: Reset network cache (button.py RESET_CACHE) and the six usage totals (sensor.py USAGE_SENSORS) are disabled by default.
+    comment: Reset network cache is disabled by default (button.py RESET_CACHE). The usage totals and speed test sensors are not created until their options are turned on (Usage totals, speed test service), so they need no disabled state.
   entity-translations:
     status: done
     comment: Every entity has a translation_key and no hard-coded name; names in strings.json and all six translations.
   exception-translations:
     status: done
-    comment: update_failed, refresh_failed, unsupported_platform and missing_tools in strings.json exceptions and all translations.
+    comment: Every raised error has a translation_key in strings.json exceptions and all six translations (update_failed, refresh_failed, speed_test_failed, daily_limit_reached, budget_reached, mlab_automated_limit, unsupported_platform, missing_tools, not_set_up, nothing_to_show).
   icon-translations:
     status: done
     comment: icons.json for every entity, with off-state icons for the binary sensors; no icons in code.

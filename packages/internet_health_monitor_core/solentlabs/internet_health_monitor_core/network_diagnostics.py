@@ -15,6 +15,7 @@ Network path visualization:
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import logging
 import socket
 import time
@@ -42,29 +43,8 @@ FALLBACK_DNS_SERVER = "1.1.1.1"  # Fallback if detection fails
 DEFAULT_TRACE_TARGET = "8.8.8.8"  # Default traceroute target
 NUM_HOPS = 3  # Fixed: always trace 3 hops (gateway, ISP, backbone)
 
-# Private IP ranges (RFC 1918 + link-local)
-PRIVATE_IP_PREFIXES = (
-    "10.",
-    "172.16.",
-    "172.17.",
-    "172.18.",
-    "172.19.",
-    "172.20.",
-    "172.21.",
-    "172.22.",
-    "172.23.",
-    "172.24.",
-    "172.25.",
-    "172.26.",
-    "172.27.",
-    "172.28.",
-    "172.29.",
-    "172.30.",
-    "172.31.",
-    "192.168.",
-    "169.254.",  # Link-local
-    "127.",  # Loopback
-)
+# IHM measures the IPv4 path (ADR-014): the family of every traced and pinged address.
+PATH_IP_VERSION = 4
 
 
 def consecutive_jitter(rtts: list[float]) -> float | None:
@@ -83,9 +63,13 @@ def format_ms(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.1f}ms"
 
 
-def is_private_ip(ip: str) -> bool:
-    """Check if an IP address is in a private range."""
-    return ip.startswith(PRIVATE_IP_PREFIXES)
+def is_traceable(ip: str) -> bool:
+    """Whether hops can be traced toward *ip*: a public address of the measured family (ADR-014)."""
+    try:
+        address = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return address.version == PATH_IP_VERSION and address.is_global
 
 
 @dataclass
@@ -331,18 +315,18 @@ class NetworkDiagnostics:
     def _resolve_trace_target(self) -> str:
         """Determine the traceroute target.
 
-        Uses the DNS server if it's public, otherwise falls back to 8.8.8.8.
+        Uses the DNS server if it is a public IPv4 address, otherwise falls back to 8.8.8.8.
         This ensures we always trace to an external host to see the full path.
 
         Returns:
             IP address to use as traceroute target.
         """
-        if self._dns_server and not is_private_ip(self._dns_server):
+        if self._dns_server and is_traceable(self._dns_server):
             _LOGGER.debug("Using DNS server as trace target: %s", self._dns_server)
             return self._dns_server
 
         _LOGGER.debug(
-            "DNS server %s is private, using default trace target: %s",
+            "DNS server %s is not a public IPv4 address, using default trace target: %s",
             self._dns_server,
             DEFAULT_TRACE_TARGET,
         )

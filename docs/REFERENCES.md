@@ -80,9 +80,15 @@ Site shut down [V].
   `logAimApiUrl` is `null` [V]. IHM never posts.
 - A real `bytes=0` request on 2026-11-19 returned `server-timing:
   cfSpeedEdge;dur=4, cfSpeedWorker;dur=18`, the summed form IHM reads [V].
-- speed.cloudflare.com's privacy text says Cloudflare truncates the IP
-  address it receives to /24 (IPv4) or /48 (IPv6) [U: read through a
-  summarizer].
+- speed.cloudflare.com, "Privacy and Speed Test", read with curl
+  2026-11-20 [V]: Cloudflare receives "Your IP address; An estimate of
+  your location (Country, City); The Autonomous System Number of your
+  ISP (ASN)", "truncates your IP address that it receives as part of
+  your use of the Speed Test to /24 and /48 for IPv4 and IPv6 addresses,
+  respectively", and "shares anonymized measurement information (e.g.,
+  the estimated geolocation, ASN associated with your Speed Test, etc.)
+  with our measurement partners". The page names no retention for
+  requests that post no result, as IHM's do not.
 - No terms specific to speed.cloudflare.com. Cloudflare Website and
   Online Services Terms (<https://www.cloudflare.com/website-terms/>,
   effective 2025-08-01), read with curl 2026-11-19 [V*]: they cover

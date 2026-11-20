@@ -22,6 +22,18 @@ from solentlabs.internet_health_monitor_core.platforms.base import HostEnvironme
 # samples (RFC 3550 consecutive form, Cloudflare's speed test; ADR-009).
 # fmt: off
 
+# DNS server -> trace target. IHM traces the IPv4 path (ADR-014), toward the DNS
+# server only when it is a public IPv4 address, else the default target.
+# fmt: off
+TRACE_TARGET_CASES: list[tuple[str, str, str]] = [
+    ("public IPv4 resolver",         "1.1.1.1",              "1.1.1.1"),
+    ("private resolver",             "192.168.1.1",          "8.8.8.8"),
+    ("shared ISP space (CGNAT)",     "100.64.0.53",          "8.8.8.8"),
+    ("loopback (Docker's resolver)", "127.0.0.11",           "8.8.8.8"),
+    ("IPv6 resolver",                "2606:4700:4700::1111", "8.8.8.8"),
+]
+# fmt: on
+
 # Re-detection without a reset (a router or modem that came up after the host, a new router).
 # First poll on one platform, then the platform changes and a later poll runs.
 # fmt: off
@@ -370,23 +382,13 @@ class TestNetworkDiagnosticsAsync:
             dns = await diag._resolve_dns_server()
             assert dns == "1.1.1.1"
 
-    @pytest.mark.asyncio
-    async def test_resolve_trace_target_public_dns(self):
-        """Test trace target uses public DNS server."""
-        diag = NetworkDiagnostics(dns_server="8.8.8.8")
-        diag._dns_server = "8.8.8.8"
 
-        target = diag._resolve_trace_target()
-        assert target == "8.8.8.8"
-
-    @pytest.mark.asyncio
-    async def test_resolve_trace_target_private_dns(self):
-        """Test trace target falls back when DNS is private."""
-        diag = NetworkDiagnostics(dns_server="192.168.1.1")
-        diag._dns_server = "192.168.1.1"
-
-        target = diag._resolve_trace_target()
-        assert target == "8.8.8.8"  # Falls back to default
+@pytest.mark.parametrize(("description", "dns", "expected"), TRACE_TARGET_CASES, ids=[c[0] for c in TRACE_TARGET_CASES])
+def test_trace_target(description: str, dns: str, expected: str) -> None:
+    """Hops are traced toward an external IPv4 host, so the whole IPv4 path is seen."""
+    diag = NetworkDiagnostics(dns_server=dns)
+    diag._dns_server = dns
+    assert diag._resolve_trace_target() == expected
 
 
 class TestHopInfo:

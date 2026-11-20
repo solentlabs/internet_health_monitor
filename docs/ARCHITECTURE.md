@@ -35,6 +35,7 @@ Core      (packages/internet_health_monitor_core/, module
            solentlabs-internet-health-monitor-core)
     network_diagnostics.py: polling, caching, jitter, loss, DNS, hostnames
     speed_test.py: one speed test interface and result (ADR-003)
+    mlab_runs.py: M-Lab's per-client limits for the command line
         backends/: _http.py (shared engine), cloudflare.py, librespeed.py, ndt7.py
     timing.py: every interval, timeout and limit (ADR-007)
         │ calls Platform: gateway, system DNS, ping, trace, host environment
@@ -80,7 +81,7 @@ scheduling. It contains no measurement logic.
 
 1. **First run only:** resolve the DNS server (system `/etc/resolv.conf`
    when set to auto, else the chosen server; fallback `1.1.1.1`). Pick
-   the traceroute target: the DNS server if public, else `8.8.8.8`.
+   the traceroute target: the DNS server if it is a public IPv4 address, else `8.8.8.8` (ADR-014).
 2. **Until cached:** detect the gateway (`ip route`), then hops 1 to 3
    (`traceroute -n -q 1 -w 2 -m 3 <target>`).
 3. **Once, after hops are known:** look up each hop's hostname by

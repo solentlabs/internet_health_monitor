@@ -20,6 +20,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19 |
 | [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Accepted 2026-11-19 |
 | [013](#adr-013-long-term-statistics-only-where-they-serve-a-use) | Long-term statistics only where they serve a use | Open |
+| [014](#adr-014-ipv4-path-ready-for-ipv6) | IPv4 path, ready for IPv6 | Open |
 
 ---
 
@@ -391,8 +392,9 @@ one-way delay, since ping measures round trips.
 
 - Jitter needs at least two replies in a poll; with one ping per target it
   is unknown. The default is three.
-- No latency history is kept; each poll stands alone, and HA's long-term
-  statistics carry the trend.
+- No latency history is kept; each poll stands alone. HA's state history
+  carries the trend for 10 days, and long-term statistics, when the user
+  turns them on, carry it longer (ADR-013).
 - Docs call it jitter (the term users know) and define it as above.
 
 ---
@@ -433,7 +435,7 @@ The project does not defer work: each is built or cut with a reason.
 
 | Feature | Reason |
 | --------- | -------- |
-| IPv6 path | IHM detects and measures the IPv4 path: gateway, traceroute and DNS. Building IPv6 touches every probe on both platforms and doubles the hop sensors. Stated in README.md § Known Limitations |
+| IPv6 path | Not built until a user asks; ADR-014 keeps every IPv6 address out of the IPv4 path and names where IPv6 would be added |
 | Custom hop targets | HA's own Ping integration pings any host the user adds, with latency, jitter and packet loss sensors (`homeassistant/components/ping/sensor.py`, HA 2026.10.4). IHM watches the path to the internet, not chosen hosts |
 | Interface selection on multi-interface hosts | IHM follows the default route, the path the host's own internet traffic takes. Measuring another interface would report a path HA does not use |
 | SNMP router counters | Reading the router is a different job from measuring the path, and needs a credential; IHM stores none. HA's SNMP integration exposes router counters as entities to combine with IHM's (as ADR-002 does with Cable Modem Monitor) |
@@ -514,3 +516,43 @@ its statistics (HA `sensor/recorder.py`); the option says so.
 **Constraint:** A new sensor gets a `state_class` only under this
 option, or with a use case that needs its statistics and a new
 decision here.
+
+---
+
+## ADR-014: IPv4 path, ready for IPv6
+
+**Status:** Open.
+
+**Context:** IHM measures the IPv4 path (ADR-011). Hosts with IPv6 can
+still hand it an IPv6 address: `/etc/resolv.conf` may name an IPv6
+resolver, and IHM used to trace toward the DNS server whenever its
+address did not start with an IPv4 private prefix, so such a host traced
+IPv6 hops behind an IPv4 gateway. No user has asked for IPv6
+monitoring.
+
+**Decision:** IHM stays on the IPv4 path; IPv6 is built when a use case
+asks for it (ADR-011's constraint). Until then:
+
+- **One gate.** `PATH_IP_VERSION = 4` and `is_traceable()` in Core's
+  `network_diagnostics.py` decide which address hops are traced toward:
+  a public address of that version, else the default target. An IPv6
+  address never enters the traced path.
+- **Family-neutral where it costs nothing.** Address checks parse with
+  `ipaddress`, which accepts both families (`platforms/base.py is_ip`);
+  the DNS latency probe already queries an IPv6 resolver over IPv6
+  (`dns_probe.py`); diagnostics redaction handles both (`redact.py`).
+- **Where IPv6 would be added**, each IPv4-only today:
+  1. Gateway: `ip route show default` lists IPv4 routes (`platforms/linux.py`);
+     IPv6 needs `ip -6 route show default`.
+  2. Windows probes: `IcmpSendEcho` takes an IPv4 address
+     (`platforms/_iphlpapi.py`, R13).
+  3. Default trace target: `DEFAULT_TRACE_TARGET` is an IPv4 address.
+  4. Hop ownership: `origin_query_name()` looks up IPv4 only
+     (`hop_owner.py`).
+  5. Entities: a second set of hop sensors, with unique ids per family.
+  6. Linux `ping` and `traceroute` take the address as given; their
+     IPv6 behavior on each supported host needs checking before use.
+
+**Constraint:** Code that takes an address accepts either family and
+checks the family where it matters, through `PATH_IP_VERSION`; no new
+IPv4-only parsing.

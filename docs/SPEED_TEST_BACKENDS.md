@@ -15,7 +15,7 @@ any of these providers.
 
 | Backend | Loaded latency | Who sees your public IP address | Limits |
 | --------- | ---------------- | ---------------------------------- | -------- |
-| **Cloudflare** | Yes, per direction | Cloudflare; it keeps the address cut to /24 (IPv4) or /48 (IPv6) *(unverified)* | None published; IHM's limits apply |
+| **Cloudflare** | Yes, per direction | Cloudflare; it says it truncates the address to /24 (IPv4) or /48 (IPv6) (R5) | None published; IHM's limits apply |
 | **M-Lab NDT7** | Server's view of round-trip time; download good, upload approximate | **M-Lab publishes it with every result, permanently** | 4 automated a day at random times; 40 a day in all |
 | **LibreSpeed** | Yes, per direction | The volunteer server you are matched with | None published; IHM's limits apply |
 | Fast.com | Not offered: Netflix's terms forbid automated access to its websites ([below](#why-not-fastcom)) | | |
@@ -103,6 +103,14 @@ running the same automation do not test at the same moment; the press returns at
 when the test finishes. M-Lab asks for randomized times without naming
 a window; one hour is IHM's choice. A person's press runs at once.
 
+The Core command line (`--speed-test mlab`) follows the same rules. A run
+whose standard input is not a terminal (cron, a script) is automated: it
+counts toward the 4 and waits a random time of up to an hour. Any run past
+40 in 24 hours, M-Lab's limit per client, is refused. Runs are recorded in
+`mlab_runs.json` in the user's state directory (`$XDG_STATE_HOME`, default
+`~/.local/state`, or `%LOCALAPPDATA%` on Windows, under
+`internet-health-monitor`).
+
 ## Data Use
 
 A 10 s test in each direction moves roughly 10 s × your line speed:
@@ -115,9 +123,10 @@ plus the upload. Each result reports the exact amount (Data used).
 
 - **Choose it if** you want per-direction loaded latency from a large
   network, without your result being published.
-- **Privacy:** Cloudflare keeps an anonymized result; its speed test
-  says it truncates your address before storing it *(unverified, R5)*.
-  IHM does not post to Cloudflare's results endpoint (R5).
+- **Privacy:** Cloudflare says it truncates the address it receives to
+  /24 (IPv4) or /48 (IPv6). The anonymized measurements it shares with
+  partners come from its own speed test page; IHM does not post to
+  Cloudflare's results endpoint (R5).
 - **Terms:** Cloudflare's website terms bar use that could "overburden"
   its servers or that "violates any Cloudflare documentation" (R5). IHM
   calls the endpoints as Cloudflare's own published client does, within

@@ -207,7 +207,7 @@ test used.
 
 | Service | Loaded latency | Who sees your public IP address |
 | --------- | ---------------- | ---------------------------------- |
-| Cloudflare | Per direction | Cloudflare (kept anonymized) |
+| Cloudflare | Per direction | Cloudflare, which says it truncates it to /24 (IPv4) or /48 (IPv6) |
 | M-Lab NDT7 | Download good, upload approximate | **M-Lab publishes it with every result, permanently**; you confirm this before first use |
 | LibreSpeed | Per direction | The volunteer server you are matched with |
 

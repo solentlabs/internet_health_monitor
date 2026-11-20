@@ -25,7 +25,7 @@ The most comprehensive, easiest-to-configure network health monitoring integrati
 
 1. **Zero-config auto-detection** - Gateway, DNS, ISP hops discovered automatically
 2. **Multi-hop network path visibility** - Latency at each hop (1, 2, 3+) - unique in HA ecosystem
-3. **Bandwidth testing you control** - Tests run only from a button or your own automation, within data and daily limits
+3. **Bandwidth testing you control** - A nightly test at a random time from 1 to 5 am (on by default) and a button, within a data limit per test, a daily limit and an optional 30-day data budget
 4. **Pluggable backends** - User picks the speed test service; each is a drop-in module that keeps to its provider's terms (docs/SPEED_TEST_BACKENDS.md)
 5. **Unified configuration** - One integration, one options flow, done
 6. **Correlation-ready** - Stable entity ids and units, combined with other integrations in HA (ADR-002)
@@ -54,9 +54,9 @@ Monitor is the reference for how each is done.
 
 1. **Local.** Everything that can be built and tested locally is: core as
    a portable package (ADR-005), modular backends (ADR-003), tests and
-   coverage gates, icon, configuration UX, a customizable entity name
-   prefix, sensor history (long-term statistics by choice, ADR-013),
-   metrics.
+   coverage gates, icon, configuration UX, names changed by renaming the
+   device (ADR-010), sensor history (long-term statistics by choice,
+   ADR-013), metrics.
 2. **GitHub.** Push to `solentlabs/internet-health-monitor` with CI.
 3. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
    version `manifest.json` pins (ADR-005). HA installs it from there.
@@ -159,9 +159,10 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 
 ## Not Built
 
-IPv6, custom hop targets, interface selection, SNMP router counters
-and an Aggregator hook were considered and cut, each for a recorded
-reason: ARCHITECTURE_DECISIONS.md § ADR-011.
+Custom hop targets, interface selection, SNMP router counters and an
+Aggregator hook were considered and cut, each for a recorded reason:
+ARCHITECTURE_DECISIONS.md § ADR-011. IPv6 waits for a user who needs
+it; ADR-014 names where it would be added.
 
 ---
 
@@ -172,8 +173,8 @@ reason: ARCHITECTURE_DECISIONS.md § ADR-011.
 1. Zero-config setup works on fresh HA install
 2. Every entity in README.md § Entities functional
 3. Multi-hop latency is unique differentiator
-4. Bandwidth testing is pluggable and runs from a button or automation
-5. 90%+ test coverage
+4. Bandwidth testing is pluggable and runs nightly, from a button or from an automation
+5. Test coverage above 95% for the HA layer and 90% for Core
 6. Multi-language support (six languages)
 7. Tested on real HA instance (not just dev)
 8. Documentation complete
@@ -182,7 +183,7 @@ reason: ARCHITECTURE_DECISIONS.md § ADR-011.
 ---
 
 *Created: 2025-11-28*
-*Updated: 2026-11-19*
+*Updated: 2026-11-20*
 *Status: Local stage (Path to Release stage 1)*
 
 ---

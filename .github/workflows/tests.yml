@@ -59,9 +59,9 @@ jobs:
       - name: Run tests
         run: pytest --cov-report=xml
 
-      - name: Coverage gates (70% HA layer, 90% Core, as make test)
+      - name: Coverage gates (95% HA layer, HA's threshold; 90% Core; as make test)
         run: |
-          coverage report --include="custom_components/*" --fail-under=70
+          coverage report --include="custom_components/*" --fail-under=95
           coverage report --include="*/solentlabs/internet_health_monitor_core/*" --fail-under=90
 
       - name: Upload coverage

@@ -48,9 +48,9 @@ test:
 	@.venv/bin/pytest
 	@$(MAKE) --no-print-directory coverage-gates
 
-# Same floors as Cable Modem Monitor: 70% HA layer, 90% Core
+# HA layer above 95%, the quality scale's test-coverage threshold; Core 90%
 coverage-gates:
-	@.venv/bin/coverage report --include="custom_components/*" --fail-under=70 > /dev/null && echo "HA layer coverage >= 70%"
+	@.venv/bin/coverage report --include="custom_components/*" --fail-under=95 > /dev/null && echo "HA layer coverage >= 95%"
 	@.venv/bin/coverage report --include="*/solentlabs/internet_health_monitor_core/*" --fail-under=90 > /dev/null && echo "Core coverage >= 90%"
 
 # Core on Windows for real, from WSL (sends a few pings; no speed test)

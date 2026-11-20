@@ -58,11 +58,13 @@ SPEED_TEST_REQUEST_TIMEOUT_S = 10.0
 SPEED_TEST_DATA_LIMIT_MB_DEFAULT = 500
 SPEED_TEST_DATA_LIMIT_MB_MIN = 100
 SPEED_TEST_DATA_LIMIT_MB_MAX = 10000
+# M-Lab: "Interactive users must not run more than 40 tests per day" (R9).
+SPEED_TEST_MLAB_DAILY = 40
 # Tests allowed in any SPEED_TEST_DAILY_WINDOW_S, manual or automated. Default 4:
-# M-Lab's limit for automated clients (R9). Max 40: its limit for interactive users.
+# M-Lab's limit for automated clients (R9). Max: its limit for interactive users.
 SPEED_TEST_DAILY_DEFAULT = 4
 SPEED_TEST_DAILY_MIN = 1
-SPEED_TEST_DAILY_MAX = 40
+SPEED_TEST_DAILY_MAX = SPEED_TEST_MLAB_DAILY
 SPEED_TEST_DAILY_WINDOW_S = 24 * 3600
 # M-Lab's AUP: automated clients "should not run more than 4 tests per day, and test
 # times should be randomized" (R9). A run no person started counts toward this cap,

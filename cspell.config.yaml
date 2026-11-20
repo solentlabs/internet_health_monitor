@@ -27,6 +27,8 @@ words:
   - automations
   - autouse
   - conftest # pytest fixtures file
+  - delenv # pytest fixture method
+  - LOCALAPPDATA # Windows per-user state directory
   - clientsession # async_get_clientsession
   - pytestmark
   - pyrightconfig # pyright config file

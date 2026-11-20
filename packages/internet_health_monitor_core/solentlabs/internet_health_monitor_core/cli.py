@@ -6,11 +6,14 @@ import argparse
 import asyncio
 import contextlib
 import json
+import random
 import sys
+import time
 from typing import TextIO
 
 import aiohttp
 
+from . import mlab_runs
 from .network_diagnostics import DEFAULT_DNS_SERVER, NetworkDiagnostics, NetworkDiagnosticsConfig
 from .speed_test import BACKEND_NAMES, SpeedTestError, run_speed_test
 from .timing import (
@@ -20,6 +23,7 @@ from .timing import (
     SPEED_TEST_DATA_LIMIT_MB_DEFAULT,
     SPEED_TEST_DATA_LIMIT_MB_MAX,
     SPEED_TEST_DATA_LIMIT_MB_MIN,
+    SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S,
     steady_poll_bound_s,
 )
 
@@ -81,8 +85,12 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-async def speed_test(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
-    """Run one speed test; print the result as JSON, or the reason it failed to *err*."""
+async def speed_test(args: argparse.Namespace, out: TextIO, err: TextIO, delay_s: float = 0.0) -> int:
+    """Wait *delay_s*, run one speed test, and print the result as JSON, or the reason it failed to *err*."""
+    if delay_s:
+        err.write(f"waiting {delay_s:.0f} s: M-Lab asks automated clients to randomize test times\n")
+        err.flush()
+        await asyncio.sleep(delay_s)
     async with aiohttp.ClientSession() as session:
         try:
             result = await run_speed_test(args.speed_test, session, data_limit_mb=args.data_limit)
@@ -109,6 +117,20 @@ async def run(args: argparse.Namespace, out: TextIO) -> None:
         await asyncio.sleep(args.interval)
 
 
+def accept_mlab_run() -> tuple[str | None, float]:
+    """Apply M-Lab's per-client limits (mlab_runs.py): the refusal, or None and the wait before testing.
+
+    A run with no terminal on standard input (cron, a script) counts as automated.
+    """
+    automated = not sys.stdin.isatty()
+    path, now = mlab_runs.state_dir() / mlab_runs.STATE_FILE, time.time()
+    if reason := mlab_runs.refusal(mlab_runs.load(path), now, automated=automated):
+        return reason, 0.0
+    mlab_runs.record(path, mlab_runs.MlabRun(now, automated), now)
+    # Spreading load, not security
+    return None, random.uniform(0, SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S) if automated else 0.0  # noqa: S311
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the command line and return the exit code."""
     parser = build_parser()
@@ -123,7 +145,13 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--speed-test runs once; it cannot be combined with --interval")
         if args.speed_test == "mlab" and not args.mlab_consent:
             parser.error("M-Lab publishes every result with your IP address, permanently; add --mlab-consent to agree")
-        return asyncio.run(speed_test(args, sys.stdout, sys.stderr))
+        delay_s = 0.0
+        if args.speed_test == "mlab":
+            reason, delay_s = accept_mlab_run()
+            if reason:
+                sys.stderr.write(f"speed test refused: {reason}\n")
+                return 1
+        return asyncio.run(speed_test(args, sys.stdout, sys.stderr, delay_s))
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(run(args, sys.stdout))
     return 0
