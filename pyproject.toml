@@ -125,7 +125,6 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-v --tb=short --cov=custom_components/internet_health_monitor --cov=solentlabs.internet_health_monitor_core --cov-report=term-missing"
 testpaths = ["tests", "packages/internet_health_monitor_core/tests"]
-markers = ["enable_socket: allow sockets (pytest-socket); loopback only, never real network"]
 
 [tool.coverage.run]
 # Windows-only ctypes bindings: exercised for real by `make test-windows`;

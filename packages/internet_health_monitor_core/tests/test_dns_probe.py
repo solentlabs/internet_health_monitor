@@ -77,7 +77,9 @@ EXCHANGE_CASES = [
 # fmt: on
 
 
-@pytest.mark.enable_socket  # loopback only: an in-process server on 127.0.0.1
+# Loopback only: an in-process server on 127.0.0.1. The fixture, not the enable_socket marker: it
+# runs after every plugin's setup hook, so HA's socket block cannot follow it.
+@pytest.mark.usefixtures("socket_enabled")
 @pytest.mark.parametrize(("description", "rcode", "measured"), EXCHANGE_CASES, ids=[c[0] for c in EXCHANGE_CASES])
 async def test_query_time_ms(description: str, rcode: int | None, measured: bool) -> None:
     """A finished resolution gives a time; failure or silence gives None."""
@@ -153,7 +155,9 @@ QUERY_TXT_CASES = [
 # fmt: on
 
 
-@pytest.mark.enable_socket  # loopback only: an in-process server on 127.0.0.1
+# Loopback only: an in-process server on 127.0.0.1. The fixture, not the enable_socket marker: it
+# runs after every plugin's setup hook, so HA's socket block cannot follow it.
+@pytest.mark.usefixtures("socket_enabled")
 @pytest.mark.parametrize(
     ("description", "rcode", "texts", "expected"), QUERY_TXT_CASES, ids=[c[0] for c in QUERY_TXT_CASES]
 )

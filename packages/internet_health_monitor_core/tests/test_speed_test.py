@@ -28,7 +28,9 @@ from solentlabs.internet_health_monitor_core.speed_test import (
     run_speed_test,
 )
 
-pytestmark = pytest.mark.enable_socket  # loopback only: in-process servers on 127.0.0.1
+# Loopback only: in-process servers on 127.0.0.1. The fixture, not the enable_socket marker: it
+# runs after every plugin's setup hook, so HA's socket block cannot follow it.
+pytestmark = pytest.mark.usefixtures("socket_enabled")
 
 LIMIT = DataLimit(4, 4)  # MB per direction: keeps every test fast
 BLOCK = b"\0" * 65536
