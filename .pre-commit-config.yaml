@@ -1,6 +1,10 @@
-# Pre-commit hooks for HA Network Diagnostics
-# Install: pip install pre-commit && pre-commit install
+# Pre-commit hooks for Internet Health Monitor: CI's checks, caught before CI.
+# Install (all three hook types below): pre-commit install
 # Run manually: pre-commit run --all-files
+
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+# A hook runs at commit unless it names its stage; a push runs only its own two.
+default_stages: [pre-commit]
 
 repos:
   # Code formatting with Black
@@ -90,3 +94,47 @@ repos:
       - id: check-ast
       - id: check-builtin-literals
       - id: check-docstring-first
+
+  # CI's checks the hooks above leave out, run from the project's virtual environments and
+  # the same commands as CI (Makefile). Each commit: the changed files'
+  # spelling and Markdown, and the whole project's types when Python changed.
+  # Each push: every check over the repository, then the tests on both HA
+  # versions with the coverage gates.
+  - repo: local
+    hooks:
+      - id: cspell
+        name: cspell (cspell.config.yaml, as CI)
+        entry: npx --yes cspell@10 --config cspell.config.yaml --no-progress --no-must-find-files
+        language: system
+        files: \.(py|md|ya?ml|json|toml|sh|txt)$
+      - id: markdownlint
+        name: markdownlint (.markdownlint.jsonc, as CI)
+        entry: npx --yes markdownlint-cli2@0.24.1
+        language: system
+        types: [markdown]
+      - id: type-check
+        name: mypy, both HA versions (make type-check)
+        entry: make -s type-check
+        language: system
+        files: \.py$
+        pass_filenames: false
+      - id: pyright
+        name: pyright, both HA versions (make pyright)
+        entry: make -s pyright
+        language: system
+        files: \.py$
+        pass_filenames: false
+      - id: check
+        name: every check over the repository (make check)
+        entry: make -s check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: test-all
+        name: tests on both HA versions, coverage gates (make test-all)
+        entry: make -s test-all
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
