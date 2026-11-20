@@ -23,9 +23,9 @@ classifiers = [
 dependencies = []  # HA provides all runtime dependencies; dev tools: requirements-dev.txt
 
 [project.urls]
-# Repository = "https://github.com/solentlabs/ha-internet-health-monitor"  # Uncomment when public
-# Documentation = "https://github.com/solentlabs/ha-internet-health-monitor#readme"
-# Organization = "https://github.com/solentlabs"
+Repository = "https://github.com/solentlabs/internet_health_monitor"
+Documentation = "https://github.com/solentlabs/internet_health_monitor#readme"
+Organization = "https://github.com/solentlabs"
 
 # -------------------------------
 # Black (code formatter)
