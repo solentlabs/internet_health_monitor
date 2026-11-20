@@ -61,35 +61,21 @@ The workflow then runs, each step only if the one before passed:
 Run by hand (Actions, Release, Run workflow), it builds and publishes to
 Test PyPI (environment `test-pypi-core`) and creates no release.
 
-## Testing Before the First Release
+## Beta Releases
 
-> **Temporary.** For the live HA test before Core is on PyPI (ROADMAP
-> § Path to Release, stage 3). Delete this section once 0.1.0 is
-> released; from then, HA installs Core from PyPI.
+A beta is a release whose version carries `b` and a number (`0.1.0b1`).
+It goes through the same workflow: Core reaches PyPI as a pre-release,
+which pip and HA install only when pinned, and the integration zip
+becomes a GitHub pre-release.
 
-HA 2026.10 installs a requirement given as a link, through uv. Core sits
-in a subfolder, so the link is GitHub's zip of a commit plus
-`#subdirectory=`, which needs no git inside HA's container.
+Betas are how a version is tested on a real HA before it is final. In
+HACS, add this repository under **Custom repositories** (category
+Integration), turn on **Show beta** for it, and install. A fix ships as
+the next beta (`0.1.0b2`), which HACS offers as an update.
 
-1. Copy `custom_components/internet_health_monitor` into the HA's
-   `config/custom_components/`. HACS cannot install it yet: it installs
-   releases only (`hacs.json`).
-2. In **that copy's** `manifest.json`, replace Core's requirement with a
-   pushed commit's link, `<commit>` its full hash:
-
-   ```json
-   "solentlabs-internet-health-monitor-core @ https://github.com/solentlabs/internet_health_monitor/archive/<commit>.zip#subdirectory=packages/internet_health_monitor_core"
-   ```
-
-3. Restart HA, then add the integration under **Settings > Devices &
-   services**. After a fix is pushed, change the link to the new commit
-   and restart.
-
-Limits: the repository must be public, since HA downloads without
-credentials. HA cannot compare a link's version, so it reinstalls Core
-on every restart and fails to load IHM if GitHub is unreachable. The
-link never goes into the repository: `check_release.py` refuses a tag
-whose `manifest.json` does not pin Core `==` the version.
+Each beta gets its own CHANGELOG heading. When the final version ships,
+the headings of its betas become that version's one heading, since the
+betas' notes are what the version holds.
 
 ## Before the First Release
 
@@ -97,20 +83,16 @@ Set up once, outside the repository, before the first tag. PyPI trusts
 one workflow file by name, so each entry names `release.yml`
 (REFERENCES.md § R25).
 
-- [ ] **GitHub environments** `pypi-core` and `test-pypi-core` in the
+- [x] **GitHub environments** `pypi-core` and `test-pypi-core` in the
       repository's settings.
-- [ ] **PyPI pending publisher** (account sidebar, Publishing): project
+- [x] **PyPI pending publisher** (account sidebar, Publishing): project
       `solentlabs-internet-health-monitor-core`, owner `solentlabs`,
       repository `internet_health_monitor`, workflow `release.yml`,
       environment `pypi-core`.
 - [ ] **Test PyPI pending publisher**: the same, environment
       `test-pypi-core`.
-- [ ] **A manual run to Test PyPI**, to prove the workflow before the
-      first tag.
-- [ ] **The first tag soon after**: a pending publisher does not reserve
-      the project name on PyPI until its first upload.
-- [ ] **After 0.1.0 is released:** delete § Testing Before the First
-      Release, and its mention in ROADMAP § Path to Release stage 3.
+- [ ] **The first tag soon after**, a beta: a pending publisher does not
+      reserve the project name on PyPI until its first upload.
 
 A project that moves publishing into another workflow file must change
 its PyPI publisher in the same step, or its next upload is refused.

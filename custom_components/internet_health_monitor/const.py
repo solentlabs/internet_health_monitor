@@ -16,7 +16,7 @@ NAME = "Internet Health Monitor"
 DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
 TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet_health_monitor#troubleshooting"
-VERSION = "0.1.0"  # must equal manifest.json "version" (tests/components/test_const.py)
+VERSION = "0.1.0b1"  # must equal manifest.json "version" (tests/components/test_const.py)
 
 # Option keys
 CONF_ENABLE_GATEWAY_MONITORING = "enable_gateway_monitoring"

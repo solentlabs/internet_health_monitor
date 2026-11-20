@@ -60,15 +60,15 @@ Monitor is the reference for how each is done.
    ADR-013), metrics.
 2. **GitHub.** Push to `solentlabs/internet_health_monitor`, public,
    with CI and branch protection.
-3. **Live HA.** Update the deployed HA to at least IHM's minimum
-   (ADR-008), then install IHM with Core fetched from a pushed commit
-   (docs/RELEASING.md § Testing Before the First Release) and verify on a
-   real network path (hops 2 and 3 cannot be seen from Docker Desktop:
-   ARCHITECTURE.md).
-4. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
-   version `manifest.json` pins (ADR-005), with the GitHub release.
-   From here HA installs Core from PyPI.
-5. **Publish.** Release zip installs, then HACS submission.
+3. **Betas, tested live.** Release `0.1.0b1` (docs/RELEASING.md § Beta
+   Releases): Core on PyPI and the zip as pre-releases. Update the
+   deployed HA to at least IHM's minimum (ADR-008), install the beta
+   through HACS as a custom repository, and verify on a real network
+   path (hops 2 and 3 cannot be seen from Docker Desktop:
+   ARCHITECTURE.md). Fixes ship as the next beta.
+4. **0.1.0.** Released once the live checks pass. From here HA installs
+   Core from PyPI at a final version.
+5. **Publish.** HACS submission.
 
 ---
 
@@ -157,7 +157,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
   - [ ] GitHub repo under solentlabs org (stage 2)
   - [ ] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
   - [ ] Branch protection (stage 2)
-  - [ ] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stages 2 and 4
+  - [ ] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stage 3
 - [ ] HACS submission (stage 5)
 
 ---
