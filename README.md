@@ -358,7 +358,7 @@ the browser: it learns of the card when the page loads.
 | Latency graphs | on | Hop latency history, and DNS latency on its own graph |
 | Jitter graph | on | Hop jitter history |
 | Packet loss graph | on | Hop packet loss history |
-| Speed test | on | Each speed test reading (bufferbloat grade and increases included), Run speed test, and a throughput graph. Shown only with a speed test service |
+| Speed test | on | Each speed test reading (bufferbloat grade and increases included), Run speed test, a bufferbloat gauge per direction colored at Waveform's B line, and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
 Each measurement has its own row or line; there is no combined score

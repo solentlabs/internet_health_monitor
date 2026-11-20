@@ -12,6 +12,7 @@ from homeassistant.helpers import (
     entity_registry as er,
 )
 
+from solentlabs.internet_health_monitor_core.bufferbloat import MAY_AFFECT_REAL_TIME, SCALE, WORST
 from solentlabs.internet_health_monitor_core.network_diagnostics import NUM_HOPS
 
 from .const import DOMAIN
@@ -83,6 +84,12 @@ _SPEED_TEST: list[Row] = [
     ("sensor", "speed_test_data_used", "Data used"),
     ("button", "run_speed_test", "Run speed test"),
 ]
+_BUFFERBLOAT: list[Row] = [
+    ("sensor", "speed_test_download_latency_increase", "Download bufferbloat"),
+    ("sensor", "speed_test_upload_latency_increase", "Upload bufferbloat"),
+]
+# Gauge range in ms: past F's lower bound, so its band shows; larger values sit at the end.
+GAUGE_MAX_MS = 500
 _THROUGHPUT: list[Row] = [
     ("sensor", "speed_test_download", "Download"),
     ("sensor", "speed_test_upload", "Upload"),
@@ -105,6 +112,30 @@ def _entities(title: str, rows: list[dict[str, str]]) -> dict[str, Any]:
     return {"type": "entities", "title": title, "entities": rows}
 
 
+def _segments() -> list[dict[str, Any]]:
+    """Waveform's bands (Core bufferbloat.py, R3), each from its grade's lower bound.
+
+    Waveform publishes no colors, only that grades past B may affect real-time use,
+    so the theme's success color up to B and its error color after. No labels: HA
+    shows a segment's label instead of the value, which would grade each direction,
+    and Waveform grades only the larger increase (the grade sensor).
+    """
+    lower = [0.0, *(bound for bound, _ in SCALE)]
+    grades = [*(g for _, g in SCALE), WORST]
+    return [
+        {"from": int(start), "color": "var(--error-color)" if grade in MAY_AFFECT_REAL_TIME else "var(--success-color)"}
+        for start, grade in zip(lower, grades, strict=True)
+    ]
+
+
+def _gauges(rows: list[dict[str, str]]) -> dict[str, Any]:
+    """One bufferbloat gauge per direction, side by side."""
+    cards = [
+        {"type": "gauge", **row, "min": 0, "max": GAUGE_MAX_MS, "needle": True, "segments": _segments()} for row in rows
+    ]
+    return {"type": "horizontal-stack", "cards": cards}
+
+
 def _graph(title: str, lines: list[dict[str, str]], hours: int) -> dict[str, Any]:
     """A history graph."""
     return {"type": "history-graph", "title": title, "hours_to_show": hours, "entities": lines}
@@ -125,7 +156,10 @@ def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) 
         parts += [_entities(f"Hop {h} · {HOP_NAMES[h]}", r) for h in _HOPS if (r := rows(_hop_rows(h)))]
     parts += [_graph(title, lines, hours) for opt, title, t in _GRAPHS if options[opt] and (lines := rows(t))]
     if options["include_speed_test"] and (speed := rows(_SPEED_TEST)):
-        parts += [_entities("Speed test", speed), _graph("Throughput", rows(_THROUGHPUT), hours)]
+        parts.append(_entities("Speed test", speed))
+        if bloat := rows(_BUFFERBLOAT):
+            parts.append(_gauges(bloat))
+        parts.append(_graph("Throughput", rows(_THROUGHPUT), hours))
     return parts
 
 

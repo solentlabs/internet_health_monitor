@@ -321,11 +321,40 @@ def test_card_form_matches_schema() -> None:
     assert form == CARD_OPTIONS_SCHEMA({})
 
 
+# Bufferbloat gauge bands: Waveform's scale (R3), from each grade's lower bound (A+ 0, A 5, B 30,
+# C 60, D 200, F 400). Success color up to B, error color past it: Waveform's "Anything worse than
+# a B may affect video calls, gaming, and other real-time applications"; it publishes no colors.
+# No labels: HA shows a segment's label instead of the value, which would grade each direction.
+# fmt: off
+GAUGE_SEGMENTS: list[dict[str, Any]] = [
+    {"from": 0,   "color": "var(--success-color)"},
+    {"from": 5,   "color": "var(--success-color)"},
+    {"from": 30,  "color": "var(--success-color)"},
+    {"from": 60,  "color": "var(--error-color)"},
+    {"from": 200, "color": "var(--error-color)"},
+    {"from": 400, "color": "var(--error-color)"},
+]
+# fmt: on
+
+
+def _gauge(direction: str) -> dict[str, Any]:
+    """The bufferbloat gauge the card shows for one direction."""
+    return {
+        "type": "gauge",
+        "entity": f"sensor.internet_health_speed_test_{direction.lower()}_latency_increase",
+        "name": f"{direction} bufferbloat",
+        "min": 0,
+        "max": 500,
+        "needle": True,
+        "segments": GAUGE_SEGMENTS,
+    }
+
+
 async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """With a speed test service chosen, the card adds the readings and a throughput graph; off hides them."""
+    """With a speed test service, the card adds readings, bufferbloat gauges and a throughput graph; off hides them."""
     await setup_entry(speed_test_backend="cloudflare")
     card = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))
-    speed, throughput = card["cards"][-2:]
+    speed, gauges, throughput = card["cards"][-3:]
     assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
         "Speed test",
         {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
@@ -334,12 +363,24 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     assert {"entity": "sensor.internet_health_speed_test_bufferbloat_grade", "name": "Bufferbloat grade"} in (
         speed["entities"]
     )
+    assert gauges == {"type": "horizontal-stack", "cards": [_gauge("Download"), _gauge("Upload")]}
     assert throughput["entities"] == [
         {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
         {"entity": "sensor.internet_health_speed_test_upload", "name": "Upload"},
     ]
     hidden = build_card_config(hass, CARD_OPTIONS_SCHEMA({"include_speed_test": False}))
-    assert len(hidden["cards"]) == len(card["cards"]) - 2
+    assert len(hidden["cards"]) == len(card["cards"]) - 3
+
+
+async def test_disabled_increase_has_no_gauge(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """A gauge whose entity the user disabled is left out, as rows are."""
+    entry = await setup_entry(speed_test_backend="cloudflare")
+    registry = er.async_get(hass)
+    upload = entity_id(hass, "sensor", entry, "speed_test_upload_latency_increase")
+    assert upload
+    registry.async_update_entity(upload, disabled_by=er.RegistryEntryDisabler.USER)
+    card = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))
+    assert card["cards"][-2] == {"type": "horizontal-stack", "cards": [_gauge("Download")]}
 
 
 async def test_card_import_failure_does_not_stop_monitoring(

@@ -22,6 +22,8 @@ SCALE: tuple[tuple[float, Grade], ...] = (
 
 
 WORST: Grade = "F"
+# "Anything worse than a B may affect video calls, gaming, and other real-time applications" (R3).
+MAY_AFFECT_REAL_TIME: tuple[Grade, ...] = ("C", "D", "F")
 
 
 def grade(increase_ms: float) -> Grade:
