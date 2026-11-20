@@ -72,10 +72,17 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: false
 
-  core-python-312:
-    # Core (and its CLI) supports Python 3.12+, below HA's 3.14 floor.
-    name: Core on Python 3.12
-    runs-on: ubuntu-latest
+  core:
+    # Core (and its CLI) supports Python 3.12+, below HA's 3.14 floor, on Linux and Windows
+    # (ADR-005). Windows runs the real IP Helper bindings' loading and Windows' asyncio loop;
+    # GitHub's runners block outbound ping, so real probes stay with make test-windows
+    # (docs/RELEASING.md).
+    name: Core on Python 3.12, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
 
@@ -91,6 +98,9 @@ jobs:
 
       - name: Run Core tests
         run: pytest packages/internet_health_monitor_core/tests --no-cov -p no:cacheprovider
+
+      - name: The command line starts
+        run: internet-health-monitor --help
 
   spell-check:
     name: Spelling

@@ -102,6 +102,7 @@ async def _run(*args: str, timeout: float) -> tuple[int | None, str, str]:
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
     except TimeoutError:
         proc.kill()
+        await proc.wait()  # reap it, so nothing of it outlives this call
         raise
     return proc.returncode, stdout.decode(errors="replace"), stderr.decode(errors="replace")
 

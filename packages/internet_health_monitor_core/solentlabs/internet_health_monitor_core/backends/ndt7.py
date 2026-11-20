@@ -10,6 +10,7 @@ import asyncio
 import json
 import os
 import statistics
+import time
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -105,12 +106,11 @@ class Ndt7Backend:
 
     async def _download(self, session: aiohttp.ClientSession, url: str, max_bytes: int, transfer: Transfer) -> _Run:
         """Receive until the server closes, the protocol's longest run passes, or *max_bytes* arrive."""
-        loop = asyncio.get_running_loop()
         readings, total = _Readings(), 0
         async with session.ws_connect(
             url, protocols=(PROTOCOL,), headers=HEADERS, max_msg_size=0, timeout=WS_TIMEOUT
         ) as ws:
-            start = loop.time()
+            start = time.perf_counter()  # the loop's clock ticks every 15.6 ms on Windows
             async for msg in ws:
                 if msg.type is aiohttp.WSMsgType.BINARY:
                     total += len(msg.data)
@@ -119,16 +119,15 @@ class Ndt7Backend:
                     total += len(msg.data)
                     transfer.downloaded += len(msg.data)
                     readings.add(msg.data)
-                if loop.time() - start >= timing.SPEED_TEST_NDT7_MAX_S or total >= max_bytes:
+                if time.perf_counter() - start >= timing.SPEED_TEST_NDT7_MAX_S or total >= max_bytes:
                     break
-            elapsed = loop.time() - start
+            elapsed = time.perf_counter() - start
         if total <= 0 or elapsed <= 0:
             raise SpeedTestError("M-Lab server sent no data")
         return _Run(total * 8 / 1e6 / elapsed, total, readings, _ended(total, max_bytes), elapsed)
 
     async def _upload(self, session: aiohttp.ClientSession, url: str, max_bytes: int, transfer: Transfer) -> _Run:
         """Send for SPEED_TEST_DIRECTION_S or *max_bytes*; throughput is what the server says it received."""
-        loop = asyncio.get_running_loop()
         readings, sent, size = _Readings(), 0, FIRST_MESSAGE
         async with session.ws_connect(
             url, protocols=(PROTOCOL,), headers=HEADERS, max_msg_size=0, timeout=WS_TIMEOUT
@@ -140,16 +139,18 @@ class Ndt7Backend:
                         readings.add(msg.data)
 
             reader = asyncio.create_task(read())
-            start = loop.time()
+            start = time.perf_counter()  # the loop's clock ticks every 15.6 ms on Windows
             try:
-                while loop.time() - start < timing.SPEED_TEST_DIRECTION_S and sent < max_bytes and not ws.closed:
+                while (
+                    time.perf_counter() - start < timing.SPEED_TEST_DIRECTION_S and sent < max_bytes and not ws.closed
+                ):
                     await ws.send_bytes(_PAYLOAD[:size])
                     sent += size
                     transfer.uploaded += size
                     # Bytes sent so far stand in for the protocol's "queued bytes" (R9).
                     if size < MAX_MESSAGE and size < sent // 16:
                         size *= 2
-                elapsed = loop.time() - start
+                elapsed = time.perf_counter() - start
                 # close() discards messages still arriving, so let the server report what it
                 # received (or close the test itself) first.
                 await asyncio.wait({reader}, timeout=timing.SPEED_TEST_NDT7_CLOSE_GRACE_S)

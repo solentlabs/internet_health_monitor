@@ -10,6 +10,7 @@ import asyncio
 import contextlib
 import os
 import statistics
+import time
 from collections.abc import AsyncIterator, Callable, Coroutine
 from dataclasses import dataclass, field
 from typing import Any
@@ -83,11 +84,10 @@ def check_status(resp: aiohttp.ClientResponse) -> None:
 
 async def probe(session: aiohttp.ClientSession, server: HttpServer) -> float:
     """One round trip in ms: time to response headers, minus the server's own processing time."""
-    loop = asyncio.get_running_loop()
-    start = loop.time()
+    start = time.perf_counter()  # durations: the loop's clock ticks every 15.6 ms on Windows
     headers = {**HEADERS, **server.probe_headers}
     async with session.get(server.probe_url(), headers=headers, timeout=REQUEST_TIMEOUT, allow_redirects=False) as resp:
-        elapsed_ms = (loop.time() - start) * 1000
+        elapsed_ms = (time.perf_counter() - start) * 1000
         check_status(resp)
         await resp.read()
         return max(0.0, elapsed_ms - server.server_time_ms(resp))
@@ -176,20 +176,19 @@ async def _direction(
     session: aiohttp.ClientSession, server: HttpServer, stream: StreamFn, counter: _Counter
 ) -> _Direction:
     """Load one direction until its window or data limit ends it."""
-    loop = asyncio.get_running_loop()
-    start = loop.time()
+    start = time.perf_counter()  # durations: the loop's clock ticks every 15.6 ms on Windows
     samples: list[float] = []
     tasks = [asyncio.create_task(stream(session, server, i, counter)) for i in range(STREAMS)]
     prober = asyncio.create_task(_probe_loop(session, server, samples))
     try:
         await _run_until(tasks, counter, timing.SPEED_TEST_WARMUP_S)
-        warm_bytes, warm_time, warm_samples = counter.total, loop.time(), len(samples)
+        warm_bytes, warm_time, warm_samples = counter.total, time.perf_counter(), len(samples)
         remaining = timing.SPEED_TEST_DIRECTION_S - timing.SPEED_TEST_WARMUP_S
         await _run_until(tasks, counter, remaining)
-        measured, seconds = counter.total - warm_bytes, loop.time() - warm_time
+        measured, seconds = counter.total - warm_bytes, time.perf_counter() - warm_time
         if measured <= 0:  # limit reached during warm-up: use the whole run
             measured, seconds = counter.total, seconds + timing.SPEED_TEST_WARMUP_S
-        loaded_s = loop.time() - start
+        loaded_s = time.perf_counter() - start
     finally:
         for task in [*tasks, prober]:
             task.cancel()

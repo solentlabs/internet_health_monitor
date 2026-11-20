@@ -32,9 +32,13 @@ with a letter (`0.2.0b1`, PEP 440) becomes a GitHub pre-release.
 
 ## To Release
 
-1. In one commit on `main`: set the version in the four places and
+1. Run `make test-windows` from WSL: Core's command line on your Windows
+   Python, with real pings and a trace. CI tests Core on Windows, but
+   GitHub's runners block outbound ping, so only this checks the real
+   probes.
+2. In one commit on `main`: set the version in the four places and
    rename CHANGELOG.md's `## [Unreleased]` to the version's heading.
-2. Push a tag `v` and the version:
+3. Push a tag `v` and the version:
 
    ```bash
    git tag v0.1.0 && git push origin v0.1.0
@@ -42,7 +46,8 @@ with a letter (`0.2.0b1`, PEP 440) becomes a GitHub pre-release.
 
 The workflow then runs, each step only if the one before passed:
 
-1. **CI**: `tests.yml` on the tagged commit.
+1. **CI**: `tests.yml` on the tagged commit, Core on Linux and Windows
+   included.
 2. **Build**: `scripts/check_release.py` refuses a tag that disagrees
    with any version, has no CHANGELOG heading, or sits on a commit not in
    `main`'s history. Core is built once, and the wheel is installed and
