@@ -63,5 +63,9 @@ def test_result_increases_and_grade(
     result = SpeedTestResult("cloudflare", "s", 100.0, 10.0, idle, down, up, 1.0, 0.0)
     got = (result.download_latency_increase_ms, result.upload_latency_increase_ms, result.bufferbloat_grade)
     assert got == expected
+    # The number the grade reads: the larger increase, only when both exist.
+    larger = max(expected[0], expected[1]) if None not in expected[:2] else None  # type: ignore[type-var]
+    assert result.bufferbloat_increase_ms == larger
     data = result.to_dict()
     assert (data["download_latency_increase_ms"], data["bufferbloat_grade"]) == (expected[0], expected[2])
+    assert data["bufferbloat_increase_ms"] == larger

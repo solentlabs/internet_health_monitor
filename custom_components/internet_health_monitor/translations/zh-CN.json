@@ -363,6 +363,9 @@
           },
           "tested_at": {
             "name": "测试时间"
+          },
+          "latency_increase_ms": {
+            "name": "延迟增加"
           }
         }
       },

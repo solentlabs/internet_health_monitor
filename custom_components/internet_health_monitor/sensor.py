@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from typing import Any, Literal, override
+from typing import Any, override
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -123,8 +123,8 @@ class SpeedTestSensorEntityDescription(SensorEntityDescription):
     """One field of the latest speed test."""
 
     value_fn: Callable[[SpeedTestResult], StateType]
-    # Throughput sensors also say what ended their direction and after how long.
-    direction: Literal["download", "upload"] | None = None
+    # Attributes beyond backend, server and tested_at.
+    attrs_fn: Callable[[SpeedTestResult], dict[str, Any]] | None = None
 
 
 def _speed(
@@ -150,8 +150,19 @@ _MS: dict[str, Any] = {
 GRADES: dict[str, str] = {"A+": "a_plus", "A": "a", "B": "b", "C": "c", "D": "d", "F": "f"}
 
 SPEED_TEST_SENSORS: tuple[SpeedTestSensorEntityDescription, ...] = (
-    _speed("download", lambda r: r.download_mbps, direction="download", **_RATE),
-    _speed("upload", lambda r: r.upload_mbps, direction="upload", **_RATE),
+    # Throughput says what ended its direction and after how long: whether the test was whole.
+    _speed(
+        "download",
+        lambda r: r.download_mbps,
+        attrs_fn=lambda r: {"ended_by": r.download_ended_by, "duration_s": r.download_s},
+        **_RATE,
+    ),
+    _speed(
+        "upload",
+        lambda r: r.upload_mbps,
+        attrs_fn=lambda r: {"ended_by": r.upload_ended_by, "duration_s": r.upload_s},
+        **_RATE,
+    ),
     _speed("idle_latency", lambda r: r.idle_latency_ms, **_MS),
     _speed("download_latency", lambda r: r.download_latency_ms, **_MS),
     _speed("upload_latency", lambda r: r.upload_latency_ms, **_MS),
@@ -167,6 +178,8 @@ SPEED_TEST_SENSORS: tuple[SpeedTestSensorEntityDescription, ...] = (
     _speed(
         "bufferbloat_grade",
         lambda r: GRADES[r.bufferbloat_grade] if r.bufferbloat_grade else None,
+        # The number the grade reads, for the card's grade gauge (dashboard.py).
+        attrs_fn=lambda r: {"latency_increase_ms": r.bufferbloat_increase_ms},
         device_class=SensorDeviceClass.ENUM,
         options=list(GRADES.values()),
         state_class=None,
@@ -292,16 +305,14 @@ class SpeedTestSensor(InternetHealthEntity[SpeedTestCoordinator], SensorEntity):
     @property
     @override
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Which backend and server measured it, and when; for throughput, what ended the direction and when."""
+        """Which backend and server measured it, and when, plus the description's own attributes."""
         result = self.coordinator.data
         if not result:
             return {}
         tested_at = dt_util.utc_from_timestamp(result.started_at).isoformat()
         attrs: dict[str, Any] = {"backend": result.backend, "server": result.server, "tested_at": tested_at}
-        if self.entity_description.direction == "download":
-            attrs |= {"ended_by": result.download_ended_by, "duration_s": result.download_s}
-        elif self.entity_description.direction == "upload":
-            attrs |= {"ended_by": result.upload_ended_by, "duration_s": result.upload_s}
+        if attrs_fn := self.entity_description.attrs_fn:
+            attrs |= attrs_fn(result)
         return attrs
 
 

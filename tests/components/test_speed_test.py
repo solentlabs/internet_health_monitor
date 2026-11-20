@@ -181,11 +181,13 @@ async def test_press_runs_and_fills_sensors(
     assert "tested_at" in attrs.attributes
 
 
-# sensor -> (ended_by, duration_s) attributes: whether each direction ran its whole window.
+# sensor -> attributes beyond backend, server and tested_at: whether each direction ran its whole
+# window; for the grade, the number it reads (the larger increase), which the card's gauge shows.
 # fmt: off
 QUALITY_CASES: list[tuple[str, dict[str, Any]]] = [
-    ("speed_test_download", {"ended_by": "time",       "duration_s": 10.0}),
-    ("speed_test_upload",   {"ended_by": "data_limit", "duration_s": 6.2}),
+    ("speed_test_download",          {"ended_by": "time",       "duration_s": 10.0}),
+    ("speed_test_upload",            {"ended_by": "data_limit", "duration_s": 6.2}),
+    ("speed_test_bufferbloat_grade", {"latency_increase_ms": 298.0}),
 ]
 # fmt: on
 
@@ -194,7 +196,7 @@ QUALITY_CASES: list[tuple[str, dict[str, Any]]] = [
 async def test_throughput_says_what_ended_it(
     hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, key: str, expected: dict[str, Any]
 ) -> None:
-    """Download and upload say whether time or the data limit ended them, and after how long."""
+    """Download and upload say what ended them and after how long; the grade gives the increase it reads."""
     entry = await setup_entry(**CLOUDFLARE)
     await _press(hass, entry)
     state = hass.states.get(entity_id(hass, "sensor", entry, key) or "")

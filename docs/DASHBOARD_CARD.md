@@ -44,7 +44,7 @@ YAML. One schema in `dashboard.py` validates all three.
 | `include_latency` | true | History graphs: hop latency, and DNS latency on its own (its scale would flatten the hops) |
 | `include_jitter` | true | History graph: hop jitter |
 | `include_packet_loss` | true | History graph: hop packet loss |
-| `include_speed_test` | true | Entities card: each speed test reading, the bufferbloat grade and increases included, and Run speed test; a bufferbloat gauge per direction; history graph: download and upload. Shown only when a speed test service is chosen |
+| `include_speed_test` | true | Entities card: each speed test reading and Run speed test; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
 | `graph_hours` | 24 | Hours each graph shows, 1 to 168 |
 
 Renaming or removing an option breaks saved dashboards: the card must
@@ -68,15 +68,18 @@ Errors, raised as translated `ServiceValidationError`:
 A failed poll is not an error: the layout comes from the registry, and
 the entities show their own unavailable state.
 
-The bufferbloat gauges are HA gauge cards of each direction's latency
-increase, 0 to 500 ms (larger values sit at the end), banded at
-Waveform's grade bounds (REFERENCES.md § R3, Core `bufferbloat.py`).
-Waveform publishes no colors, only that "Anything worse than a B may
-affect video calls, gaming, and other real-time applications", so bands
-up to B take the theme's success color and those past it the error
-color. The bands carry no labels: HA would show a label in place of the
-value, grading each direction, while Waveform grades the larger
-increase, which the grade row shows.
+The bufferbloat gauges are HA gauge cards from 0 to 500 ms (larger
+values sit at the end), banded at Waveform's grade bounds
+(REFERENCES.md § R3, Core `bufferbloat.py`). Waveform publishes no
+colors, only that "Anything worse than a B may affect video calls,
+gaming, and other real-time applications", so bands up to B take the
+theme's success color and those past it the error color. The first
+gauge reads the grade sensor's `latency_increase_ms`, the larger
+increase, and its bands carry the grades as labels, which HA shows in
+place of the value: the letter, as Waveform grades. The download and
+upload gauges carry no labels, since a letter there would grade each
+direction; they show their increase in ms. The entities card lists
+neither the grade nor the increases, since the gauges show them.
 
 Every row and graph line carries a short name ("Latency", "Gateway"),
 so the device name is not repeated on each line; a name the user gave

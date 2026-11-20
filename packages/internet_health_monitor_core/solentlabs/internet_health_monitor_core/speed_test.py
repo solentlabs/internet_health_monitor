@@ -109,10 +109,16 @@ class SpeedTestResult:
         return _increase(self.upload_latency_ms, self.idle_latency_ms)
 
     @property
+    def bufferbloat_increase_ms(self) -> float | None:
+        """The larger of the two increases, which the grade reads; None without both."""
+        down, up = self.download_latency_increase_ms, self.upload_latency_increase_ms
+        return max(down, up) if down is not None and up is not None else None
+
+    @property
     def bufferbloat_grade(self) -> Grade | None:
         """Waveform's grade of the larger increase (bufferbloat.py); None without both."""
-        down, up = self.download_latency_increase_ms, self.upload_latency_increase_ms
-        return grade(max(down, up)) if down is not None and up is not None else None
+        increase = self.bufferbloat_increase_ms
+        return grade(increase) if increase is not None else None
 
     def to_dict(self) -> dict[str, Any]:
         """Plain data for JSON output and diagnostics, with the increases and grade."""
@@ -120,6 +126,7 @@ class SpeedTestResult:
             **asdict(self),
             "download_latency_increase_ms": self.download_latency_increase_ms,
             "upload_latency_increase_ms": self.upload_latency_increase_ms,
+            "bufferbloat_increase_ms": self.bufferbloat_increase_ms,
             "bufferbloat_grade": self.bufferbloat_grade,
         }
 

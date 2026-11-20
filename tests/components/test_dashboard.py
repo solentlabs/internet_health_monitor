@@ -321,66 +321,74 @@ def test_card_form_matches_schema() -> None:
     assert form == CARD_OPTIONS_SCHEMA({})
 
 
-# Bufferbloat gauge bands: Waveform's scale (R3), from each grade's lower bound (A+ 0, A 5, B 30,
-# C 60, D 200, F 400). Success color up to B, error color past it: Waveform's "Anything worse than
-# a B may affect video calls, gaming, and other real-time applications"; it publishes no colors.
-# No labels: HA shows a segment's label instead of the value, which would grade each direction.
+# Bufferbloat gauge bands: Waveform's scale (R3), from each grade's lower bound. Success color up
+# to B, error color past it: Waveform's "Anything worse than a B may affect video calls, gaming,
+# and other real-time applications"; it publishes no colors. Only the grade gauge, which reads the
+# larger increase as Waveform grades, carries the grade labels (HA shows a label instead of the value).
 # fmt: off
-GAUGE_SEGMENTS: list[dict[str, Any]] = [
-    {"from": 0,   "color": "var(--success-color)"},
-    {"from": 5,   "color": "var(--success-color)"},
-    {"from": 30,  "color": "var(--success-color)"},
-    {"from": 60,  "color": "var(--error-color)"},
-    {"from": 200, "color": "var(--error-color)"},
-    {"from": 400, "color": "var(--error-color)"},
+BANDS: list[tuple[int, str, str]] = [
+    (0,   "var(--success-color)", "A+"),
+    (5,   "var(--success-color)", "A"),
+    (30,  "var(--success-color)", "B"),
+    (60,  "var(--error-color)",   "C"),
+    (200, "var(--error-color)",   "D"),
+    (400, "var(--error-color)",   "F"),
 ]
 # fmt: on
+GAUGE = {"type": "gauge", "min": 0, "max": 500, "needle": True}
+SENSOR = "sensor.internet_health_speed_test_"
 
 
-def _gauge(direction: str) -> dict[str, Any]:
-    """The bufferbloat gauge the card shows for one direction."""
-    return {
-        "type": "gauge",
-        "entity": f"sensor.internet_health_speed_test_{direction.lower()}_latency_increase",
-        "name": f"{direction} bufferbloat",
-        "min": 0,
-        "max": 500,
-        "needle": True,
-        "segments": GAUGE_SEGMENTS,
-    }
+def _gauge(key: str, name: str, *, labels: bool = False) -> dict[str, Any]:
+    """One bufferbloat gauge as the card builds it."""
+    segments = [{"from": f, "color": c, **({"label": g} if labels else {})} for f, c, g in BANDS]
+    return {**GAUGE, "entity": f"{SENSOR}{key}", "name": name, "segments": segments}
+
+
+GRADE_GAUGE = {
+    **_gauge("bufferbloat_grade", "Bufferbloat", labels=True),
+    "attribute": "latency_increase_ms",
+    "unit": "ms",
+}
+DOWNLOAD_GAUGE = _gauge("download_latency_increase", "Download bufferbloat")
+UPLOAD_GAUGE = _gauge("upload_latency_increase", "Upload bufferbloat")
 
 
 async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """With a speed test service, the card adds readings, bufferbloat gauges and a throughput graph; off hides them."""
+    """With a speed test service, the card adds readings, the grade gauge full width, the direction gauges side by
+    side, and a throughput graph; off hides them."""
     await setup_entry(speed_test_backend="cloudflare")
     card = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))
-    speed, gauges, throughput = card["cards"][-3:]
+    speed, grade, directions, throughput = card["cards"][-4:]
     assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
         "Speed test",
-        {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
+        {"entity": f"{SENSOR}download", "name": "Download"},
         {"entity": "button.internet_health_run_speed_test", "name": "Run speed test"},
     )
-    assert {"entity": "sensor.internet_health_speed_test_bufferbloat_grade", "name": "Bufferbloat grade"} in (
-        speed["entities"]
-    )
-    assert gauges == {"type": "horizontal-stack", "cards": [_gauge("Download"), _gauge("Upload")]}
+    # The gauges show the grade and the increases, so the list does not repeat them.
+    listed = {row["entity"] for row in speed["entities"]}
+    gauged = {f"{SENSOR}{key}" for key in ("bufferbloat_grade", "download_latency_increase", "upload_latency_increase")}
+    assert not listed & gauged
+    assert grade == GRADE_GAUGE
+    assert directions == {"type": "horizontal-stack", "cards": [DOWNLOAD_GAUGE, UPLOAD_GAUGE]}
     assert throughput["entities"] == [
-        {"entity": "sensor.internet_health_speed_test_download", "name": "Download"},
-        {"entity": "sensor.internet_health_speed_test_upload", "name": "Upload"},
+        {"entity": f"{SENSOR}download", "name": "Download"},
+        {"entity": f"{SENSOR}upload", "name": "Upload"},
     ]
     hidden = build_card_config(hass, CARD_OPTIONS_SCHEMA({"include_speed_test": False}))
-    assert len(hidden["cards"]) == len(card["cards"]) - 3
+    assert len(hidden["cards"]) == len(card["cards"]) - 4
 
 
-async def test_disabled_increase_has_no_gauge(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+async def test_disabled_sensor_has_no_gauge(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
     """A gauge whose entity the user disabled is left out, as rows are."""
     entry = await setup_entry(speed_test_backend="cloudflare")
     registry = er.async_get(hass)
-    upload = entity_id(hass, "sensor", entry, "speed_test_upload_latency_increase")
-    assert upload
-    registry.async_update_entity(upload, disabled_by=er.RegistryEntryDisabler.USER)
+    for key in ("speed_test_bufferbloat_grade", "speed_test_upload_latency_increase"):
+        disabled = entity_id(hass, "sensor", entry, key)
+        assert disabled
+        registry.async_update_entity(disabled, disabled_by=er.RegistryEntryDisabler.USER)
     card = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))
-    assert card["cards"][-2] == {"type": "horizontal-stack", "cards": [_gauge("Download")]}
+    assert card["cards"][-2] == {"type": "horizontal-stack", "cards": [DOWNLOAD_GAUGE]}
 
 
 async def test_card_import_failure_does_not_stop_monitoring(

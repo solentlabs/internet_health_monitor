@@ -363,6 +363,9 @@
           },
           "tested_at": {
             "name": "Getestet am"
+          },
+          "latency_increase_ms": {
+            "name": "Latenzanstieg"
           }
         }
       },

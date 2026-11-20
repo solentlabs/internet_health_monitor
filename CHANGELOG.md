@@ -41,8 +41,9 @@ with Python 3.12 or later.
   option says what the service sees; M-Lab asks for consent first because
   it publishes results with your IP address.
 - **Bufferbloat:** the latency increase under load in each direction, and
-  a grade from A+ to F on Waveform's published scale; the card shows a
-  gauge per direction, colored where Waveform says real-time use suffers.
+  a grade from A+ to F on Waveform's published scale. The card shows them
+  as gauges, the grade's letter and each direction in ms, colored where
+  Waveform says real-time use suffers.
 - **Hop ownership (off by default):** the network operator of each public
   hop, from Team Cymru over DNS.
 - **Usage totals:** pings, traceroutes, DNS queries, speed tests and their

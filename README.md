@@ -150,7 +150,8 @@ Hop sensors carry attributes: `hop_ip`, `reachable`, `packets_sent`,
 ownership on, `asn` and `as_name`. Speed test sensors carry `backend`,
 `server` and `tested_at`; download and upload also carry `ended_by`
 (`time`, or `data_limit` when the limit stopped that direction early) and
-`duration_s`, the seconds it was loaded. The measurement sensors keep
+`duration_s`, the seconds it was loaded; the bufferbloat grade carries
+`latency_increase_ms`, the larger increase it was read from. The measurement sensors keep
 long-term statistics only with the *Long-term statistics* option on.
 
 ### Usage Totals
@@ -358,7 +359,7 @@ the browser: it learns of the card when the page loads.
 | Latency graphs | on | Hop latency history, and DNS latency on its own graph |
 | Jitter graph | on | Hop jitter history |
 | Packet loss graph | on | Hop packet loss history |
-| Speed test | on | Each speed test reading (bufferbloat grade and increases included), Run speed test, a bufferbloat gauge per direction colored at Waveform's B line, and a throughput graph. Shown only with a speed test service |
+| Speed test | on | Each speed test reading and Run speed test; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it); and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
 Each measurement has its own row or line; there is no combined score

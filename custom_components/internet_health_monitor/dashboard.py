@@ -78,12 +78,11 @@ _SPEED_TEST: list[Row] = [
     ("sensor", "speed_test_idle_latency", "Idle latency"),
     ("sensor", "speed_test_download_latency", "Download latency"),
     ("sensor", "speed_test_upload_latency", "Upload latency"),
-    ("sensor", "speed_test_bufferbloat_grade", "Bufferbloat grade"),
-    ("sensor", "speed_test_download_latency_increase", "Download latency increase"),
-    ("sensor", "speed_test_upload_latency_increase", "Upload latency increase"),
     ("sensor", "speed_test_data_used", "Data used"),
     ("button", "run_speed_test", "Run speed test"),
 ]
+# The grade and the increases appear only as gauges: the list above does not repeat them.
+_GRADE: list[Row] = [("sensor", "speed_test_bufferbloat_grade", "Bufferbloat")]
 _BUFFERBLOAT: list[Row] = [
     ("sensor", "speed_test_download_latency_increase", "Download bufferbloat"),
     ("sensor", "speed_test_upload_latency_increase", "Upload bufferbloat"),
@@ -112,28 +111,36 @@ def _entities(title: str, rows: list[dict[str, str]]) -> dict[str, Any]:
     return {"type": "entities", "title": title, "entities": rows}
 
 
-def _segments() -> list[dict[str, Any]]:
+def _segments(*, labels: bool) -> list[dict[str, Any]]:
     """Waveform's bands (Core bufferbloat.py, R3), each from its grade's lower bound.
 
     Waveform publishes no colors, only that grades past B may affect real-time use,
-    so the theme's success color up to B and its error color after. No labels: HA
-    shows a segment's label instead of the value, which would grade each direction,
-    and Waveform grades only the larger increase (the grade sensor).
+    so the theme's success color up to B and its error color after. HA shows a
+    segment's label instead of the value, so only the grade gauge, which reads the
+    larger increase as Waveform grades, carries the grades as labels.
     """
     lower = [0.0, *(bound for bound, _ in SCALE)]
     grades = [*(g for _, g in SCALE), WORST]
-    return [
-        {"from": int(start), "color": "var(--error-color)" if grade in MAY_AFFECT_REAL_TIME else "var(--success-color)"}
-        for start, grade in zip(lower, grades, strict=True)
-    ]
+    segments: list[dict[str, Any]] = []
+    for start, grade in zip(lower, grades, strict=True):
+        color = "var(--error-color)" if grade in MAY_AFFECT_REAL_TIME else "var(--success-color)"
+        segments.append({"from": int(start), "color": color, **({"label": grade} if labels else {})})
+    return segments
 
 
-def _gauges(rows: list[dict[str, str]]) -> dict[str, Any]:
-    """One bufferbloat gauge per direction, side by side."""
-    cards = [
-        {"type": "gauge", **row, "min": 0, "max": GAUGE_MAX_MS, "needle": True, "segments": _segments()} for row in rows
-    ]
-    return {"type": "horizontal-stack", "cards": cards}
+def _gauge(row: dict[str, str], *, labels: bool = False) -> dict[str, Any]:
+    """A bufferbloat gauge over Waveform's bands."""
+    return {"type": "gauge", **row, "min": 0, "max": GAUGE_MAX_MS, "needle": True, "segments": _segments(labels=labels)}
+
+
+def _grade_gauge(row: dict[str, str]) -> dict[str, Any]:
+    """The grade: the larger increase, labeled with its grade, full width."""
+    return {**_gauge(row, labels=True), "attribute": "latency_increase_ms", "unit": "ms"}
+
+
+def _direction_gauges(rows: list[dict[str, str]]) -> dict[str, Any]:
+    """Each direction's increase in ms, side by side."""
+    return {"type": "horizontal-stack", "cards": [_gauge(row) for row in rows]}
 
 
 def _graph(title: str, lines: list[dict[str, str]], hours: int) -> dict[str, Any]:
@@ -157,8 +164,9 @@ def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) 
     parts += [_graph(title, lines, hours) for opt, title, t in _GRAPHS if options[opt] and (lines := rows(t))]
     if options["include_speed_test"] and (speed := rows(_SPEED_TEST)):
         parts.append(_entities("Speed test", speed))
-        if bloat := rows(_BUFFERBLOAT):
-            parts.append(_gauges(bloat))
+        parts += [_grade_gauge(row) for row in rows(_GRADE)]
+        if directions := rows(_BUFFERBLOAT):
+            parts.append(_direction_gauges(directions))
         parts.append(_graph("Throughput", rows(_THROUGHPUT), hours))
     return parts
 
