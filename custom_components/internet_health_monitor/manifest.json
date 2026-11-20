@@ -12,10 +12,10 @@
   ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/solentlabs/internet-health-monitor",
+  "documentation": "https://github.com/solentlabs/internet_health_monitor",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/solentlabs/internet-health-monitor/issues",
+  "issue_tracker": "https://github.com/solentlabs/internet_health_monitor/issues",
   "loggers": [
     "solentlabs.internet_health_monitor_core"
   ],

@@ -29,10 +29,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/solentlabs/internet-health-monitor"
-Repository = "https://github.com/solentlabs/internet-health-monitor"
-Issues = "https://github.com/solentlabs/internet-health-monitor/issues"
-Changelog = "https://github.com/solentlabs/internet-health-monitor/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/solentlabs/internet_health_monitor"
+Repository = "https://github.com/solentlabs/internet_health_monitor"
+Issues = "https://github.com/solentlabs/internet_health_monitor/issues"
+Changelog = "https://github.com/solentlabs/internet_health_monitor/blob/main/CHANGELOG.md"
 
 [project.scripts]
 internet-health-monitor = "solentlabs.internet_health_monitor_core.cli:main"

@@ -58,7 +58,7 @@ Monitor is the reference for how each is done.
    coverage gates, icon, configuration UX, names changed by renaming the
    device (ADR-010), sensor history (long-term statistics by choice,
    ADR-013), metrics.
-2. **GitHub.** Push to `solentlabs/internet-health-monitor`, public,
+2. **GitHub.** Push to `solentlabs/internet_health_monitor`, public,
    with CI and branch protection.
 3. **Live HA.** Update the deployed HA to at least IHM's minimum
    (ADR-008), then install IHM with Core fetched from a pushed commit

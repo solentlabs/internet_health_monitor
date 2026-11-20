@@ -31,7 +31,7 @@ except PackageNotFoundError:  # pragma: no cover - running from a source tree wi
 CLIENT_NAME = "internet-health-monitor"
 CLIENT_VERSION = _VERSION
 # Honest identification (ADR-003): every request a backend sends carries this.
-USER_AGENT = f"{CLIENT_NAME}/{CLIENT_VERSION} (+https://github.com/solentlabs/internet-health-monitor)"
+USER_AGENT = f"{CLIENT_NAME}/{CLIENT_VERSION} (+https://github.com/solentlabs/internet_health_monitor)"
 
 
 class SpeedTestError(Exception):

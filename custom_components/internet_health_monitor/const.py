@@ -15,7 +15,7 @@ NAME = "Internet Health Monitor"
 # in HA instead of a prefix setting (ADR-010).
 DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
-TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet-health-monitor#troubleshooting"
+TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet_health_monitor#troubleshooting"
 VERSION = "0.1.0"  # must equal manifest.json "version" (tests/components/test_const.py)
 
 # Option keys

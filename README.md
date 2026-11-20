@@ -551,7 +551,7 @@ Assistant (Linux): see
 
 ```bash
 # Clone the repository
-git clone https://github.com/solentlabs/internet-health-monitor.git
+git clone https://github.com/solentlabs/internet_health_monitor.git
 cd internet_health_monitor
 
 # Set up development environments (needs uv: https://docs.astral.sh/uv/)
@@ -570,7 +570,7 @@ make check
 This integration is part of the **Solent Networks Suite** by Solent Labs:
 
 - [Cable Modem Monitor](https://github.com/kwschulz/cable_modem_monitor) - Monitor your cable modem's signal quality
-- [Internet Health Monitor](https://github.com/solentlabs/internet-health-monitor) - Track gateway latency, multi-hop visibility, and DNS health
+- [Internet Health Monitor](https://github.com/solentlabs/internet_health_monitor) - Track gateway latency, multi-hop visibility, and DNS health
 
 ## License
 

@@ -78,7 +78,7 @@ in a subfolder, so the link is GitHub's zip of a commit plus
    pushed commit's link, `<commit>` its full hash:
 
    ```json
-   "solentlabs-internet-health-monitor-core @ https://github.com/solentlabs/internet-health-monitor/archive/<commit>.zip#subdirectory=packages/internet_health_monitor_core"
+   "solentlabs-internet-health-monitor-core @ https://github.com/solentlabs/internet_health_monitor/archive/<commit>.zip#subdirectory=packages/internet_health_monitor_core"
    ```
 
 3. Restart HA, then add the integration under **Settings > Devices &
@@ -101,7 +101,7 @@ one workflow file by name, so each entry names `release.yml`
       repository's settings.
 - [ ] **PyPI pending publisher** (account sidebar, Publishing): project
       `solentlabs-internet-health-monitor-core`, owner `solentlabs`,
-      repository `internet-health-monitor`, workflow `release.yml`,
+      repository `internet_health_monitor`, workflow `release.yml`,
       environment `pypi-core`.
 - [ ] **Test PyPI pending publisher**: the same, environment
       `test-pypi-core`.

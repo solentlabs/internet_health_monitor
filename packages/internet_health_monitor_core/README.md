@@ -39,7 +39,7 @@ of up to an hour; runs past either limit are refused. Runs are recorded in
 
 Jitter is the mean change between consecutive ping round trips within a
 poll, so it needs `--ping-count` of 2 or more. Speed test services and
-their terms: [docs/SPEED_TEST_BACKENDS.md](https://github.com/solentlabs/internet-health-monitor/blob/main/docs/SPEED_TEST_BACKENDS.md).
+their terms: [docs/SPEED_TEST_BACKENDS.md](https://github.com/solentlabs/internet_health_monitor/blob/main/docs/SPEED_TEST_BACKENDS.md).
 
 ## Library
 

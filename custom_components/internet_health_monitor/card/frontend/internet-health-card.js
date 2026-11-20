@@ -153,6 +153,6 @@ if (!window.customCards.some((card) => card.type === CARD_TAG)) {
     type: CARD_TAG,
     name: "Internet Health",
     description: "Reachability, latency, jitter and packet loss along your path to the internet.",
-    documentationURL: "https://github.com/solentlabs/internet-health-monitor/blob/main/docs/DASHBOARD_CARD.md",
+    documentationURL: "https://github.com/solentlabs/internet_health_monitor/blob/main/docs/DASHBOARD_CARD.md",
   });
 }
