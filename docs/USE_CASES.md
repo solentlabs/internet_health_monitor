@@ -41,9 +41,10 @@ probe cadence added for bloat tracking states its data cost.
 **Who:** A user who changed something (enabled SQM on a new router,
 moved the camera to a lower bitrate, changed plan).
 **Need:** Before/after comparison on the same targets.
-**Done when:** Hop sensors expose the target IP as an attribute and keep
-long-term statistics (`state_class: measurement`), so before/after
-periods are comparable, or visibly not when the target changed.
+**Done when:** Hop sensors expose the target IP as an attribute and, with
+the *Long-term statistics* option on (ADR-013), keep long-term
+statistics, so before/after periods are comparable, or visibly not when
+the target changed. Within 10 days, state history alone serves.
 
 ## UC-7: Tell a modem problem from a queueing problem
 

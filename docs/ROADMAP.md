@@ -55,7 +55,8 @@ Monitor is the reference for how each is done.
 1. **Local.** Everything that can be built and tested locally is: core as
    a portable package (ADR-005), modular backends (ADR-003), tests and
    coverage gates, icon, configuration UX, a customizable entity name
-   prefix, sensor history (long-term statistics), metrics.
+   prefix, sensor history (long-term statistics by choice, ADR-013),
+   metrics.
 2. **GitHub.** Push to `solentlabs/internet-health-monitor` with CI.
 3. **PyPI.** Publish `solentlabs-internet-health-monitor-core`, the
    version `manifest.json` pins (ADR-005). HA installs it from there.

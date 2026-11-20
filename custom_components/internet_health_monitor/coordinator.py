@@ -62,6 +62,8 @@ class InternetHealthRuntimeData:
     enable_dns: bool
     # Usage total sensors exist only when chosen; the totals are kept either way.
     usage_totals: bool
+    # Measurement sensors carry state_class only when chosen: HA never purges their statistics (ADR-013).
+    long_term_statistics: bool
     # HA's own installation type, read once at setup (sensor.py INSTALL_TYPES).
     installation_type: str
     # Present only when the user chose a speed test backend (and, for M-Lab, consented).

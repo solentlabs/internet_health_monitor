@@ -27,6 +27,7 @@ from .const import (
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_LONG_TERM_STATISTICS,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
     CONF_SPEED_TEST_AUTOMATIC,
@@ -68,6 +69,20 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the actions and the dashboard card, once per HA start."""
     async_setup_services(hass)
     await async_register_card(hass)
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
+    """Bring an older entry up to date before setup.
+
+    1.1 -> 1.2: entries from before the Long-term statistics option already
+    built statistics, so they keep it on; turning it off would raise one HA
+    warning per sensor (ADR-013). New entries start off. HA itself refuses an
+    entry from a newer major version before calling this.
+    """
+    if entry.minor_version < 2:
+        options = {CONF_LONG_TERM_STATISTICS: True, **entry.options}
+        hass.config_entries.async_update_entry(entry, options=options, minor_version=2)
     return True
 
 
@@ -113,6 +128,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
         enable_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
         enable_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
         usage_totals=options.get(CONF_USAGE_TOTALS, False),
+        long_term_statistics=options.get(CONF_LONG_TERM_STATISTICS, False),
         installation_type=(await async_get_system_info(hass))["installation_type"],
         speed_test=await _async_speed_test(hass, entry, usage),
     )

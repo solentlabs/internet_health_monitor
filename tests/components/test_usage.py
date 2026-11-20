@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
-from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -47,17 +47,26 @@ SENSOR_CASES: list[tuple[str, str | None, SensorDeviceClass | None]] = [
 # fmt: on
 
 
+# registered by an older build as -> after setup with Usage totals on
+# fmt: off
+UPGRADE_CASES: list[tuple[str, er.RegistryEntryDisabler | None]] = [
+    ("hidden by IHM",  None),                            # shown now
+    ("hidden by user", er.RegistryEntryDisabler.USER),   # the user's choice stays
+]
+# fmt: on
+
+
 @pytest.mark.parametrize("key,unit,device_class", SENSOR_CASES, ids=[c[0] for c in SENSOR_CASES])
 async def test_usage_sensors_are_diagnostic_totals(
     hass: HomeAssistant, setup_entry: SetupEntry, key: str, unit: str | None, device_class: SensorDeviceClass | None
 ) -> None:
-    """With Usage totals on, each total is an enabled, diagnostic, ever-increasing sensor."""
+    """With Usage totals on, each total is an enabled diagnostic sensor with no state_class: no long-term statistics."""
     entry = await setup_entry(**{CONF_USAGE_TOTALS: True})
     entity = er.async_get(hass).async_get(entity_id(hass, "sensor", entry, key) or "")
     assert entity is not None
     assert entity.entity_category is EntityCategory.DIAGNOSTIC
     assert entity.disabled_by is None
-    assert entity.capabilities == {"state_class": SensorStateClass.TOTAL_INCREASING}
+    assert entity.capabilities is None
     assert (entity.unit_of_measurement, entity.original_device_class) == (unit, device_class)
 
 
@@ -194,15 +203,6 @@ async def test_failed_speed_test_still_adds_its_data(hass: HomeAssistant, setup_
     assert _value(hass, entry, "usage_speed_tests") == "1"
 
 
-# registered by an older build as -> after setup with Usage totals on
-# fmt: off
-UPGRADE_CASES: list[tuple[str, er.RegistryEntryDisabler | None]] = [
-    ("hidden by IHM",  None),                            # shown now
-    ("hidden by user", er.RegistryEntryDisabler.USER),   # the user's choice stays
-]
-# fmt: on
-
-
 @pytest.mark.parametrize(("description", "expected"), UPGRADE_CASES, ids=[c[0] for c in UPGRADE_CASES])
 async def test_usage_sensors_hidden_by_older_build_are_shown(
     hass: HomeAssistant, poll: AsyncMock, description: str, expected: er.RegistryEntryDisabler | None
@@ -220,3 +220,39 @@ async def test_usage_sensors_hidden_by_older_build_are_shown(
     assert now is not None  # same entity id, so its history carries over
     assert now.disabled_by is expected
     assert (hass.states.get(old.entity_id) is not None) is (expected is None)  # shown in this setup, no restart
+
+
+async def test_probe_save_deadline_does_not_slide(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Polls every minute keep one save deadline (HA's delayed save would slide it forever), then start a new one."""
+    entry = await setup_entry()
+    usage = entry.runtime_data.coordinator.usage
+    usage._save_at = 0.0  # noqa: SLF001  # forget setup's deadline, set on the real clock
+    with (
+        patch("custom_components.internet_health_monitor.usage.time.monotonic") as clock,
+        patch.object(usage._store, "async_delay_save") as delay_save,  # noqa: SLF001
+    ):
+        for minute in range(7):
+            clock.return_value = 1000.0 + 60 * minute
+            usage.add_probes(ProbeCounts(pings=minute))
+    delays = [call.args[1] for call in delay_save.call_args_list]
+    # A save due at 1300 for every call through minute 4; from minute 5 (1300) a new one, due at 1600.
+    assert delays == [300.0, 240.0, 180.0, 120.0, 60.0, 300.0, 240.0]
+
+
+async def test_speed_test_data_saved_at_once(
+    hass: HomeAssistant, setup_entry: SetupEntry, hass_storage: dict[str, Any]
+) -> None:
+    """A speed test's runs and data are written right away, not after a delay a restart can cut short."""
+    entry = await setup_entry(speed_test_backend="cloudflare", speed_test_automatic=False)
+    user = await hass.auth.async_create_user("Person", group_ids=["system-admin"])
+    with patch("custom_components.internet_health_monitor.coordinator.run_speed_test", AsyncMock(return_value=RESULT)):
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": entity_id(hass, "button", entry, "run_speed_test")},
+            blocking=True,
+            context=Context(user_id=user.id),
+        )
+    await hass.async_block_till_done()
+    stored = hass_storage[STORAGE_KEY]["data"]
+    assert (stored["speed_tests"], stored["downloaded_mb"], stored["uploaded_mb"]) == (1, 50.1, 30.2)

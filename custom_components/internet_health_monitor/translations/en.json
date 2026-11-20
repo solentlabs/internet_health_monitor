@@ -11,6 +11,7 @@
           "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop",
           "usage_totals": "Usage totals",
+          "long_term_statistics": "Long-term statistics",
           "speed_test_backend": "Speed test service"
         },
         "data_description": {
@@ -20,6 +21,7 @@
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
+          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
           "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },
@@ -32,6 +34,7 @@
           "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop",
           "usage_totals": "Usage totals",
+          "long_term_statistics": "Long-term statistics",
           "speed_test_backend": "Speed test service"
         },
         "data_description": {
@@ -41,6 +44,7 @@
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
+          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
           "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },
@@ -87,6 +91,7 @@
           "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop",
           "usage_totals": "Usage totals",
+          "long_term_statistics": "Long-term statistics",
           "speed_test_backend": "Speed test service"
         },
         "data_description": {
@@ -96,6 +101,7 @@
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
+          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
           "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import asdict, dataclass, fields
 from typing import Any
 
@@ -38,7 +39,9 @@ class UsageTracker:
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Totals load from storage before the first poll."""
+        self._hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self._save_at = 0.0  # monotonic time of the next probe save; fixed once set
         self._base = UsageTotals()  # probe totals stored before this Core instance started
         self.totals = UsageTotals()
 
@@ -54,18 +57,27 @@ class UsageTracker:
         self.totals.pings = self._base.pings + counts.pings
         self.totals.traceroutes = self._base.traceroutes + counts.traceroutes
         self.totals.dns_queries = self._base.dns_queries + counts.dns_queries
-        self._store.async_delay_save(self.totals.to_dict, USAGE_SAVE_DELAY_S)
+        # HA's delayed save slides its deadline on every call; a poll calls this every
+        # minute, so a sliding delay would never write. Keep one fixed deadline.
+        now = time.monotonic()  # the clock HA's event loop and Store use
+        if now >= self._save_at:
+            self._save_at = now + USAGE_SAVE_DELAY_S
+        self._store.async_delay_save(self.totals.to_dict, self._save_at - now)
 
     def add_speed_test_run(self) -> None:
         """Count one accepted speed test."""
         self.totals.speed_tests += 1
-        self._store.async_delay_save(self.totals.to_dict, USAGE_SAVE_DELAY_S)
+        self._save_now()
 
     def add_speed_test_data(self, downloaded_mb: float, uploaded_mb: float) -> None:
         """Add the data a test moved, whether it completed or failed partway."""
         self.totals.downloaded_mb = round(self.totals.downloaded_mb + downloaded_mb, 1)
         self.totals.uploaded_mb = round(self.totals.uploaded_mb + uploaded_mb, 1)
-        self._store.async_delay_save(self.totals.to_dict, USAGE_SAVE_DELAY_S)
+        self._save_now()
+
+    def _save_now(self) -> None:
+        """Write at once: speed tests are rare and their data matters (a direct save, not HA's sliding delay)."""
+        self._hass.async_create_task(self._store.async_save(self.totals.to_dict()), "IHM usage totals save")
 
     async def async_save(self) -> None:
         """Write now (unload), replacing any pending delayed write."""

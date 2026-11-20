@@ -11,6 +11,7 @@
           "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
           "usage_totals": "Nutzungssummen",
+          "long_term_statistics": "Langzeitstatistiken",
           "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
@@ -20,6 +21,7 @@
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
+          "long_term_statistics": "Standardmäßig aus. Speichert stündliche Statistiken zu Latenz, Jitter, Paketverlust, DNS-Latenz und Speedtest-Werten für Trends über Monate; Home Assistant löscht sie nie. Aus: Der Verlauf deckt weiterhin die letzten 10 Tage ab. Schaltest du es später aus, warnt Home Assistant einmal pro Sensor, bis du dessen Statistiken unter Entwicklerwerkzeuge > Statistiken löschst.",
           "speed_test_backend": "Standardmäßig aus. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden. Auf der nächsten Seite legst du fest, wann Tests laufen und wie viele Daten sie verbrauchen dürfen."
         }
       },
@@ -32,6 +34,7 @@
           "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
           "usage_totals": "Nutzungssummen",
+          "long_term_statistics": "Langzeitstatistiken",
           "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
@@ -41,6 +44,7 @@
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
+          "long_term_statistics": "Standardmäßig aus. Speichert stündliche Statistiken zu Latenz, Jitter, Paketverlust, DNS-Latenz und Speedtest-Werten für Trends über Monate; Home Assistant löscht sie nie. Aus: Der Verlauf deckt weiterhin die letzten 10 Tage ab. Schaltest du es später aus, warnt Home Assistant einmal pro Sensor, bis du dessen Statistiken unter Entwicklerwerkzeuge > Statistiken löschst.",
           "speed_test_backend": "Standardmäßig aus. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden. Auf der nächsten Seite legst du fest, wann Tests laufen und wie viele Daten sie verbrauchen dürfen."
         }
       },
@@ -87,6 +91,7 @@
           "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
           "usage_totals": "Nutzungssummen",
+          "long_term_statistics": "Langzeitstatistiken",
           "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
@@ -96,6 +101,7 @@
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
+          "long_term_statistics": "Standardmäßig aus. Speichert stündliche Statistiken zu Latenz, Jitter, Paketverlust, DNS-Latenz und Speedtest-Werten für Trends über Monate; Home Assistant löscht sie nie. Aus: Der Verlauf deckt weiterhin die letzten 10 Tage ab. Schaltest du es später aus, warnt Home Assistant einmal pro Sensor, bis du dessen Statistiken unter Entwicklerwerkzeuge > Statistiken löschst.",
           "speed_test_backend": "Standardmäßig aus. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden. Auf der nächsten Seite legst du fest, wann Tests laufen und wie viele Daten sie verbrauchen dürfen."
         }
       },

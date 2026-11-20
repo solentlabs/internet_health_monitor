@@ -18,6 +18,14 @@ from .conftest import SetupEntry, entity_id, make_result
 
 SYSTEM_INFO = "custom_components.internet_health_monitor.async_get_system_info"
 
+# Long-term statistics option -> state_class on the measurement sensors (ADR-013).
+STATISTICS_CASES: list[tuple[bool, str | None]] = [
+    (False, None),  # default: HA keeps 10 days of history, nothing that is never purged
+    (True, "measurement"),
+]
+MEASUREMENT_KEYS = ["hop_1_latency", "hop_2_jitter", "hop_3_packet_loss", "dns_latency", "speed_test_download"]
+
+
 # entity key -> state for the default scripted poll (conftest.make_result)
 # fmt: off
 STATE_CASES = [
@@ -182,3 +190,15 @@ async def test_environment_sensors_are_diagnostic_and_always_created(
         assert entity is not None
         assert entity.entity_category is EntityCategory.DIAGNOSTIC
         assert entity.original_device_class is SensorDeviceClass.ENUM
+
+
+@pytest.mark.parametrize(("on", "expected"), STATISTICS_CASES, ids=["off", "on"])
+async def test_long_term_statistics_option(
+    hass: HomeAssistant, setup_entry: SetupEntry, on: bool, expected: str | None
+) -> None:
+    """Measurement sensors carry a state_class, and so long-term statistics, only when the user chooses."""
+    entry = await setup_entry(speed_test_backend="cloudflare", long_term_statistics=on)
+    for key in MEASUREMENT_KEYS:
+        registered = er.async_get(hass).async_get(entity_id(hass, "sensor", entry, key) or "")
+        assert registered is not None, key
+        assert (registered.capabilities or {}).get("state_class") == expected, key

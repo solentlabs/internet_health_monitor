@@ -459,6 +459,22 @@ How a national program schedules home speed tests, read 2026-11-19 [V]:
   use"; "the testing will not run when you are using the internet".
   SamKnows runs the FCC's test units (R21).
 
+## R23. Home Assistant history and statistics
+
+Read 2026-11-19 [V]:
+
+- <https://data.home-assistant.io/docs/statistics/>: the states table
+  keeps every state change "only for a limited time: 10 days by
+  default"; long-term statistics "are compiled every hour ... They are
+  never purged."
+- Developer docs, sensor entity
+  (<https://github.com/home-assistant/developers.home-assistant/blob/master/docs/core/entity/sensor.md>,
+  § Long-term Statistics): a sensor is stored as long-term statistics
+  "if the entity has `state_class` set".
+- An integration can keep attributes out of the recorder
+  (`_unrecorded_attributes`, `helpers/entity.py`, HA 2026.11) but not an
+  entity's state; only the user's `recorder: exclude` does that.
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

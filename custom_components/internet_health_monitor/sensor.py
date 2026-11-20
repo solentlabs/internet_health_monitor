@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, override
 
 from homeassistant.components.sensor import (
@@ -128,7 +128,7 @@ class SpeedTestSensorEntityDescription(SensorEntityDescription):
 def _speed(
     key: str, value_fn: Callable[[SpeedTestResult], float | None], **kwargs: Any
 ) -> SpeedTestSensorEntityDescription:
-    """A speed test sensor with long-term statistics."""
+    """A speed test sensor; its state_class applies only with Long-term statistics on."""
     return SpeedTestSensorEntityDescription(
         key=f"speed_test_{key}",
         translation_key=f"speed_test_{key}",
@@ -171,12 +171,15 @@ class UsageSensorEntityDescription(SensorEntityDescription):
 
 
 def _usage(key: str, value_fn: Callable[[UsageTotals], float], **kwargs: Any) -> UsageSensorEntityDescription:
-    """A diagnostic, ever-increasing total; created only with Usage totals on."""
+    """A diagnostic running total; created only with Usage totals on.
+
+    No state_class: the total is what matters, so no long-term statistics,
+    which HA never purges (ADR-013).
+    """
     return UsageSensorEntityDescription(
         key=f"usage_{key}",
         translation_key=f"usage_{key}",
         entity_category=EntityCategory.DIAGNOSTIC,
-        state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=value_fn,
         **kwargs,
     )
@@ -206,6 +209,11 @@ INSTALL_TYPE_SENSOR = SensorEntityDescription(
 )
 
 
+def _statistics[D: SensorEntityDescription](description: D, keep: bool) -> D:
+    """The description with its state_class, or without it unless the user chose long-term statistics (ADR-013)."""
+    return description if keep else replace(description, state_class=None)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: InternetHealthConfigEntry,
@@ -219,12 +227,13 @@ async def async_setup_entry(
     ]
     if data.usage_totals:
         entities.extend(UsageSensor(data.coordinator, d) for d in USAGE_SENSORS)
+    keep = data.long_term_statistics
     if data.speed_test:
-        entities.extend(SpeedTestSensor(data.speed_test, d) for d in SPEED_TEST_SENSORS)
+        entities.extend(SpeedTestSensor(data.speed_test, _statistics(d, keep)) for d in SPEED_TEST_SENSORS)
     if data.enable_gateway:
-        entities.extend(HopSensor(data.coordinator, d) for d in HOP_SENSORS)
+        entities.extend(HopSensor(data.coordinator, _statistics(d, keep)) for d in HOP_SENSORS)
     if data.enable_dns:
-        entities.append(ResultSensor(data.coordinator, DNS_SENSOR))
+        entities.append(ResultSensor(data.coordinator, _statistics(DNS_SENSOR, keep)))
     async_add_entities(entities)
 
 

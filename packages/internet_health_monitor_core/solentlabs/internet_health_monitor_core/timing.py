@@ -80,7 +80,8 @@ SPEED_TEST_BUDGET_GB_DEFAULT = 0
 SPEED_TEST_BUDGET_GB_MAX = 10000
 SPEED_TEST_BUDGET_WINDOW_S = 30 * 24 * 3600
 
-# Hosts that keep running usage totals write them at most this often (and on unload).
+# Hosts that keep running usage totals write probe counts within this many seconds
+# (and on unload); speed test totals are written at once.
 USAGE_SAVE_DELAY_S = 300
 
 # Reachability (ADR-012): a failure turns a target off only after this many quick

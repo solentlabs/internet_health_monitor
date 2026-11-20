@@ -17,7 +17,7 @@ ENTITY_ID = re.compile(r"\b(?:sensor|binary_sensor|button)\.internet_health_[a-z
 
 async def test_doc_entity_ids_exist(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
     """Every IHM entity id in the docs is one the integration registers."""
-    entry = await setup_entry(speed_test_backend="cloudflare")
+    entry = await setup_entry(speed_test_backend="cloudflare", usage_totals=True)
     created = {e.entity_id for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)}
     mentioned = {m for doc in DOCS for m in ENTITY_ID.findall(doc.read_text(encoding="utf-8"))}
     assert mentioned - created == set()

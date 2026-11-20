@@ -11,6 +11,7 @@
           "ping_count": "Pings por destino",
           "hop_ownership": "Identificar quem opera cada salto",
           "usage_totals": "Totais de uso",
+          "long_term_statistics": "Estatísticas de longo prazo",
           "speed_test_backend": "Serviço de teste de velocidade"
         },
         "data_description": {
@@ -20,6 +21,7 @@
           "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados.",
           "usage_totals": "Desligado por padrão. Adiciona seis sensores de diagnóstico: pings enviados, traceroutes executados, consultas DNS enviadas, testes de velocidade executados e dados de teste baixados e enviados, contados desde a instalação. A contagem continua mesmo desligado.",
+          "long_term_statistics": "Desligado por padrão. Guarda estatísticas por hora de latência, jitter, perda de pacotes, latência DNS e resultados de testes de velocidade, para tendências de meses; o Home Assistant nunca as apaga. Desligado, o histórico continua cobrindo os últimos 10 dias. Desligar depois faz o Home Assistant avisar uma vez por sensor até você apagar as estatísticas dele em Ferramentas de desenvolvedor > Estatísticas.",
           "speed_test_backend": "Desligado por padrão. Um teste baixa e envia por até 10 s em cada sentido com o serviço escolhido, que vê seu endereço IP público. O M-Lab publica cada resultado com esse endereço, permanentemente; você será solicitado a confirmar. A Cloudflare guarda um resultado anonimizado. O LibreSpeed usa servidores voluntários. O IHM não é afiliado a nenhum deles. A próxima tela define quando os testes rodam e quantos dados podem usar."
         }
       },
@@ -32,6 +34,7 @@
           "ping_count": "Pings por destino",
           "hop_ownership": "Identificar quem opera cada salto",
           "usage_totals": "Totais de uso",
+          "long_term_statistics": "Estatísticas de longo prazo",
           "speed_test_backend": "Serviço de teste de velocidade"
         },
         "data_description": {
@@ -41,6 +44,7 @@
           "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados.",
           "usage_totals": "Desligado por padrão. Adiciona seis sensores de diagnóstico: pings enviados, traceroutes executados, consultas DNS enviadas, testes de velocidade executados e dados de teste baixados e enviados, contados desde a instalação. A contagem continua mesmo desligado.",
+          "long_term_statistics": "Desligado por padrão. Guarda estatísticas por hora de latência, jitter, perda de pacotes, latência DNS e resultados de testes de velocidade, para tendências de meses; o Home Assistant nunca as apaga. Desligado, o histórico continua cobrindo os últimos 10 dias. Desligar depois faz o Home Assistant avisar uma vez por sensor até você apagar as estatísticas dele em Ferramentas de desenvolvedor > Estatísticas.",
           "speed_test_backend": "Desligado por padrão. Um teste baixa e envia por até 10 s em cada sentido com o serviço escolhido, que vê seu endereço IP público. O M-Lab publica cada resultado com esse endereço, permanentemente; você será solicitado a confirmar. A Cloudflare guarda um resultado anonimizado. O LibreSpeed usa servidores voluntários. O IHM não é afiliado a nenhum deles. A próxima tela define quando os testes rodam e quantos dados podem usar."
         }
       },
@@ -87,6 +91,7 @@
           "ping_count": "Pings por destino",
           "hop_ownership": "Identificar quem opera cada salto",
           "usage_totals": "Totais de uso",
+          "long_term_statistics": "Estatísticas de longo prazo",
           "speed_test_backend": "Serviço de teste de velocidade"
         },
         "data_description": {
@@ -96,6 +101,7 @@
           "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados.",
           "usage_totals": "Desligado por padrão. Adiciona seis sensores de diagnóstico: pings enviados, traceroutes executados, consultas DNS enviadas, testes de velocidade executados e dados de teste baixados e enviados, contados desde a instalação. A contagem continua mesmo desligado.",
+          "long_term_statistics": "Desligado por padrão. Guarda estatísticas por hora de latência, jitter, perda de pacotes, latência DNS e resultados de testes de velocidade, para tendências de meses; o Home Assistant nunca as apaga. Desligado, o histórico continua cobrindo os últimos 10 dias. Desligar depois faz o Home Assistant avisar uma vez por sensor até você apagar as estatísticas dele em Ferramentas de desenvolvedor > Estatísticas.",
           "speed_test_backend": "Desligado por padrão. Um teste baixa e envia por até 10 s em cada sentido com o serviço escolhido, que vê seu endereço IP público. O M-Lab publica cada resultado com esse endereço, permanentemente; você será solicitado a confirmar. A Cloudflare guarda um resultado anonimizado. O LibreSpeed usa servidores voluntários. O IHM não é afiliado a nenhum deles. A próxima tela define quando os testes rodam e quantos dados podem usar."
         }
       },

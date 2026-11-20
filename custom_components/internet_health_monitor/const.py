@@ -21,6 +21,7 @@ VERSION = "0.1.0"  # must equal manifest.json "version" (tests/components/test_c
 # Option keys
 CONF_ENABLE_GATEWAY_MONITORING = "enable_gateway_monitoring"
 CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
+CONF_LONG_TERM_STATISTICS = "long_term_statistics"  # state_class on measurement sensors (ADR-013)
 CONF_USAGE_TOTALS = "usage_totals"  # the six usage total sensors (README.md § Usage Totals)
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"

@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Usage totals** (diagnostic sensors, one option, off by default): pings sent,
+- **Long-term statistics option** (off by default): hourly statistics
+  of latency, jitter, packet loss, DNS latency and speed tests, for
+  trends over months. Off, Home Assistant keeps 10 days of history and
+  nothing that is never deleted.
+- **Usage totals** (diagnostic sensors, one option, off by default, no
+  long-term statistics): pings sent,
   traceroutes run, DNS queries sent, speed tests run, and the MB speed
   tests downloaded and uploaded (failed tests included), counted since
   install.

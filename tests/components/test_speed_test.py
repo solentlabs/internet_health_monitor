@@ -57,6 +57,27 @@ SPEED_SENSORS = [
 ]
 
 
+# Nightly test times (HA's test time zone is US/Pacific): now, random offset -> next test.
+# ┌────────────────────┬────────────┬──────────────────────┐
+# │ now (local)        │ offset (s) │ next test (local)    │
+# ├────────────────────┼────────────┼──────────────────────┤
+# │ 00:30              │ 3600       │ today 02:00          │
+# │ 02:30              │ 3600       │ tomorrow 02:00       │
+# │ 02:30              │ 7200       │ today 03:00          │
+# │ 12:00              │ 0          │ tomorrow 01:00       │
+# │ 12:00              │ 14400      │ tomorrow 05:00       │
+# └────────────────────┴────────────┴──────────────────────┘
+# fmt: off
+NIGHTLY_CASES: list[tuple[str, int, str]] = [
+    ("2026-11-19 00:30:00", 3600,  "2026-11-19 02:00:00"),
+    ("2026-11-19 02:30:00", 3600,  "2026-11-20 02:00:00"),
+    ("2026-11-19 02:30:00", 7200,  "2026-11-19 03:00:00"),
+    ("2026-11-19 12:00:00", 0,     "2026-11-20 01:00:00"),
+    ("2026-11-19 12:00:00", 14400, "2026-11-20 05:00:00"),
+]
+# fmt: on
+
+
 @pytest.fixture
 def speed_test() -> Iterator[AsyncMock]:
     """Script Core's speed test; no test traffic is sent."""
@@ -358,26 +379,6 @@ def _local(text: str) -> datetime:
     parsed = dt_util.parse_datetime(text)
     assert parsed is not None
     return parsed.replace(tzinfo=dt_util.get_default_time_zone())
-
-
-# ┌────────────────────┬────────────┬──────────────────────┐
-# │ now (local)        │ offset (s) │ next test (local)    │
-# ├────────────────────┼────────────┼──────────────────────┤
-# │ 00:30              │ 3600       │ today 02:00          │
-# │ 02:30              │ 3600       │ tomorrow 02:00       │
-# │ 02:30              │ 7200       │ today 03:00          │
-# │ 12:00              │ 0          │ tomorrow 01:00       │
-# │ 12:00              │ 14400      │ tomorrow 05:00       │
-# └────────────────────┴────────────┴──────────────────────┘
-# fmt: off
-NIGHTLY_CASES: list[tuple[str, int, str]] = [
-    ("2026-11-19 00:30:00", 3600,  "2026-11-19 02:00:00"),
-    ("2026-11-19 02:30:00", 3600,  "2026-11-20 02:00:00"),
-    ("2026-11-19 02:30:00", 7200,  "2026-11-19 03:00:00"),
-    ("2026-11-19 12:00:00", 0,     "2026-11-20 01:00:00"),
-    ("2026-11-19 12:00:00", 14400, "2026-11-20 05:00:00"),
-]
-# fmt: on
 
 
 @pytest.mark.parametrize(("now", "offset", "expected"), NIGHTLY_CASES)

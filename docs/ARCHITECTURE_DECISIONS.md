@@ -19,6 +19,7 @@ Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 | [010](#adr-010-names-are-changed-by-renaming-the-device) | Names are changed by renaming the device | Accepted 2026-11-19 |
 | [011](#adr-011-roadmap-features-not-built) | Roadmap features not built | Accepted 2026-11-19 |
 | [012](#adr-012-reachability-confirms-before-off-and-re-checks-fast-while-off) | Reachability confirms before off and re-checks fast while off | Accepted 2026-11-19 |
+| [013](#adr-013-long-term-statistics-only-where-they-serve-a-use) | Long-term statistics only where they serve a use | Open |
 
 ---
 
@@ -476,3 +477,47 @@ totals. During an outage the internet check costs one DNS query every
 **Constraint:** Nothing is added to the healthy path; a faster constant
 cadence needs a new decision (ADR-001's passive bufferbloat probe would
 be one).
+
+---
+
+## ADR-013: Long-term statistics only where they serve a use
+
+**Status:** Open.
+
+**Context:** Home Assistant keeps two kinds of history (R23). State
+history records every change of every sensor and is purged after 10
+days by default. Long-term statistics are hourly summaries, written only
+for sensors with a `state_class`, and never purged. Cable Modem Monitor
+measured what that costs: about 100 MB a year per modem, most of it from
+per-channel sensors. An integration can choose `state_class`; it cannot
+keep a sensor's state out of state history, which only the user's
+`recorder: exclude` can.
+
+**Decision:**
+
+- **Usage totals carry no `state_class`.** The total is what matters, so
+  they add nothing that is never purged. The README shows the
+  `recorder: exclude` for users who want no state history either.
+- **Measurement sensors carry one only by user choice.** A *Long-term
+  statistics* option, off by default, sets `state_class: measurement` on
+  hop latency, jitter and packet loss, DNS latency and the speed test
+  readings. A before-and-after trend over months (UC-6) needs it; the
+  10 days of state history serves the rest, and the card's graphs (at
+  most 168 hours) never need it.
+- **Existing entries keep statistics on.** An entry created before the
+  option (config entry 1.1) already built statistics; switching them off
+  would raise one HA warning per sensor. A one-time migration to 1.2
+  (`async_migrate_entry`) turns the option on for such entries; new
+  entries start off. This is the policy Cable Modem Monitor chose for
+  the same change: new installs change, existing ones keep their
+  behavior until the user opts out.
+
+**Consequences:** Without `state_class`, the frontend still draws these
+sensors as lines, since they have units (frontend `src/data/history.ts`).
+Turning the option off after statistics exist makes HA raise one
+"no longer has a state class" warning per sensor until the user deletes
+its statistics (HA `sensor/recorder.py`); the option says so.
+
+**Constraint:** A new sensor gets a `state_class` only under this
+option, or with a use case that needs its statistics and a new
+decision here.

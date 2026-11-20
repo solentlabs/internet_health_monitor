@@ -20,6 +20,7 @@ from custom_components.internet_health_monitor.const import (
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_LONG_TERM_STATISTICS,
     CONF_PING_COUNT,
     CONF_SPEED_TEST_AUTOMATIC,
     CONF_SPEED_TEST_BACKEND,
@@ -40,6 +41,7 @@ USER_INPUT: dict[str, Any] = {
     CONF_PING_COUNT: 5,
     CONF_HOP_OWNERSHIP: True,
     CONF_USAGE_TOTALS: True,
+    CONF_LONG_TERM_STATISTICS: True,
     CONF_SPEED_TEST_BACKEND: "cloudflare",
 }
 SPEED_INPUT: dict[str, Any] = {

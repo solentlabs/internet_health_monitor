@@ -25,6 +25,7 @@ from .const import (
     CONF_ENABLE_DNS_MONITORING,
     CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_LONG_TERM_STATISTICS,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
     CONF_SPEED_TEST_AUTOMATIC,
@@ -53,6 +54,7 @@ DEFAULTS: dict[str, Any] = {
     CONF_PING_COUNT: DEFAULT_PING_COUNT,
     CONF_HOP_OWNERSHIP: False,
     CONF_USAGE_TOTALS: False,
+    CONF_LONG_TERM_STATISTICS: False,
     CONF_SPEED_TEST_BACKEND: SPEED_TEST_OFF,
 }
 # The second screen, shown only when a speed test service is chosen.
@@ -108,6 +110,7 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
             ),
             probatio.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),
             probatio.Required(CONF_USAGE_TOTALS, default=default(CONF_USAGE_TOTALS)): BooleanSelector(),
+            probatio.Required(CONF_LONG_TERM_STATISTICS, default=default(CONF_LONG_TERM_STATISTICS)): BooleanSelector(),
             probatio.Required(CONF_SPEED_TEST_BACKEND, default=default(CONF_SPEED_TEST_BACKEND)): SelectSelector(
                 SelectSelectorConfig(
                     options=SPEED_TEST_CHOICES,
@@ -157,6 +160,8 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
     """One entry per Home Assistant: it monitors this host's own path."""
 
     VERSION = 1
+    # 2: Long-term statistics option; older entries keep statistics on (__init__.async_migrate_entry).
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Nothing is pending until the first screen is submitted."""

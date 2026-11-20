@@ -55,6 +55,7 @@ During setup, and later under Configure, you can set:
 | Pings per target | 3 | Pings sent to each target per poll (1 to 10) |
 | Look up who runs each hop | off | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
 | Usage totals | off | Adds six sensors counting what IHM has sent. See [Usage Totals](#usage-totals) |
+| Long-term statistics | off | Keeps hourly statistics of latency, jitter, loss and speed tests for trends over months; Home Assistant never deletes them. Off, history covers the last 10 days |
 | Speed test service | Off | Cloudflare, M-Lab NDT7 or LibreSpeed. See [Speed Testing](#speed-testing) |
 
 Choosing a speed test service adds a second screen:
@@ -138,7 +139,8 @@ Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS and two 
 Hop sensors carry attributes: `hop_ip`, `reachable`, `packets_sent`,
 `packets_received`, `hostname` (when the hop has one) and, with hop
 ownership on, `asn` and `as_name`. Speed test sensors carry `backend`,
-`server` and `tested_at`. The measurement sensors keep long-term statistics.
+`server` and `tested_at`. The measurement sensors keep long-term statistics
+only with the *Long-term statistics* option on.
 
 ### Usage Totals
 
@@ -147,6 +149,23 @@ costs your network. Turn on *Usage totals* under Configure to add these
 six diagnostic sensors; turning it off removes them. IHM counts either
 way, so they show everything since install. They count up across
 restarts and reset only when the integration is removed.
+
+They keep no long-term statistics, which Home Assistant never deletes.
+Home Assistant still records their recent changes (10 days by default).
+To keep only the totals, exclude them from the recorder in
+`configuration.yaml`:
+
+```yaml
+recorder:
+  exclude:
+    entities:
+      - sensor.internet_health_pings_sent
+      - sensor.internet_health_traceroutes_run
+      - sensor.internet_health_dns_queries_sent
+      - sensor.internet_health_speed_tests_run
+      - sensor.internet_health_speed_test_data_downloaded
+      - sensor.internet_health_speed_test_data_uploaded
+```
 
 | Sensor | Unit | Counts |
 | -------- | ------ | -------- |
