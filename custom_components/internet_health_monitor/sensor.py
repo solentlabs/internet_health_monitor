@@ -171,12 +171,11 @@ class UsageSensorEntityDescription(SensorEntityDescription):
 
 
 def _usage(key: str, value_fn: Callable[[UsageTotals], float], **kwargs: Any) -> UsageSensorEntityDescription:
-    """A diagnostic, ever-increasing total, off until the user enables it."""
+    """A diagnostic, ever-increasing total; created only with Usage totals on."""
     return UsageSensorEntityDescription(
         key=f"usage_{key}",
         translation_key=f"usage_{key}",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=value_fn,
         **kwargs,
@@ -217,8 +216,9 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [
         ResultSensor(data.coordinator, CONNECTION_TYPE_SENSOR),
         InstallTypeSensor(data.coordinator, INSTALL_TYPE_SENSOR),
-        *(UsageSensor(data.coordinator, d) for d in USAGE_SENSORS),
     ]
+    if data.usage_totals:
+        entities.extend(UsageSensor(data.coordinator, d) for d in USAGE_SENSORS)
     if data.speed_test:
         entities.extend(SpeedTestSensor(data.speed_test, d) for d in SPEED_TEST_SENSORS)
     if data.enable_gateway:

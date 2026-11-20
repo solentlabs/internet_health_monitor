@@ -21,12 +21,15 @@ VERSION = "0.1.0"  # must equal manifest.json "version" (tests/components/test_c
 # Option keys
 CONF_ENABLE_GATEWAY_MONITORING = "enable_gateway_monitoring"
 CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
+CONF_USAGE_TOTALS = "usage_totals"  # the six usage total sensors (README.md § Usage Totals)
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
 CONF_SPEED_TEST_BACKEND = "speed_test_backend"  # opt-in; docs/SPEED_TEST_BACKENDS.md (ADR-003, ADR-006)
 CONF_SPEED_TEST_DATA_LIMIT = "speed_test_data_limit_mb"
 CONF_SPEED_TEST_DAILY_LIMIT = "speed_test_daily_limit"
+CONF_SPEED_TEST_AUTOMATIC = "speed_test_automatic"  # one test a night (timing.SPEED_TEST_AUTO_*)
+CONF_SPEED_TEST_BUDGET = "speed_test_budget_gb"  # data per 30 days; 0 means none
 CONF_MLAB_CONSENT = "mlab_consent"  # M-Lab publishes results with the user's IP; asked before first use
 
 SPEED_TEST_OFF = "none"

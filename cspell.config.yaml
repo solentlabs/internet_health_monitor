@@ -47,6 +47,7 @@ words:
   - aiohttp
   - traceroutes
   - Gbit
+  - kbps # kilobits per second
   - urandom
   - ancount
   - arin

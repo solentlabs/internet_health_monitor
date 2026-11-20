@@ -51,7 +51,10 @@ jobs:
         run: mypy
 
       - name: Run pyright (as VS Code runs it, pyrightconfig.json; same as make pyright)
-        run: npx --yes pyright@1.1.408 --pythonpath "$(which python)"
+        run: npx --yes pyright@1.1.414 --pythonpath "$(which python)"
+
+      - name: Run markdownlint (as VS Code runs it, .markdownlint.jsonc; same as make markdownlint)
+        run: git ls-files '*.md' | xargs npx --yes markdownlint-cli2@0.24.1
 
       - name: Run tests
         run: pytest --cov-report=xml

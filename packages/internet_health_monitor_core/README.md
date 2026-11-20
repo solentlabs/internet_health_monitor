@@ -21,13 +21,13 @@ internet-health-monitor --speed-test cloudflare   # one speed test, one JSON lin
 ```
 
 | Option | Default | Meaning |
-|--------|---------|---------|
+| -------- | --------- | --------- |
 | `--dns-server` | `auto` | DNS server to time; `auto` reads `/etc/resolv.conf` |
 | `--ping-count` | 3 | Pings per target per poll (1 to 10) |
 | `--interval` | none | Seconds between polls (up to 3600, and at least as long as a poll can take: 5 s per ping per target). Without it, one poll and exit. The HA integration uses 60 |
 | `--hop-ownership` | off | Add each public hop's network operator; sends those hop addresses to Team Cymru |
 | `--speed-test` | none | Run one speed test with `cloudflare`, `mlab` or `librespeed`, print it, and exit. The service sees your public IP address |
-| `--data-limit` | 1000 | Most MB one speed test may use, both directions together (100 to 10000) |
+| `--data-limit` | 500 | Most MB one speed test may use, both directions together (100 to 10000) |
 | `--mlab-consent` | off | Required with `--speed-test mlab`: M-Lab publishes every result with your public IP address, permanently |
 
 Jitter is the mean change between consecutive ping round trips within a

@@ -11,7 +11,7 @@ The most comprehensive, easiest-to-configure network health monitoring integrati
 ## Why This Exists
 
 | Existing Solution | Problem |
-|-------------------|---------|
+| ------------------- | --------- |
 | HA Ping integration | One host per entry, added by hand; no view of the path's hops |
 | HA Speedtest.net | No scheduling control, runs whenever, heavy |
 | HANetProbe | Requires MQTT broker + external daemon |
@@ -38,7 +38,7 @@ This roadmap tracks phases and decisions in progress. What IHM does is
 specified once, where it is implemented:
 
 | Topic | Doc |
-|-------|-----|
+| ------- | ----- |
 | Entities and attributes | [README.md § Entities](../README.md#entities) |
 | Options | [README.md § Configuration](../README.md#configuration) |
 | Speed tests, backends, limits | [SPEED_TEST_BACKENDS.md](SPEED_TEST_BACKENDS.md) |
@@ -70,6 +70,7 @@ Monitor is the reference for how each is done.
 ## Implementation Checklist
 
 ### Phase 1: Core Foundation ✓ (Existing)
+
 - [x] Gateway latency/jitter/packet loss
 - [x] ISP hop detection
 - [x] DNS latency
@@ -79,6 +80,7 @@ Monitor is the reference for how each is done.
 - [x] Basic tests
 
 ### Phase 2: Multi-Hop & Polish
+
 - [x] Multi-hop: hops 1 to 3, each with latency, jitter and loss sensors;
       hop IPs cached and re-detected on reset
 - [x] Config toggles (gateway, DNS)
@@ -96,24 +98,29 @@ Monitor is the reference for how each is done.
   - [x] Shows each measurement separately (no composite, ADR-004)
 
 ### Phase 3: Bandwidth Testing
+
 - [x] Core speed test interface and result (`speed_test.py`, ADR-003)
 - [x] Backends, one module each (docs/SPEED_TEST_BACKENDS.md)
   - [x] Cloudflare
   - [x] M-Lab NDT7, with consent and its automated-client rules
   - [x] LibreSpeed
   - Fast.com: cut, Netflix's terms forbid automated access (ADR-003)
-- [x] Run speed test button; scheduling by HA automation, not a built-in
-      schedule (HA `appropriate-polling`, ADR-003)
-- [x] Data limit per test and tests per day
+- [x] Run speed test button, and a nightly test (on or off, at a random
+      time from 1 to 5 am; HA `appropriate-polling`, ADR-003)
+- [x] Data limit per test, daily test limit and data budget per 30 days,
+      on their own setup screen
 - [x] Speed test sensors: download, upload, idle and loaded latency, data used
 
 ### Phase 4: Environment Detection
+
 Decided 2026-11-19: build both, as diagnostic sensors.
+
 - [x] Connection type detection (wifi/ethernet), from the default route's interface
 - [x] Install type: HA's own `system_info`, not detected by Core
 - [x] Sensors for each
 
 ### Phase 5: Quality & Release
+
 - [x] Multi-language support: de, es, fr, pt-BR, zh-CN, plus en
 - [x] Comprehensive test coverage
   - [x] Unit tests for all core modules

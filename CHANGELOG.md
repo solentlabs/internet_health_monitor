@@ -9,15 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Usage totals** (diagnostic sensors, off by default): pings sent,
+- **Usage totals** (diagnostic sensors, one option, off by default): pings sent,
   traceroutes run, DNS queries sent, speed tests run, and the MB speed
   tests downloaded and uploaded (failed tests included), counted since
   install.
 - **Speed tests (optional, off by default)** with Cloudflare, M-Lab NDT7
   or LibreSpeed: download, upload, latency at rest and under load each
-  way, and the data used. Run from the Run speed test button or an
-  automation; a data limit per test and a daily test limit bound the
-  cost. Each option says what the service sees; M-Lab asks for your
+  way, and the data used. A nightly test (on by default once a service
+  is chosen, at a random time from 1 to 5 am), the Run speed test
+  button and automations run them; a data limit per test, a daily test
+  limit and an optional data budget per 30 days bound the cost, on
+  their own setup screen. Each option says what the service sees; M-Lab asks for your
   consent first because it publishes results with your IP address.
   Fast.com is not offered: Netflix's terms forbid automated access.
   Also `--speed-test` on the command line.
@@ -156,6 +158,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Initial Release** - Internet Health Monitor for Home Assistant
 
 #### Sensors
+
 - **Gateway Latency** - Round-trip time to your router/modem (ms)
 - **Gateway Jitter** - Standard deviation of recent latency measurements (ms)
 - **Packet Loss** - Percentage of dropped packets to gateway (%)
@@ -163,14 +166,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DNS Latency** - Time to resolve DNS queries (ms)
 
 #### Binary Sensors
+
 - **Gateway Reachable** - Connectivity status to local gateway
 - **Internet Reachable** - DNS resolution success indicator
 
 #### Buttons
+
 - **Refresh Diagnostics** - Trigger immediate network check
 - **Reset Network Cache** - Clear cached gateway/ISP hop detection
 
 #### Configuration
+
 - **Zero-config setup** - Auto-detects gateway via `ip route`
 - **Auto DNS detection** - Reads system DNS from `/etc/resolv.conf`
 - **Configurable scan interval** - 10-3600 seconds (default: 60)
@@ -178,18 +184,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DNS server selection** - Auto, Cloudflare, Google, Quad9, OpenDNS
 
 #### Infrastructure
+
 - **HA Diagnostics** - Download diagnostics for troubleshooting
 - **Multi-language support** - English, German, Spanish, French, Portuguese (BR)
 - **Modern HA patterns** - SensorEntityDescription, CoordinatorEntity
 - **Full test coverage** - Unit and integration tests
 
 #### Technical Details
+
 - **Gateway detection** - Uses `ip route show default` on Linux
 - **ISP hop detection** - Uses `traceroute` to find first external hop
 - **DNS timing** - Uses `dig` for accurate measurement, falls back to socket
 - **Jitter calculation** - Rolling standard deviation of last 30 measurements
 
 ### Requirements
+
 - Home Assistant 2024.1.0+
 - Python 3.12+
 - Linux host (for gateway detection)
@@ -199,5 +208,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 **Part of the Solent Labs Network Suite**
+
 - [Cable Modem Monitor](https://github.com/solentlabs/cable_modem_monitor) - Monitor cable modem signal quality
 - [Internet Health Monitor](https://github.com/solentlabs/internet-health-monitor) - Track network latency and health

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import shutil
 import sys
 from unittest.mock import AsyncMock, patch
 
@@ -218,9 +220,9 @@ def test_detect_environment(description: str, files: set[str], cgroup: str, envi
     """Container type comes from marker files and /proc."""
     texts = {"/proc/1/cgroup": cgroup, "/proc/1/environ": environ}
     with (
-        patch.object(linux.os.path, "exists", side_effect=lambda p: p in files),
+        patch.object(os.path, "exists", side_effect=lambda p: p in files),
         patch.object(linux, "_read_text", side_effect=lambda p: texts.get(p)),
-        patch.dict(linux.os.environ, {}, clear=True),
+        patch.dict(os.environ, {}, clear=True),
     ):
         assert linux._detect_container() == expected
 
@@ -258,6 +260,6 @@ MISSING_TOOL_CASES = [
 )
 def test_missing_tools(description: str, present: set[str], expected: list[str]) -> None:
     """ip and ping are required; traceroute is optional."""
-    with patch.object(linux.shutil, "which", side_effect=lambda tool: f"/bin/{tool}" if tool in present else None):
+    with patch.object(shutil, "which", side_effect=lambda tool: f"/bin/{tool}" if tool in present else None):
         assert LinuxPlatform().missing_tools() == expected
         assert LinuxPlatform().missing_optional_tools() == ([] if "traceroute" in present else ["traceroute"])

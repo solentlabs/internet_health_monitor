@@ -10,9 +10,8 @@
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
           "hop_ownership": "Averiguar quién opera cada salto",
-          "speed_test_backend": "Servicio de prueba de velocidad",
-          "speed_test_data_limit_mb": "Límite de datos por prueba",
-          "speed_test_daily_limit": "Pruebas por día"
+          "usage_totals": "Totales de uso",
+          "speed_test_backend": "Servicio de prueba de velocidad"
         },
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
@@ -20,9 +19,8 @@
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
-          "speed_test_backend": "Desactivado por defecto. Las pruebas solo se ejecutan al pulsar Ejecutar prueba de velocidad o desde una automatización. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno.",
-          "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
-          "speed_test_daily_limit": "Máximo de pruebas en 24 horas, con el botón o automatizaciones (1 a 40). M-Lab pide que las pruebas automáticas no pasen de 4."
+          "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
+          "speed_test_backend": "Desactivado por defecto. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno. La siguiente pantalla define cuándo se ejecutan las pruebas y cuántos datos pueden usar."
         }
       },
       "reconfigure": {
@@ -33,9 +31,8 @@
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
           "hop_ownership": "Averiguar quién opera cada salto",
-          "speed_test_backend": "Servicio de prueba de velocidad",
-          "speed_test_data_limit_mb": "Límite de datos por prueba",
-          "speed_test_daily_limit": "Pruebas por día"
+          "usage_totals": "Totales de uso",
+          "speed_test_backend": "Servicio de prueba de velocidad"
         },
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
@@ -43,9 +40,24 @@
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
-          "speed_test_backend": "Desactivado por defecto. Las pruebas solo se ejecutan al pulsar Ejecutar prueba de velocidad o desde una automatización. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno.",
+          "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
+          "speed_test_backend": "Desactivado por defecto. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno. La siguiente pantalla define cuándo se ejecutan las pruebas y cuántos datos pueden usar."
+        }
+      },
+      "speed_test": {
+        "title": "Pruebas de velocidad",
+        "description": "Ejecutar prueba de velocidad y las automatizaciones inician una prueba en cualquier momento. Con {limit_mb} MB por prueba, solo la prueba nocturna usa hasta {monthly_gb} GB en 30 días; la mayoría de las pruebas usan menos.",
+        "data": {
+          "speed_test_automatic": "Prueba nocturna",
+          "speed_test_data_limit_mb": "Límite de datos por prueba",
+          "speed_test_daily_limit": "Límite diario de pruebas",
+          "speed_test_budget_gb": "Presupuesto de datos por 30 días"
+        },
+        "data_description": {
+          "speed_test_automatic": "Una prueba cada noche a una hora aleatoria entre la 1 y las 5, cuando la línea suele estar libre. Desactivada: las pruebas solo se ejecutan con Ejecutar prueba de velocidad o una automatización.",
           "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
-          "speed_test_daily_limit": "Máximo de pruebas en 24 horas, con el botón o automatizaciones (1 a 40). M-Lab pide que las pruebas automáticas no pasen de 4."
+          "speed_test_daily_limit": "Un tope, no un horario: si ya se ejecutaron tantas pruebas en las últimas 24 horas, las siguientes se rechazan hasta que la más antigua cumpla un día (1 a 40). Cuenta la prueba nocturna, el botón y las automatizaciones. M-Lab pide que las pruebas automáticas no pasen de 4.",
+          "speed_test_budget_gb": "0 para ninguno. Una prueba solo empieza si cabe en lo que queda de esto tras las pruebas de los últimos 30 días. Si tu plan tiene un límite de datos, mantén esto en una pequeña parte de él."
         }
       },
       "mlab_consent": {
@@ -74,9 +86,8 @@
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
           "hop_ownership": "Averiguar quién opera cada salto",
-          "speed_test_backend": "Servicio de prueba de velocidad",
-          "speed_test_data_limit_mb": "Límite de datos por prueba",
-          "speed_test_daily_limit": "Pruebas por día"
+          "usage_totals": "Totales de uso",
+          "speed_test_backend": "Servicio de prueba de velocidad"
         },
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
@@ -84,9 +95,24 @@
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
-          "speed_test_backend": "Desactivado por defecto. Las pruebas solo se ejecutan al pulsar Ejecutar prueba de velocidad o desde una automatización. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno.",
+          "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
+          "speed_test_backend": "Desactivado por defecto. Una prueba descarga y sube hasta 10 s en cada sentido con el servicio elegido, que ve tu dirección IP pública. M-Lab publica cada resultado con esa dirección de forma permanente; se te pedirá confirmación. Cloudflare guarda un resultado anonimizado. LibreSpeed usa servidores de voluntarios. IHM no está afiliado a ninguno. La siguiente pantalla define cuándo se ejecutan las pruebas y cuántos datos pueden usar."
+        }
+      },
+      "speed_test": {
+        "title": "Pruebas de velocidad",
+        "description": "Ejecutar prueba de velocidad y las automatizaciones inician una prueba en cualquier momento. Con {limit_mb} MB por prueba, solo la prueba nocturna usa hasta {monthly_gb} GB en 30 días; la mayoría de las pruebas usan menos.",
+        "data": {
+          "speed_test_automatic": "Prueba nocturna",
+          "speed_test_data_limit_mb": "Límite de datos por prueba",
+          "speed_test_daily_limit": "Límite diario de pruebas",
+          "speed_test_budget_gb": "Presupuesto de datos por 30 días"
+        },
+        "data_description": {
+          "speed_test_automatic": "Una prueba cada noche a una hora aleatoria entre la 1 y las 5, cuando la línea suele estar libre. Desactivada: las pruebas solo se ejecutan con Ejecutar prueba de velocidad o una automatización.",
           "speed_test_data_limit_mb": "Máximo de datos que puede usar una prueba, ambos sentidos juntos (100 a 10000 MB); cada sentido se detiene a la mitad. En una línea rápida, un límite menor da una prueba más corta y menos precisa.",
-          "speed_test_daily_limit": "Máximo de pruebas en 24 horas, con el botón o automatizaciones (1 a 40). M-Lab pide que las pruebas automáticas no pasen de 4."
+          "speed_test_daily_limit": "Un tope, no un horario: si ya se ejecutaron tantas pruebas en las últimas 24 horas, las siguientes se rechazan hasta que la más antigua cumpla un día (1 a 40). Cuenta la prueba nocturna, el botón y las automatizaciones. M-Lab pide que las pruebas automáticas no pasen de 4.",
+          "speed_test_budget_gb": "0 para ninguno. Una prueba solo empieza si cabe en lo que queda de esto tras las pruebas de los últimos 30 días. Si tu plan tiene un límite de datos, mantén esto en una pequeña parte de él."
         }
       },
       "mlab_consent": {
@@ -322,7 +348,10 @@
       "message": "La prueba de velocidad falló: {error}"
     },
     "daily_limit_reached": {
-      "message": "Límite de pruebas alcanzado: {limit} pruebas en las últimas 24 horas. Aumenta Pruebas por día en las opciones o inténtalo más tarde."
+      "message": "Límite de pruebas alcanzado: {limit} pruebas en las últimas 24 horas. Aumenta Límite diario de pruebas en las opciones o inténtalo más tarde."
+    },
+    "budget_reached": {
+      "message": "Presupuesto de datos alcanzado: {used} GB de {budget} GB usados en los últimos 30 días, y una prueba puede usar hasta {limit} MB. Aumenta el presupuesto en las opciones o inténtalo más tarde."
     },
     "mlab_automated_limit": {
       "message": "M-Lab permite como máximo {limit} pruebas automáticas al día, y ya se hicieron {limit} en las últimas 24 horas. Una prueba que inicia una persona desde el panel no tiene este límite."

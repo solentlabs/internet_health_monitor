@@ -55,7 +55,7 @@ SPEED_TEST_TIMEOUT_S = 60.0
 # Seconds to wait for one request that is not a load stream (lookups, probes).
 SPEED_TEST_REQUEST_TIMEOUT_S = 10.0
 # Per-test data limit in MB, both directions together; each direction stops at half.
-SPEED_TEST_DATA_LIMIT_MB_DEFAULT = 1000
+SPEED_TEST_DATA_LIMIT_MB_DEFAULT = 500
 SPEED_TEST_DATA_LIMIT_MB_MIN = 100
 SPEED_TEST_DATA_LIMIT_MB_MAX = 10000
 # Tests allowed in any SPEED_TEST_DAILY_WINDOW_S, manual or automated. Default 4:
@@ -70,6 +70,15 @@ SPEED_TEST_DAILY_WINDOW_S = 24 * 3600
 # M-Lab names no window; one hour is IHM's choice (docs/SPEED_TEST_BACKENDS.md § Limits).
 SPEED_TEST_MLAB_AUTOMATED_DAILY = 4
 SPEED_TEST_MLAB_AUTOMATED_WAIT_MAX_S = 3600
+# The daily automatic test starts at a random time in this local window: overnight,
+# when the household is least likely to be on a call or a game (docs/SPEED_TEST_BACKENDS.md
+# § Limits), and random so homes don't all test at once (M-Lab, R9).
+SPEED_TEST_AUTO_START_HOUR = 1
+SPEED_TEST_AUTO_WINDOW_S = 4 * 3600
+# Speed test data budget, in GB per SPEED_TEST_BUDGET_WINDOW_S; 0 means none.
+SPEED_TEST_BUDGET_GB_DEFAULT = 0
+SPEED_TEST_BUDGET_GB_MAX = 10000
+SPEED_TEST_BUDGET_WINDOW_S = 30 * 24 * 3600
 
 # Hosts that keep running usage totals write them at most this often (and on unload).
 USAGE_SAVE_DELAY_S = 300

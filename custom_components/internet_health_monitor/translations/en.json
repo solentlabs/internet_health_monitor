@@ -10,9 +10,8 @@
           "dns_server": "DNS server",
           "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop",
-          "speed_test_backend": "Speed test service",
-          "speed_test_data_limit_mb": "Data limit per test",
-          "speed_test_daily_limit": "Tests per day"
+          "usage_totals": "Usage totals",
+          "speed_test_backend": "Speed test service"
         },
         "data_description": {
           "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
@@ -20,9 +19,8 @@
           "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
-          "speed_test_backend": "Off by default. Tests run only when you press Run speed test or an automation does. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them.",
-          "speed_test_data_limit_mb": "Most data one test may use, both directions together (100 to 10000 MB); each direction stops at half. On a fast line a lower limit gives a shorter, less precise test.",
-          "speed_test_daily_limit": "Most tests in any 24 hours, from the button or automations (1 to 40). M-Lab asks automated tests to stay at 4 or fewer."
+          "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
+          "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },
       "reconfigure": {
@@ -33,9 +31,8 @@
           "dns_server": "DNS server",
           "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop",
-          "speed_test_backend": "Speed test service",
-          "speed_test_data_limit_mb": "Data limit per test",
-          "speed_test_daily_limit": "Tests per day"
+          "usage_totals": "Usage totals",
+          "speed_test_backend": "Speed test service"
         },
         "data_description": {
           "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
@@ -43,9 +40,24 @@
           "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
-          "speed_test_backend": "Off by default. Tests run only when you press Run speed test or an automation does. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them.",
+          "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
+          "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
+        }
+      },
+      "speed_test": {
+        "title": "Speed tests",
+        "description": "Run speed test and automations start a test at any time. At {limit_mb} MB a test, the nightly test alone uses up to {monthly_gb} GB in 30 days; most tests use less.",
+        "data": {
+          "speed_test_automatic": "Nightly test",
+          "speed_test_data_limit_mb": "Data limit per test",
+          "speed_test_daily_limit": "Daily test limit",
+          "speed_test_budget_gb": "Data budget per 30 days"
+        },
+        "data_description": {
+          "speed_test_automatic": "One test a night at a random time between 1 and 5 am, when the line is likely quiet. Off: tests run only from Run speed test or an automation.",
           "speed_test_data_limit_mb": "Most data one test may use, both directions together (100 to 10000 MB); each direction stops at half. On a fast line a lower limit gives a shorter, less precise test.",
-          "speed_test_daily_limit": "Most tests in any 24 hours, from the button or automations (1 to 40). M-Lab asks automated tests to stay at 4 or fewer."
+          "speed_test_daily_limit": "A cap, not a schedule: once this many tests ran in the last 24 hours, more are refused until the oldest is a day old (1 to 40). Counts the nightly test, the button and automations. M-Lab asks automated tests to stay at 4 or fewer.",
+          "speed_test_budget_gb": "0 for none. A test starts only if it fits in what is left of this after the last 30 days of speed tests. If your plan has a data cap, keep this to a small share of it."
         }
       },
       "mlab_consent": {
@@ -74,9 +86,8 @@
           "dns_server": "DNS server",
           "ping_count": "Pings per target",
           "hop_ownership": "Look up who runs each hop",
-          "speed_test_backend": "Speed test service",
-          "speed_test_data_limit_mb": "Data limit per test",
-          "speed_test_daily_limit": "Tests per day"
+          "usage_totals": "Usage totals",
+          "speed_test_backend": "Speed test service"
         },
         "data_description": {
           "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
@@ -84,9 +95,24 @@
           "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
-          "speed_test_backend": "Off by default. Tests run only when you press Run speed test or an automation does. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them.",
+          "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
+          "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare keeps an anonymized result. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
+        }
+      },
+      "speed_test": {
+        "title": "Speed tests",
+        "description": "Run speed test and automations start a test at any time. At {limit_mb} MB a test, the nightly test alone uses up to {monthly_gb} GB in 30 days; most tests use less.",
+        "data": {
+          "speed_test_automatic": "Nightly test",
+          "speed_test_data_limit_mb": "Data limit per test",
+          "speed_test_daily_limit": "Daily test limit",
+          "speed_test_budget_gb": "Data budget per 30 days"
+        },
+        "data_description": {
+          "speed_test_automatic": "One test a night at a random time between 1 and 5 am, when the line is likely quiet. Off: tests run only from Run speed test or an automation.",
           "speed_test_data_limit_mb": "Most data one test may use, both directions together (100 to 10000 MB); each direction stops at half. On a fast line a lower limit gives a shorter, less precise test.",
-          "speed_test_daily_limit": "Most tests in any 24 hours, from the button or automations (1 to 40). M-Lab asks automated tests to stay at 4 or fewer."
+          "speed_test_daily_limit": "A cap, not a schedule: once this many tests ran in the last 24 hours, more are refused until the oldest is a day old (1 to 40). Counts the nightly test, the button and automations. M-Lab asks automated tests to stay at 4 or fewer.",
+          "speed_test_budget_gb": "0 for none. A test starts only if it fits in what is left of this after the last 30 days of speed tests. If your plan has a data cap, keep this to a small share of it."
         }
       },
       "mlab_consent": {
@@ -322,7 +348,10 @@
       "message": "Speed test failed: {error}"
     },
     "daily_limit_reached": {
-      "message": "Speed test limit reached: {limit} tests in the last 24 hours. Raise Tests per day in the options or try later."
+      "message": "Speed test limit reached: {limit} tests in the last 24 hours. Raise Daily test limit in the options or try later."
+    },
+    "budget_reached": {
+      "message": "Speed test data budget reached: {used} GB of {budget} GB used in the last 30 days, and a test may use up to {limit} MB. Raise the budget in the options or try later."
     },
     "mlab_automated_limit": {
       "message": "M-Lab allows at most {limit} automated tests a day, and {limit} ran in the last 24 hours. A test a person starts from the dashboard is not limited this way."

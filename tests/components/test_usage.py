@@ -16,7 +16,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.internet_health_monitor.const import DOMAIN
+from custom_components.internet_health_monitor.const import CONF_USAGE_TOTALS, DOMAIN
 from custom_components.internet_health_monitor.usage import STORAGE_KEY, UsageTotals
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, ProbeCounts
 from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
@@ -48,28 +48,41 @@ SENSOR_CASES: list[tuple[str, str | None, SensorDeviceClass | None]] = [
 
 
 @pytest.mark.parametrize("key,unit,device_class", SENSOR_CASES, ids=[c[0] for c in SENSOR_CASES])
-async def test_usage_sensors_are_diagnostic_totals_off_by_default(
+async def test_usage_sensors_are_diagnostic_totals(
     hass: HomeAssistant, setup_entry: SetupEntry, key: str, unit: str | None, device_class: SensorDeviceClass | None
 ) -> None:
-    """Each total is a diagnostic, ever-increasing sensor, disabled until the user enables it."""
-    entry = await setup_entry()
+    """With Usage totals on, each total is an enabled, diagnostic, ever-increasing sensor."""
+    entry = await setup_entry(**{CONF_USAGE_TOTALS: True})
     entity = er.async_get(hass).async_get(entity_id(hass, "sensor", entry, key) or "")
     assert entity is not None
     assert entity.entity_category is EntityCategory.DIAGNOSTIC
-    assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert entity.disabled_by is None
     assert entity.capabilities == {"state_class": SensorStateClass.TOTAL_INCREASING}
     assert (entity.unit_of_measurement, entity.original_device_class) == (unit, device_class)
 
 
 async def _enabled(hass: HomeAssistant, setup_entry: SetupEntry, **options: Any) -> MockConfigEntry:
-    """Set up with every usage sensor enabled."""
-    registry = er.async_get(hass)
-    entry = await setup_entry(**options)
-    for key, _, _ in SENSOR_CASES:
-        registry.async_update_entity(entity_id(hass, "sensor", entry, key) or "", disabled_by=None)
-    assert await hass.config_entries.async_reload(entry.entry_id)
+    """Set up with Usage totals on."""
+    return await setup_entry(**{CONF_USAGE_TOTALS: True}, **options)
+
+
+async def test_usage_sensors_follow_the_option(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Off by default: no usage sensors. Turning it off removes them; counting goes on either way."""
+    entry = await setup_entry()
+    assert all(entity_id(hass, "sensor", entry, key) is None for key, _, _ in SENSOR_CASES)
+    entry.runtime_data.diagnostics.counts = ProbeCounts(pings=4)
+    await entry.runtime_data.coordinator.async_refresh()
+
+    hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_USAGE_TOTALS: True})
     await hass.async_block_till_done()
-    return entry
+    entry.runtime_data.diagnostics.counts = ProbeCounts(pings=1)
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _value(hass, entry, "usage_pings") == "5"
+
+    hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_USAGE_TOTALS: False})
+    await hass.async_block_till_done()
+    assert all(entity_id(hass, "sensor", entry, key) is None for key, _, _ in SENSOR_CASES)
 
 
 def _value(hass: HomeAssistant, entry: MockConfigEntry, key: str) -> str:
@@ -179,3 +192,31 @@ async def test_failed_speed_test_still_adds_its_data(hass: HomeAssistant, setup_
     await hass.async_block_till_done()
     assert (_value(hass, entry, "usage_downloaded"), _value(hass, entry, "usage_uploaded")) == ("40.5", "0.3")
     assert _value(hass, entry, "usage_speed_tests") == "1"
+
+
+# registered by an older build as -> after setup with Usage totals on
+# fmt: off
+UPGRADE_CASES: list[tuple[str, er.RegistryEntryDisabler | None]] = [
+    ("hidden by IHM",  None),                            # shown now
+    ("hidden by user", er.RegistryEntryDisabler.USER),   # the user's choice stays
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "expected"), UPGRADE_CASES, ids=[c[0] for c in UPGRADE_CASES])
+async def test_usage_sensors_hidden_by_older_build_are_shown(
+    hass: HomeAssistant, poll: AsyncMock, description: str, expected: er.RegistryEntryDisabler | None
+) -> None:
+    """Usage sensors an older build registered hidden show once Usage totals is on; ones a user hid stay hidden."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=DOMAIN, options={CONF_USAGE_TOTALS: True})
+    entry.add_to_hass(hass)
+    disabler = er.RegistryEntryDisabler.USER if expected else er.RegistryEntryDisabler.INTEGRATION
+    old = er.async_get(hass).async_get_or_create(
+        "sensor", DOMAIN, f"{entry.entry_id}_usage_pings", config_entry=entry, disabled_by=disabler
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    now = er.async_get(hass).async_get(old.entity_id)
+    assert now is not None  # same entity id, so its history carries over
+    assert now.disabled_by is expected
+    assert (hass.states.get(old.entity_id) is not None) is (expected is None)  # shown in this setup, no restart

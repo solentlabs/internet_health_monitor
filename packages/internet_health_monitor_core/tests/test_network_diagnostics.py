@@ -9,13 +9,13 @@ import pytest
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import (
     HopInfo,
-    HostEnvironment,
     NetworkDiagnostics,
     NetworkDiagnosticsConfig,
     NetworkDiagnosticsResult,
     consecutive_jitter,
     format_ms,
 )
+from solentlabs.internet_health_monitor_core.platforms.base import HostEnvironment
 
 # Round-trip times in sending order -> jitter: mean |difference| of consecutive
 # samples (RFC 3550 consecutive form, Cloudflare's speed test; ADR-009).

@@ -27,9 +27,12 @@ from .const import (
     CONF_HOP_OWNERSHIP,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
+    CONF_SPEED_TEST_AUTOMATIC,
     CONF_SPEED_TEST_BACKEND,
+    CONF_SPEED_TEST_BUDGET,
     CONF_SPEED_TEST_DAILY_LIMIT,
     CONF_SPEED_TEST_DATA_LIMIT,
+    CONF_USAGE_TOTALS,
     DEFAULT_DNS_SERVER,
     DEFAULT_PING_COUNT,
     DNS_SERVERS,
@@ -49,9 +52,15 @@ DEFAULTS: dict[str, Any] = {
     CONF_DNS_SERVER: DEFAULT_DNS_SERVER,
     CONF_PING_COUNT: DEFAULT_PING_COUNT,
     CONF_HOP_OWNERSHIP: False,
+    CONF_USAGE_TOTALS: False,
     CONF_SPEED_TEST_BACKEND: SPEED_TEST_OFF,
+}
+# The second screen, shown only when a speed test service is chosen.
+SPEED_TEST_DEFAULTS: dict[str, Any] = {
+    CONF_SPEED_TEST_AUTOMATIC: True,
     CONF_SPEED_TEST_DATA_LIMIT: timing.SPEED_TEST_DATA_LIMIT_MB_DEFAULT,
     CONF_SPEED_TEST_DAILY_LIMIT: timing.SPEED_TEST_DAILY_DEFAULT,
+    CONF_SPEED_TEST_BUDGET: timing.SPEED_TEST_BUDGET_GB_DEFAULT,
 }
 
 # M-Lab publishes every result with the user's IP address; its terms require informed consent (R9).
@@ -98,6 +107,7 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
                 probatio.Coerce(int),
             ),
             probatio.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),
+            probatio.Required(CONF_USAGE_TOTALS, default=default(CONF_USAGE_TOTALS)): BooleanSelector(),
             probatio.Required(CONF_SPEED_TEST_BACKEND, default=default(CONF_SPEED_TEST_BACKEND)): SelectSelector(
                 SelectSelectorConfig(
                     options=SPEED_TEST_CHOICES,
@@ -105,22 +115,42 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
                     translation_key=CONF_SPEED_TEST_BACKEND,
                 )
             ),
+        }
+    )
+
+
+def build_speed_test_schema(current: Mapping[str, Any]) -> probatio.Schema:
+    """Return the speed test screen, pre-filled from current values or SPEED_TEST_DEFAULTS."""
+
+    def default(key: str) -> Any:
+        return current.get(key, SPEED_TEST_DEFAULTS[key])
+
+    return probatio.Schema(
+        {
+            probatio.Required(CONF_SPEED_TEST_AUTOMATIC, default=default(CONF_SPEED_TEST_AUTOMATIC)): BooleanSelector(),
             probatio.Required(CONF_SPEED_TEST_DATA_LIMIT, default=default(CONF_SPEED_TEST_DATA_LIMIT)): _box(
                 timing.SPEED_TEST_DATA_LIMIT_MB_MIN, timing.SPEED_TEST_DATA_LIMIT_MB_MAX, 100, "MB"
             ),
             probatio.Required(CONF_SPEED_TEST_DAILY_LIMIT, default=default(CONF_SPEED_TEST_DAILY_LIMIT)): _box(
                 timing.SPEED_TEST_DAILY_MIN, timing.SPEED_TEST_DAILY_MAX, 1
             ),
+            probatio.Required(CONF_SPEED_TEST_BUDGET, default=default(CONF_SPEED_TEST_BUDGET)): _box(
+                0, timing.SPEED_TEST_BUDGET_GB_MAX, 1, "GB"
+            ),
         }
     )
 
 
-def with_consent(user_input: dict[str, Any], current: Mapping[str, Any]) -> tuple[dict[str, Any], bool]:
-    """The options to save, keeping consent already given, and whether M-Lab consent must still be asked."""
-    options = dict(user_input)
-    if current.get(CONF_MLAB_CONSENT):
-        options[CONF_MLAB_CONSENT] = True
-    return options, options[CONF_SPEED_TEST_BACKEND] == "mlab" and not options.get(CONF_MLAB_CONSENT)
+def speed_test_placeholders(current: Mapping[str, Any]) -> dict[str, str]:
+    """Advice on the speed test screen: the most the nightly test can use in 30 days at the current limit."""
+    limit_mb = current.get(CONF_SPEED_TEST_DATA_LIMIT, SPEED_TEST_DEFAULTS[CONF_SPEED_TEST_DATA_LIMIT])
+    days = timing.SPEED_TEST_BUDGET_WINDOW_S // 86400
+    return {"limit_mb": str(limit_mb), "monthly_gb": f"{days * limit_mb / 1000:g}"}
+
+
+def needs_consent(options: Mapping[str, Any]) -> bool:
+    """M-Lab is chosen and consent was never given."""
+    return options[CONF_SPEED_TEST_BACKEND] == "mlab" and not options.get(CONF_MLAB_CONSENT)
 
 
 class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -129,47 +159,61 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
-        """Nothing is pending until the form is submitted."""
-        self._pending: dict[str, Any] = {}
+        """Nothing is pending until the first screen is submitted."""
+        self._options: dict[str, Any] = {}
 
     @override
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Show the settings, then create the entry."""
+        """Show the monitoring settings; a chosen speed test service leads to its own screen."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
         if user_input is not None:
-            return await self._async_submit(user_input, {})
+            self._options = dict(user_input)
+            return await self._async_next()
         return self.async_show_form(step_id="user", data_schema=build_schema({}))
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Change the settings from the entry's Reconfigure menu, then reload."""
         entry = self._get_reconfigure_entry()
         if user_input is not None:
-            return await self._async_submit(user_input, entry.options)
+            self._options = {**entry.options, **user_input}
+            return await self._async_next()
         return self.async_show_form(step_id="reconfigure", data_schema=build_schema(entry.options))
+
+    async def async_step_speed_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """When tests run and how much data they may use."""
+        if user_input is not None:
+            self._options.update(user_input)
+            if needs_consent(self._options):
+                return await self.async_step_mlab_consent()
+            return self._async_finish()
+        return self.async_show_form(
+            step_id="speed_test",
+            data_schema=build_speed_test_schema(self._options),
+            description_placeholders=speed_test_placeholders(self._options),
+        )
 
     async def async_step_mlab_consent(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ask before M-Lab is used: it publishes results with the user's IP address."""
         errors: dict[str, str] = {}
         if user_input is not None:
             if user_input[CONF_MLAB_CONSENT]:
-                return self._async_finish({**self._pending, CONF_MLAB_CONSENT: True})
+                self._options[CONF_MLAB_CONSENT] = True
+                return self._async_finish()
             errors["base"] = "mlab_consent_required"
         return self.async_show_form(step_id="mlab_consent", data_schema=CONSENT_SCHEMA, errors=errors)
 
-    async def _async_submit(self, user_input: dict[str, Any], current: Mapping[str, Any]) -> ConfigFlowResult:
-        """Save, or ask for M-Lab consent first."""
-        options, ask = with_consent(user_input, current)
-        if ask:
-            self._pending = options
-            return await self.async_step_mlab_consent()
-        return self._async_finish(options)
+    async def _async_next(self) -> ConfigFlowResult:
+        """The speed test screen if a service is chosen, else save."""
+        if self._options[CONF_SPEED_TEST_BACKEND] != SPEED_TEST_OFF:
+            return await self.async_step_speed_test()
+        return self._async_finish()
 
-    def _async_finish(self, options: dict[str, Any]) -> ConfigFlowResult:
+    def _async_finish(self) -> ConfigFlowResult:
         """Create the entry, or update it when reconfiguring."""
         if self.source == SOURCE_RECONFIGURE:
-            return self.async_update_reload_and_abort(self._get_reconfigure_entry(), options=options)
-        return self.async_create_entry(title=NAME, data={}, options=options)
+            return self.async_update_reload_and_abort(self._get_reconfigure_entry(), options=self._options)
+        return self.async_create_entry(title=NAME, data={}, options=self._options)
 
     @override
     @staticmethod
@@ -183,24 +227,36 @@ class InternetHealthOptionsFlow(OptionsFlow):
     """Change settings; HA supplies self.config_entry (2024.11+)."""
 
     def __init__(self) -> None:
-        """Nothing is pending until the form is submitted."""
-        self._pending: dict[str, Any] = {}
+        """Nothing is pending until the first screen is submitted."""
+        self._options: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Show the current settings, then save them (asking M-Lab consent first if needed)."""
+        """Show the current settings; a chosen speed test service leads to its own screen."""
         if user_input is not None:
-            options, ask = with_consent(user_input, self.config_entry.options)
-            if ask:
-                self._pending = options
-                return await self.async_step_mlab_consent()
-            return self.async_create_entry(data=options)
+            self._options = {**self.config_entry.options, **user_input}
+            if self._options[CONF_SPEED_TEST_BACKEND] != SPEED_TEST_OFF:
+                return await self.async_step_speed_test()
+            return self.async_create_entry(data=self._options)
         return self.async_show_form(step_id="init", data_schema=build_schema(self.config_entry.options))
+
+    async def async_step_speed_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """When tests run and how much data they may use."""
+        if user_input is not None:
+            self._options.update(user_input)
+            if needs_consent(self._options):
+                return await self.async_step_mlab_consent()
+            return self.async_create_entry(data=self._options)
+        return self.async_show_form(
+            step_id="speed_test",
+            data_schema=build_speed_test_schema(self._options),
+            description_placeholders=speed_test_placeholders(self._options),
+        )
 
     async def async_step_mlab_consent(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ask before M-Lab is used: it publishes results with the user's IP address."""
         errors: dict[str, str] = {}
         if user_input is not None:
             if user_input[CONF_MLAB_CONSENT]:
-                return self.async_create_entry(data={**self._pending, CONF_MLAB_CONSENT: True})
+                return self.async_create_entry(data={**self._options, CONF_MLAB_CONSENT: True})
             errors["base"] = "mlab_consent_required"
         return self.async_show_form(step_id="mlab_consent", data_schema=CONSENT_SCHEMA, errors=errors)

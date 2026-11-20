@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from solentlabs.internet_health_monitor_core import cli
-from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnosticsResult
+from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsResult
 from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
 
 # argv -> (dns_server, ping_count, interval, hop_ownership)
@@ -67,7 +67,7 @@ async def test_single_poll_prints_one_json_line() -> None:
     """Without --interval, one poll runs and its result is one JSON line."""
     out = io.StringIO()
     args = argparse.Namespace(dns_server="auto", ping_count=3, interval=None, hop_ownership=False)
-    with patch.object(cli.NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())):
+    with patch.object(NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())):
         await cli.run(args, out)
 
     lines = out.getvalue().splitlines()
@@ -91,8 +91,8 @@ async def test_interval_polls_until_stopped() -> None:
     out = io.StringIO()
     args = argparse.Namespace(dns_server="auto", ping_count=3, interval=60, hop_ownership=False)
     with (
-        patch.object(cli.NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())),
-        patch.object(cli.asyncio, "sleep", fake_sleep),
+        patch.object(NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())),
+        patch.object(asyncio, "sleep", fake_sleep),
         pytest.raises(StopLoopError),
     ):
         await cli.run(args, out)

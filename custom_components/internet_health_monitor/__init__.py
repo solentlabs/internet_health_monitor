@@ -29,9 +29,12 @@ from .const import (
     CONF_HOP_OWNERSHIP,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
+    CONF_SPEED_TEST_AUTOMATIC,
     CONF_SPEED_TEST_BACKEND,
+    CONF_SPEED_TEST_BUDGET,
     CONF_SPEED_TEST_DAILY_LIMIT,
     CONF_SPEED_TEST_DATA_LIMIT,
+    CONF_USAGE_TOTALS,
     DEFAULT_DNS_SERVER,
     DEFAULT_PING_COUNT,
     DNS_SERVERS,
@@ -109,9 +112,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
         diagnostics=diagnostics,
         enable_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
         enable_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
+        usage_totals=options.get(CONF_USAGE_TOTALS, False),
         installation_type=(await async_get_system_info(hass))["installation_type"],
         speed_test=await _async_speed_test(hass, entry, usage),
     )
+    _show_hidden_usage_sensors(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _remove_stale_entities(hass, entry)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_options_change))
@@ -133,9 +138,27 @@ async def _async_speed_test(
         data_limit_mb=options.get(CONF_SPEED_TEST_DATA_LIMIT, timing.SPEED_TEST_DATA_LIMIT_MB_DEFAULT),
         daily_limit=options.get(CONF_SPEED_TEST_DAILY_LIMIT, timing.SPEED_TEST_DAILY_DEFAULT),
         usage=usage,
+        automatic=options.get(CONF_SPEED_TEST_AUTOMATIC, True),
+        budget_gb=options.get(CONF_SPEED_TEST_BUDGET, timing.SPEED_TEST_BUDGET_GB_DEFAULT),
     )
     await coordinator.async_load()
     return coordinator
+
+
+def _show_hidden_usage_sensors(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:
+    """Clear the hidden flag an older build gave usage sensors, so the Usage totals option alone decides.
+
+    HA: entities an option controls are created or removed, not disabled by the
+    integration. HA restores a removed entity's flag, so the flag is cleared
+    (HA reloads the entry once, 30 s later). Ones a user hid stay hidden.
+    """
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if (
+            entity.unique_id.startswith(f"{entry.entry_id}_usage_")
+            and entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        ):
+            registry.async_update_entity(entity.entity_id, disabled_by=None)
 
 
 def _remove_stale_entities(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> None:

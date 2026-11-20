@@ -9,7 +9,7 @@ Use cases: [USE_CASES.md](USE_CASES.md).
 
 IHM watches the path from the Home Assistant host to the internet:
 
-```
+```text
 HA host ──> hop 1 (gateway) ──> hop 2 (ISP) ──> hop 3 (backbone)
    └──────────────────────────────────────────> DNS server
 ```
@@ -24,7 +24,7 @@ detects bufferbloat passively (ADR-001).
 Two layers, one-way dependency. Core is its own package (ADR-005), so
 other hosts can use it; the command line is the second.
 
-```
+```text
 HA layer  (custom_components/internet_health_monitor/*.py)    CLI (cli.py)
     config flow, coordinator, sensors,                    one JSON line
     binary sensors, buttons, diagnostics                  per poll
@@ -60,11 +60,11 @@ and hop hostnames. Each poll's measurements stand alone.
 scheduling. It contains no measurement logic.
 
 | File | Role |
-|------|------|
+| ------ | ------ |
 | `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`; reloads when options change. |
-| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test only when the button is pressed, enforces the data and daily limits and M-Lab's automated-client rules, and stores run times and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
+| `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test when the button is pressed and, if the nightly test is on, once a night; enforces the data limit, daily limit, 30-day data budget and M-Lab's automated-client rules; and stores each run's time and data and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
 | `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
-| `config_flow.py` | Setup and options from one `build_schema`: gateway and DNS monitoring, DNS server, pings per target (1 to 10), hop ownership, speed test service and limits; an M-Lab consent step. One entry per HA. |
+| `config_flow.py` | Setup and options, two screens: `build_schema` (gateway and DNS monitoring, DNS server, pings per target 1 to 10, hop ownership, usage totals, speed test service), then, with a service chosen, `build_speed_test_schema` (nightly test, data limit, daily test limit, data budget, with the nightly test's 30-day cost shown); an M-Lab consent step. One entry per HA. |
 | `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency and, with a service chosen, six speed test readings, all `state_class: measurement`. Diagnostic enums: Connection type (Core's host environment) and Install type (HA's own `system_info`). |
 | `binary_sensor.py` | `gateway_reachable` (gateway ping answered), `internet_reachable` (DNS query succeeded). |
 | `button.py` | Refresh diagnostics; Reset network cache (disabled by default); Run speed test (with a service chosen; a press with no user counts as automated). A failed press raises a translated error. |
@@ -127,7 +127,7 @@ Beyond the probes themselves (ping, traceroute and the DNS query), IHM
 sends only:
 
 | Destination | What is sent | When |
-|-------------|--------------|------|
+| ------------- | -------------- | ------ |
 | The host's configured DNS resolver | Each hop IP, as a reverse DNS query | Once after hops are detected, and after a cache reset |
 | Team Cymru, through the DNS server under test | Each public hop IP, as an `origin.asn.cymru.com` query, then its ASN | Only with Hop ownership on (off by default); same timing as reverse DNS |
 | Cloudflare (speed.cloudflare.com) | Test data both ways; it sees the public IP address. Nothing is posted to its results endpoint | Each speed test, with Cloudflare chosen |
@@ -163,7 +163,7 @@ Reviewed 2026-11-19 (ROADMAP Phase 5); `packages/internet_health_monitor_core/te
 No code dependency in either direction (ADR-002).
 
 | Integration | Measures | Boundary |
-|-------------|----------|----------|
+| ------------- | ---------- | ---------- |
 | Cable Modem Monitor | DOCSIS signal, errors, modem ping | Combined with IHM in HA templates over entities (UC-7). |
 | Other speed test integrations | Throughput | IHM does not read them (ADR-003). |
 

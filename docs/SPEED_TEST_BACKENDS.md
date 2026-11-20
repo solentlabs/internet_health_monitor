@@ -14,7 +14,7 @@ any of these providers.
 ## At a Glance
 
 | Backend | Loaded latency | Who sees your public IP address | Limits |
-|---------|----------------|----------------------------------|--------|
+| --------- | ---------------- | ---------------------------------- | -------- |
 | **Cloudflare** | Yes, per direction | Cloudflare; it keeps the address cut to /24 (IPv4) or /48 (IPv6) *(unverified)* | None published; IHM's limits apply |
 | **M-Lab NDT7** | Server's view of round-trip time; download good, upload approximate | **M-Lab publishes it with every result, permanently** | 4 automated a day at random times; 40 a day in all |
 | **LibreSpeed** | Yes, per direction | The volunteer server you are matched with | None published; IHM's limits apply |
@@ -30,7 +30,7 @@ address: the test is a connection from your network to theirs.
 Every backend returns the same result (Core `speed_test.SpeedTestResult`):
 
 | Field | Meaning |
-|-------|---------|
+| ------- | --------- |
 | Download, upload | Mbit/s of test data received or sent. No overhead factor is added, so it reads a few percent below the line rate that includes TCP/IP headers |
 | Idle latency | Median round trip before any load |
 | Download latency, upload latency | Median round trip while that direction is loaded. Minus idle latency, this is bufferbloat |
@@ -48,6 +48,7 @@ and IHM's usage totals include it.
 One engine serves the HTTP backends; NDT7 follows M-Lab's protocol.
 
 **HTTP backends** (Cloudflare, LibreSpeed):
+
 1. **Idle latency:** 10 small requests one after another, after one
    warm-up; the median time to the first response byte. Cloudflare
    reports its own processing time in a `server-timing` header, which is
@@ -75,24 +76,30 @@ results or telemetry endpoint, and gives up after 60 s.
 
 ## Running Tests and Limits
 
-Tests never run on their own. They run when you press **Run speed
-test**, or when an automation presses it: HA's quality rules bar an
-integration from offering its own polling schedule (R16), and an
-automation can test at any time or condition you like (README.md §
-Speed Testing).
+Tests run three ways: the *Nightly test*, the **Run speed test**
+button, and automations that press it. The nightly test is on by
+default once a service is chosen and runs at a random time from 1 to
+5 am local (Core `timing.py`). HA's quality rules bar a user-set
+interval (R16), so it is only on or off; an automation covers any other
+time or condition (README.md § Speed Testing). Overnight, a test is
+least likely to slow a call or a game. IHM does not check whether the
+line is busy: the FCC's test units do (R21), but they sit between modem
+and router, and the HA host cannot see other devices' traffic.
 
-Two settings bound the cost, counting every run, failed ones included:
+Three settings bound the cost, counting every run, failed ones included:
 
 | Setting | Default | Range | Why |
-|---------|---------|-------|-----|
-| Data limit per test | 1000 MB | 100 to 10000 MB | Each direction stops at half, so a fast line cannot use a large share of a data cap |
-| Tests per day | 4 | 1 to 40 | Any 24 hours. 4 is M-Lab's limit for automated clients; 40 its limit for interactive users (R9) |
+| --------- | --------- | ------- | ----- |
+| Data limit per test | 500 MB | 100 to 10000 MB | Each direction stops at half, so a fast line cannot use a large share of a data cap. 30 nightly tests use at most 30 times this |
+| Daily test limit | 4 | 1 to 40 | Any 24 hours. 4 is M-Lab's limit for automated clients; 40 its limit for interactive users (R9) |
+| Data budget per 30 days | 0 (none) | 0 to 10000 GB | A test starts only if its data limit fits what speed tests have left of it in the last 30 days, so it is never exceeded. SamKnows aims for under 10% of a monthly cap on slower plans (R22); IHM's advice is a small share |
 
 With M-Lab, IHM also follows its rules for automated clients (R9). A
-press with no person behind it (an automation or script) counts toward
-at most 4 a day, whatever Tests per day says. It starts after a random
-wait of up to an hour, so homes running the same automation do not test
-at the same moment; the press returns at once and the sensors update
+run with no person behind it (the nightly test, an automation or a
+script) counts toward at most 4 a day, whatever the daily test limit
+says. The nightly test already starts at a random time; one an
+automation starts waits a random time of up to an hour, so homes
+running the same automation do not test at the same moment; the press returns at once and the sensors update
 when the test finishes. M-Lab asks for randomized times without naming
 a window; one hour is IHM's choice. A person's press runs at once.
 

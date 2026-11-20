@@ -18,7 +18,7 @@ no test traffic sent):
 *Responsiveness under Working Conditions.* Relevant only if an active
 test is ever revisited.
 
-- https://datatracker.ietf.org/doc/draft-ietf-ippm-responsiveness/
+- <https://datatracker.ietf.org/doc/draft-ietf-ippm-responsiveness/>
 - Latest revision -09, 2026-07-06, an Internet-Draft (bpm WG), not an
   RFC [V*].
 - RPM = 60000 / RTT(ms), single-sided 95% trimmed mean; classes Poor
@@ -41,11 +41,11 @@ Only if an active test is revisited.
 
 ## R3. Waveform bufferbloat test (grading scale only)
 
-https://www.waveform.com/tools/bufferbloat. Never contacted by our code.
+<https://www.waveform.com/tools/bufferbloat>. Never contacted by our code.
 
 | Fact | Label |
-|------|-------|
-| Thresholds on latency increase: A+ < 5 ms, A < 30, B < 60, C < 200, D < 400, F ≥ 400. | [V] via Wayback capture 2026-11-07 of Waveform's production JS: https://web.archive.org/web/20261107122556id_/https://www.waveform.com/tools/bufferbloat/assets/entry_v2-CNNFEkiB.js |
+| ------ | ------- |
+| Thresholds on latency increase: A+ < 5 ms, A < 30, B < 60, C < 200, D < 400, F ≥ 400. | [V] via Wayback capture 2026-11-07 of Waveform's production JS: <https://web.archive.org/web/20261107122556id_/https://www.waveform.com/tools/bufferbloat/assets/entry_v2-CNNFEkiB.js> |
 | Grade = worst of download and upload increase over idle. | [V] same source |
 | "Anything worse than a B may affect video calls." | [V] |
 
@@ -54,7 +54,7 @@ Wayback-only so far; a live re-read is an Open Verification Item.
 
 ## R4. DSLReports speed test grading (historical)
 
-Archived FAQ: https://web.archive.org/web/20230802002937/https://www.dslreports.com/faq/17930.
+Archived FAQ: <https://web.archive.org/web/20230802002937/https://www.dslreports.com/faq/17930>.
 Site shut down [V].
 
 - Same cutoffs as R3 [V].
@@ -65,7 +65,7 @@ Site shut down [V].
 
 ## R5. Cloudflare speed test
 
-- https://github.com/cloudflare/speedtest, MIT [V].
+- <https://github.com/cloudflare/speedtest>, MIT [V].
 - Endpoints, from `src/config/defaultConfig.ts` and
   `src/engines/BandwidthEngine/BandwidthEngine.ts`, read 2026-11-19 [V]:
   `https://speed.cloudflare.com/__down?bytes=N` (GET) and `__up` (POST);
@@ -84,7 +84,7 @@ Site shut down [V].
   address it receives to /24 (IPv4) or /48 (IPv6) [U: read through a
   summarizer].
 - No terms specific to speed.cloudflare.com. Cloudflare Website and
-  Online Services Terms (https://www.cloudflare.com/website-terms/,
+  Online Services Terms (<https://www.cloudflare.com/website-terms/>,
   effective 2025-08-01), read with curl 2026-11-19 [V*]: they cover
   websites "that Cloudflare operates and that link to these Terms";
   § 7 bars use that "could damage, disable, overburden, disrupt or
@@ -97,21 +97,21 @@ Site shut down [V].
 
 ## R6. crusader
 
-https://github.com/Zoxc/crusader. Rust, MIT / Apache-2.0, v0.3.2
+<https://github.com/Zoxc/crusader>. Rust, MIT / Apache-2.0, v0.3.2
 (2024-10-03) [V]. LAN client/server latency-under-load tool; latency
 sampled every 5 ms over UDP [V]. Useful for a manual LAN vs WAN check
 (UC-8) if an active test is ever revisited.
 
 ## R7. bufferbloat.net testing guidance
 
-https://www.bufferbloat.net/projects/bloat/wiki/Tests_for_Bufferbloat/
+<https://www.bufferbloat.net/projects/bloat/wiki/Tests_for_Bufferbloat/>
 (updated 2026-01-26) [V]
 
 - Recommends web tests (Waveform, Cloudflare, LibreQoS), a "ping during
   a speed test" quick test, and Flent RRUL as the best test [V].
 - Rule of thumb: "above 50 msec, or a grade lower than 'B'" is a
   problem [V].
-- RRUL spec (https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/):
+- RRUL spec (<https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/>):
   measure unloaded and saturated; insufficient tester CPU invalidates a
   test [V].
 
@@ -121,22 +121,23 @@ requires attribution and share-alike.
 ## R8. Prior art in Home Assistant
 
 | Project | What it does | License | Label |
-|---------|--------------|---------|-------|
+| --------- | -------------- | --------- | ------- |
 | HA core | No bufferbloat or responsiveness integration. `speedtestdotnet` and `fastdotcom` report no loaded latency. | Apache-2.0 | [V] |
-| **soulripper13/hass-speedtest-ookla** (HACS default) | Wraps Ookla's CLI. Loaded latency IQM per direction and a "Bufferbloat Grade": `max(dl_iqm, ul_iqm) - idle`, A+ ≤ 5, A ≤ 30, B ≤ 60, C ≤ 120, D ≤ 300, E ≤ 600, F > 600. Matches R3 only up to B. | MIT | [V*] https://raw.githubusercontent.com/soulripper13/hass-speedtest-ookla/main/custom_components/ookla_speedtest/__init__.py |
+| **soulripper13/hass-speedtest-ookla** (HACS default) | Wraps Ookla's CLI. Loaded latency IQM per direction and a "Bufferbloat Grade": `max(dl_iqm, ul_iqm) - idle`, A+ ≤ 5, A ≤ 30, B ≤ 60, C ≤ 120, D ≤ 300, E ≤ 600, F > 600. Matches R3 only up to B. | MIT | [V*] <https://raw.githubusercontent.com/soulripper13/hass-speedtest-ookla/main/custom_components/ookla_speedtest/__init__.py> |
 | Ookla CLI (its dependency) | EULA: "personal, non-commercial use on a single personal computer". | Proprietary | [V] |
 | DigitallyRefined/ha-cloudflare-speed-test | Idle latency and jitter, no loaded latency. | MIT | [V] README, [U] code |
 | lynxthecat/cake-autorate `mqtt-publisher.sh` | OpenWrt only. MQTT discovery of shaper rates and delay deltas. No grade. | GPL-2.0 | [V] |
 
 **How these integrations reach their providers** (read 2026-11-18):
+
 - hass-speedtest-ookla downloads the Ookla CLI itself and runs
   `[SPEEDTEST_BIN_PATH, "--accept-license", "--accept-gdpr", "--format=json"]`;
   its README says nothing on Ookla's terms [V]
-  https://raw.githubusercontent.com/soulripper13/hass-speedtest-ookla/main/custom_components/ookla_speedtest/__init__.py
+  <https://raw.githubusercontent.com/soulripper13/hass-speedtest-ookla/main/custom_components/ookla_speedtest/__init__.py>
 - ha-cloudflare-speed-test uses cloudflarepycli against
   speed.cloudflare.com, "every hour" by default, "not affiliated or
   associated with Cloudflare"; no permission statement [V]
-  https://github.com/DigitallyRefined/ha-cloudflare-speed-test
+  <https://github.com/DigitallyRefined/ha-cloudflare-speed-test>
 
 **hass-speedtest-ookla v3.1.6 review notes** (commit dad6a77, read by
 the BufferBloat session 2026-11-18, not re-checked here [U]):
@@ -156,25 +157,26 @@ Research pass of 2026-11-18, docs only, no tests run. Only M-Lab
 publishes a permission basis for automated third-party clients.
 
 **M-Lab NDT7**
-- https://www.measurementlab.net/develop/: "M-Lab welcomes automated and
+
+- <https://www.measurementlab.net/develop/>: "M-Lab welcomes automated and
   repeated testing." Integrations should test "no more than 4 times per
   day" at Poisson-randomized times; hard limit "40 tests per client per
   day" [V].
-- AUP https://www.measurementlab.net/aup/: "measurements must be actively
+- AUP <https://www.measurementlab.net/aup/>: "measurements must be actively
   initiated based on informed consent", with a link to M-Lab's privacy
   policy; "Integration developers with commercial applications need to
   contribute to the platform" [V].
-- Privacy https://www.measurementlab.net/privacy/: results, including
+- Privacy <https://www.measurementlab.net/privacy/>: results, including
   IP addresses, are "published publicly" and "retained indefinitely" [V].
 - Client: ndt7-client-go, Apache-2.0, v0.10.1 (2026-01-26). It must
   identify itself by client name; access tokens come from Locate API v2
   [V]. No Python client on PyPI [V].
 - Latency: no dedicated loaded-latency test. The server reports TCPInfo
-  `RTT` and `MinRTT` (https://github.com/m-lab/ndt-server/blob/main/spec/ndt7-protocol.md) [V].
+  `RTT` and `MinRTT` (<https://github.com/m-lab/ndt-server/blob/main/spec/ndt7-protocol.md>) [V].
   Using them as idle and download loaded latency, and their upload
   reliability, is [U].
 
-- Locate API v2 (https://www.measurementlab.net/develop/locate-v2/) and
+- Locate API v2 (<https://www.measurementlab.net/develop/locate-v2/>) and
   `api/v2/api.go` (github.com/m-lab/locate), read 2026-11-19 [V]:
   `https://locate.measurementlab.net/v2/nearest/ndt/ndt7` returns
   `results[]` with `machine`, `location` and `urls`, e.g. key
@@ -189,24 +191,24 @@ publishes a permission basis for automated third-party clients.
   meaningful, non-generic User-Agent string"; binary messages "SHOULD
   initially be sending binary messages containing 1 << 13 bytes",
   doubling "when it is smaller than 1/16 of the queued bytes"; "The
-  expected duration of a test is _up to_ ten seconds"; a client "MAY
+  expected duration of a test is *up to* ten seconds"; a client "MAY
   close" after thirteen; `MinRTT` and `RTT` are "measured in
   microseconds"; `AppInfo.NumBytes` counts application bytes; Locate
   `204` is "the no-capacity signal".
-- AUP (https://www.measurementlab.net/aup/), read with curl 2026-11-19
+- AUP (<https://www.measurementlab.net/aup/>), read with curl 2026-11-19
   [V*]: "Interactive users must not run more than 40 tests per day.
   Automated software or hardware clients should not run more than 4
   tests per day, and test times should be randomized"; "Automated and
   repeated testing requires user consent and care in implementation".
-- Developer guide (https://www.measurementlab.net/develop/), read with
+- Developer guide (<https://www.measurementlab.net/develop/>), read with
   curl 2026-11-19 [V*]: "Clients are required to provide informed consent
   about collection of personal information"; "Clients that hit this rate
   limit will be provided a 204 No Content response".
-- Privacy (https://www.measurementlab.net/privacy/), read with curl
+- Privacy (<https://www.measurementlab.net/privacy/>), read with curl
   2026-11-19 [V*]: "All experiment data is retained indefinitely and
   published publicly".
 
-**M-Lab MSAK** (https://github.com/m-lab/msak): Apache-2.0, adds a UDP
+**M-Lab MSAK** (<https://github.com/m-lab/msak>): Apache-2.0, adds a UDP
 `latency1` test [V]. Whether third-party use is permitted and whether
 latency1 runs under load are [U].
 
@@ -219,17 +221,17 @@ Cloudflare (R5); Ookla (R8); nPerf, Apple (not assessed) [U].
 ## R10. Ping round-trip time
 
 - **RFC 2681**, *A Round-trip Delay Metric for IPPM*
-  (https://www.rfc-editor.org/rfc/rfc2681.txt). Round-trip delay is from
+  (<https://www.rfc-editor.org/rfc/rfc2681.txt>). Round-trip delay is from
   when "Src sent the first bit" to when "Src received the last bit" of
   the reply, in wire-time. "ping" qualifies "with a Type-P of ICMP echo
   request/reply", but "the uncertainties associated with a typical ping
   program must be analyzed" [V].
-- **iputils `ping(8)`** (https://man7.org/linux/man-pages/man8/ping.8.html):
+- **iputils `ping(8)`** (<https://man7.org/linux/man-pages/man8/ping.8.html>):
   "Round-trip times and packet loss statistics are computed", from a
   timestamp carried in the packet payload; "Normally ping prints network
   round trip time" [V].
 - **HA core `ping` integration**
-  (https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/ping/helpers.py):
+  (<https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/ping/helpers.py>):
   uses icmplib's `min_rtt`/`avg_rtt`/`max_rtt`, or parses the
   min/avg/max(/mdev) summary of the `ping` binary, with a separate
   pattern for BusyBox output [V].
@@ -237,7 +239,7 @@ Cloudflare (R5); Ookla (R8); nPerf, Apple (not assessed) [U].
 ## R11. HA options flow `config_entry`
 
 HA developer blog, 2024-11-12
-(https://contributors.home-assistant.io/blog/2024/11/12/options-flow/):
+(<https://contributors.home-assistant.io/blog/2024/11/12/options-flow/>):
 `self.config_entry` is now a helper property HA provides on `OptionsFlow`;
 setting it explicitly logs a warning and is allowed "until Home
 Assistant Core 2025.12" [V]. HA 2026.9.3 raises `AttributeError:
@@ -246,35 +248,36 @@ release that added the property [U].
 
 ## R12. Documentation addresses and names
 
-RFC 5737 (https://www.rfc-editor.org/rfc/rfc5737): 192.0.2.0/24,
+RFC 5737 (<https://www.rfc-editor.org/rfc/rfc5737>): 192.0.2.0/24,
 198.51.100.0/24 and 203.0.113.0/24 are reserved for documentation [V].
-RFC 2606 (https://www.rfc-editor.org/rfc/rfc2606): `example.com`,
+RFC 2606 (<https://www.rfc-editor.org/rfc/rfc2606>): `example.com`,
 `example.net` and `example.org` are reserved for examples [V]. Used for
 test fixtures (`CLAUDE.md § Code`).
 
 ## R13. Windows IP Helper API
 
 Microsoft Learn, checked 2026-11-19:
+
 - `IcmpSendEcho`
-  (https://learn.microsoft.com/en-us/windows/win32/api/icmpapi/nf-icmpapi-icmpsendecho):
+  (<https://learn.microsoft.com/en-us/windows/win32/api/icmpapi/nf-icmpapi-icmpsendecho>):
   exported from Iphlpapi.dll; "a synchronous function"; the reply buffer
   must hold one `ICMP_ECHO_REPLY` "plus RequestSize bytes of data" and "8
   more bytes" [V].
 - `ICMP_ECHO_REPLY`
-  (https://learn.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-icmp_echo_reply):
+  (<https://learn.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-icmp_echo_reply>):
   `RoundTripTime` is a ULONG, "The round trip time, in milliseconds", so
   Windows readings are whole milliseconds [V]. Status codes: IP_SUCCESS 0,
   IP_REQ_TIMED_OUT 11010, IP_TTL_EXPIRED_TRANSIT 11013 [V].
 - `IP_OPTION_INFORMATION`
-  (https://learn.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_option_information):
+  (<https://learn.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_option_information>):
   `Ttl` is carried in the IPv4 header [V].
 - `GetBestRoute` and `MIB_IPFORWARDROW`
-  (https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getbestroute,
-  https://learn.microsoft.com/en-us/windows/win32/api/ipmib/ns-ipmib-mib_ipforwardrow):
+  (<https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getbestroute>,
+  <https://learn.microsoft.com/en-us/windows/win32/api/ipmib/ns-ipmib-mib_ipforwardrow>):
   `dwForwardNextHop` is the next system en route, in network byte order [V].
 - `GetNetworkParams` and `FIXED_INFO`
-  (https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getnetworkparams,
-  https://learn.microsoft.com/en-us/windows/win32/api/iptypes/ns-iptypes-fixed_info_w2ksp1):
+  (<https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getnetworkparams>,
+  <https://learn.microsoft.com/en-us/windows/win32/api/iptypes/ns-iptypes-fixed_info_w2ksp1>):
   `DnsServerList` is a linked list of `IP_ADDR_STRING` [V].
 
 Not stated by Microsoft, confirmed by a local run on 64-bit Windows,
@@ -286,7 +289,7 @@ local run read the DNS server list correctly with them.
 
 ## R14. DNS message format
 
-RFC 1035 (https://www.rfc-editor.org/rfc/rfc1035), read 2026-11-19:
+RFC 1035 (<https://www.rfc-editor.org/rfc/rfc1035>), read 2026-11-19:
 § 4.1.1 header (ID, QR bit marks a response, RD "Recursion Desired",
 RCODE 0 no error and 3 "Name Error"), § 4.1.2 question (each label "a
 length octet followed by that number of characters", QTYPE, QCLASS),
@@ -295,7 +298,8 @@ length octet followed by that number of characters", QTYPE, QCLASS),
 
 ## R15. Team Cymru IP-to-ASN mapping
 
-https://www.team-cymru.com/ip-asn-mapping, read 2026-11-19 [V]:
+<https://www.team-cymru.com/ip-asn-mapping>, read 2026-11-19 [V]:
+
 - DNS interface: "Reverse the octets and append the zone"
   (`origin.asn.cymru.com`); TXT answer "ASN | prefix | CC | registry |
   allocated"; "A prefix we do not hold returns NXDOMAIN". AS names from
@@ -313,26 +317,27 @@ Format confirmed by a live query for 8.8.8.8 (2026-11-19): ASN 15169,
 ## R16. Polling intervals
 
 HA's rule and guidance, read 2026-11-19 [V]:
+
 - Quality scale `appropriate-polling`
-  (https://github.com/home-assistant/developers.home-assistant/blob/master/docs/core/integration-quality-scale/rules/appropriate-polling.md):
+  (<https://github.com/home-assistant/developers.home-assistant/blob/master/docs/core/integration-quality-scale/rules/appropriate-polling.md>):
   set "an appropriate polling interval that will serve the majority of
   users"; the interval "is not a field in the config flow"; users wanting
   more frequent updates "can define a custom polling interval"
-  (https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval).
+  (<https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval>).
 - HA core's integration guidance
-  (https://github.com/home-assistant/core/blob/dev/.claude/skills/ha-integration-knowledge/SKILL.md):
+  (<https://github.com/home-assistant/core/blob/dev/.claude/skills/ha-integration-knowledge/SKILL.md>):
   "Polling intervals are NOT user-configurable. Never add scan_interval,
   update_interval, or polling frequency options to config flows or config
   entries."
 - Counter-view: discussion #306
-  (https://github.com/orgs/home-assistant/discussions/306) asks for
+  (<https://github.com/orgs/home-assistant/discussions/306>) asks for
   configurable intervals and calls the automation route "not very user
   friendly".
 
 Defaults of comparable tools, read from their source 2026-11-19 [V]:
 
 | Tool | Interval | Probes per poll | Source |
-|------|----------|-----------------|--------|
+| ------ | ---------- | ----------------- | -------- |
 | HA Ping integration | 30 s | 5 pings | `homeassistant/components/ping/coordinator.py`, `const.py` (home-assistant/core, dev) |
 | HA Speedtest.net integration | 60 min | one speed test | `speedtestdotnet/const.py` `DEFAULT_SCAN_INTERVAL = 60`, used as `timedelta(minutes=...)` in `coordinator.py` (HA 2026.10.4) |
 | HA Fast.com integration | 1 h | one speed test | `fastdotcom/const.py` `DEFAULT_INTERVAL = 1`, used as `timedelta(hours=...)` in `coordinator.py` (HA 2026.10.4) |
@@ -345,7 +350,7 @@ Neither speed test integration offers an interval option; both mark
 ## R17. Probatio replaces voluptuous
 
 HA developer blog, "Probatio is our validation engine", 2026-09-30
-(https://github.com/home-assistant/developers.home-assistant/blob/master/blog/2026-09-30-probatio-validation-engine.md)
+(<https://github.com/home-assistant/developers.home-assistant/blob/master/blog/2026-09-30-probatio-validation-engine.md>)
 [V]: "Since Home Assistant Core 2026.9, schema validation runs on
 Probatio instead of voluptuous"; `import voluptuous` still works through
 an alias and "voluptuous is no longer installed at all"; "Core itself has
@@ -359,32 +364,32 @@ HA core `pyproject.toml` at release tags [V]: `voluptuous==0.15.2` up to
 voluptuous; 2026.10.4 annotates it as `probatio.schema.Schema`.
 
 HA core strict typing settings: `mypy.ini`
-(https://github.com/home-assistant/core/blob/dev/mypy.ini) [V].
+(<https://github.com/home-assistant/core/blob/dev/mypy.ini>) [V].
 
 ## R18. Jitter
 
-- RFC 3550 § 6.4.1 (https://www.rfc-editor.org/rfc/rfc3550), read
+- RFC 3550 § 6.4.1 (<https://www.rfc-editor.org/rfc/rfc3550>), read
   2026-11-19 [V]: interarrival jitter "is defined to be the mean deviation
   (smoothed absolute value) of the difference D in packet spacing at the
   receiver compared to the sender for a pair of packets", updated as
   `J(i) = J(i-1) + (|D(i-1,i)| - J(i-1))/16`.
-- RFC 5481 § 1 (https://www.rfc-editor.org/rfc/rfc5481) [V]: prefers
+- RFC 5481 § 1 (<https://www.rfc-editor.org/rfc/rfc5481>) [V]: prefers
   "delay variation" because "jitter" has many meanings; the industry
   "predominantly implemented two specific formulations": IPDV, "where the
   reference is the previous packet in the stream", and PDV, against the
   minimum delay. RFC 3393 § 1.1 [V] likewise avoids the term.
 - Cloudflare speed test, `src/Results/MeasurementCalculations.ts`
-  (https://github.com/cloudflare/speedtest, MIT), read 2026-11-19 [V]:
+  (<https://github.com/cloudflare/speedtest>, MIT), read 2026-11-19 [V]:
   `getJitter` "Computes jitter (ms) as the mean absolute difference between
   consecutive latency samples. Returns `null` if fewer than 2 samples".
 
 ## R19. Fast.com
 
 - No published API or terms of use: fast.com's page links only a
-  privacy statement (http://help.netflix.com/legal/fastprivacy, updated
+  privacy statement (<http://help.netflix.com/legal/fastprivacy>, updated
   2021-03-16), which covers "IP address" and "connection information
   such as speed and latency measurements" [V].
-- Netflix Terms of Use (https://help.netflix.com/legal/termsofuse),
+- Netflix Terms of Use (<https://help.netflix.com/legal/termsofuse>),
   read with curl 2026-11-19 [V*]: users may not "use any robot, spider,
   scraper or other automated means to access the Netflix service", and
   "Netflix service" means "the service provided by Netflix for
@@ -400,7 +405,7 @@ HA core strict typing settings: `mypy.ini`
   GET with `Range: bytes=0-0`; upload is a POST to a target URL.
   Fast.com's own method is [U]: Netflix's engineering post could not be
   read.
-- FAQ (https://fast.com, read 2026-11-19 [V]): "FAST.com performs a
+- FAQ (<https://fast.com>, read 2026-11-19 [V]): "FAST.com performs a
   series of downloads from and uploads to Netflix servers" and reports
   two latencies, unloaded and loaded.
 - `fastdotcom` 0.0.7 (PyPI, MIT, nkgilley/fast.com), the library HA
@@ -426,6 +431,33 @@ HA core strict typing settings: `mypy.ini`
   `413 Request Entity Too Large` [V]. nginx's default
   `client_max_body_size` is 1m [U: not read this pass]; IHM posts
   1,000,000-byte bodies to LibreSpeed servers.
+
+## R21. FCC Measuring Broadband America
+
+How a national program schedules home speed tests, read 2026-11-19 [V]:
+
+- Technical Appendix to the Thirteenth MBA Report, fixed, 2023
+  (<https://data.fcc.gov/download/measuring-broadband-america/2023/Technical-Appendix-fixed-2023.pdf>).
+  Methods page: <https://www.fcc.gov/page/measuring-broadband-america-open-methodology>.
+- Download and upload: "The test operates for a fixed duration of 10
+  seconds", eight TCP connections (p. 28).
+- Schedule (Table 8): download and upload to the off-net server once in
+  each of 12am-6am, 6am-12pm, 12pm-6pm, 6pm-8pm, 8pm-10pm and 10pm-12am;
+  estimated 75 MB a day at 10 Mbps down, 7.5 MB at 1 Mbps up.
+- Busy line: tests wait while household traffic exceeds 200 kbps either
+  way, retrying every 5 seconds "for up to six times before the test is
+  abandoned".
+- Caps: "Schedules were adjusted when required for specific tests to
+  avoid triggering data usage limits applied by some ISPs."
+
+## R22. SamKnows data use
+
+- <https://samknows.zendesk.com/hc/en-gb/articles/115002327729-How-much-data-is-my-Whitebox-using>,
+  read 2026-11-19 [V]: for a slower plan such as ADSL, "the testing
+  should use less than 10% of your monthly cap (if you have one)"; "The
+  faster your broadband connection, the more data the testing will
+  use"; "the testing will not run when you are using the internet".
+  SamKnows runs the FCC's test units (R21).
 
 ## Open Verification Items
 

@@ -1,0 +1,11 @@
+// markdownlint, as VS Code's extension and `make markdownlint` run it.
+{
+  // Tables and URLs run long; prose is wrapped by hand.
+  "MD013": false,
+  // CHANGELOG repeats Added/Changed under each release (Keep a Changelog).
+  "MD024": { "siblings_only": true },
+  // Bold taglines and labels (README footer, REFERENCES) are not headings.
+  "MD036": false,
+  // Tables: one space inside each pipe; columns are not padded to align.
+  "MD060": { "style": "compact" }
+}

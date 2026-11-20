@@ -6,7 +6,7 @@ constraint they create. Sources: [REFERENCES.md](REFERENCES.md) (`R<n>`).
 Use cases: [USE_CASES.md](USE_CASES.md) (`UC-<n>`).
 
 | ADR | Topic | Status |
-|-----|-------|--------|
+| ----- | ------- | -------- |
 | [001](#adr-001-bufferbloat-is-measured-passively-in-ihm) | Bufferbloat is measured passively in IHM | Accepted 2026-11-18 |
 | [002](#adr-002-ihm-stays-a-standalone-integration) | IHM stays a standalone integration | Accepted 2026-11-18 |
 | [003](#adr-003-speed-testing-with-user-selected-backends) | Speed testing with user-selected backends | Open |
@@ -33,6 +33,7 @@ its repo retired. This ADR is the surviving record.
 
 **Why not a standalone active test** (IHM's own opt-in speed tests are
 ADR-003):
+
 - soulripper13/hass-speedtest-ookla (HACS default) already reports
   loaded latency per direction and a "Bufferbloat Grade" (R8). A
   standalone active test would add only the IETF method, a
@@ -54,6 +55,7 @@ Wi-Fi queueing (UC-8). It costs almost no data, loads nobody's servers,
 and graphs in HA against the camera's streaming state.
 
 **Constraints:**
+
 - The passive signal works with no active test configured. Active
   tests are separate and opt-in
   ([ADR-003](#adr-003-speed-testing-with-user-selected-backends)).
@@ -62,6 +64,7 @@ and graphs in HA against the camera's streaming state.
 
 **Verify before relying on it** (Open Verification Items in
 REFERENCES.md):
+
 1. ISP routers may deprioritize ICMP aimed at themselves, so a stable
    host just past the first hop may be the better target. Needs a
    citation, not recall.
@@ -82,6 +85,7 @@ REFERENCES.md):
 **Decision:** No. IHM stays its own integration.
 
 **Rationale:**
+
 - **Audience.** Gateway, DNS, hop and bloat monitoring apply to any ISP
   (fiber, DSL, 5G, cable). CMM's identity, setup flow and modem catalog
   are cable-only; non-cable users would never find these features inside
@@ -95,6 +99,7 @@ REFERENCES.md):
   and CMM's CI, release and HACS tooling.
 
 **Constraints:**
+
 - No code dependency between IHM and CMM in either direction.
 - Combined diagnosis happens in HA over entities (UC-7). Three ping
   points localize a queue: router (IHM gateway), modem (CMM modem ping
@@ -116,6 +121,7 @@ REFERENCES.md):
 already ships throughput, loaded latency and a bloat grade?
 
 **Decision:** Yes, done better than R8.
+
 - **One interface, one module per backend.** Each backend runs a test and
   returns download, upload, idle latency, loaded latency per direction
   and the data it used (Core `speed_test.py`, `backends/`). Adding a
@@ -126,12 +132,25 @@ already ships throughput, loaded latency and a bloat grade?
   sensors.
 - **Bufferbloat included,** complementing ADR-001's passive signal.
 - **No server to run,** by the user or Solent Labs.
-- **Tests run only when asked:** from the Run speed test button or an
-  automation that presses it. HA's `appropriate-polling` rule (R16) bars
-  a user-set schedule, and no test runs at startup.
-- **Two limits bound the cost,** counting every run: a data limit per
-  test (default 1000 MB; each direction stops at half) and tests per
-  day (default 4, up to 40).
+- **When tests run:** a nightly test, on by default once a service is
+  chosen, at a random time from 1 to 5 am local; plus the Run speed test
+  button and automations that press it. The schedule is IHM's, not the
+  user's: HA's `appropriate-polling` rule (R16) bars a user-set
+  interval, so the nightly test is only on or off, and other times go
+  through an automation. Overnight, a test is least likely to slow a
+  call or a game; random, homes don't all test at once (R9). No test
+  runs at startup.
+- **No busy-line check.** The FCC's units skip a test while household
+  traffic passes 200 kbps (R21), but they sit between modem and router;
+  IHM on the HA host cannot see other devices' traffic, so it does not
+  guess.
+- **Three limits bound the cost,** counting every run, failed ones
+  included: a data limit per test (default 500 MB; each direction stops
+  at half), a daily test limit (default 4, up to 40), and an optional
+  data budget per 30 days. A test starts only if its data limit fits
+  what is left of the budget, so the budget is never exceeded. Setup
+  shows what the nightly test can use in 30 days and advises keeping
+  the budget to a small share of any plan cap (R22).
 - **A failed test is visible:** the sensors go unavailable and the
   button gives the reason; nothing reads 0. A failure still reports the
   data it moved.
@@ -143,6 +162,7 @@ already ships throughput, loaded latency and a bloat grade?
   GPL-3.0 (R5).
 
 **Constraints:**
+
 - **Keep to each provider's terms as closely as possible;** this is part
   of what IHM offers. Where terms are silent, use the provider as its
   own published client does, identify honestly, and stay modest.
@@ -151,9 +171,9 @@ already ships throughput, loaded latency and a bloat grade?
   limits apply, requests identify IHM (User-Agent or client name), and
   the docs state IHM is not affiliated.
 - **M-Lab:** the user consents before first use, since M-Lab publishes
-  results with the user's IP address; a run no person started counts
-  toward at most 4 a day and starts after a random wait of up to an hour
-  (R9).
+  results with the user's IP address; a run no person started (the
+  nightly test included) counts toward at most 4 a day; one an
+  automation started waits a random time of up to an hour (R9).
 - **Not offered:** Fast.com, because Netflix's Terms of Use forbid "any
   robot, spider, scraper or other automated means to access the Netflix
   service" and include "our websites" in it, while every client must
@@ -175,6 +195,7 @@ already ships throughput, loaded latency and a bloat grade?
 **Decision:** Drop both. Neither was implemented.
 
 **Rationale:**
+
 - A composite hides which signal moved. Localizing a problem (ISP hop
   rising while the gateway stays flat, ADR-001) depends on seeing the
   signals separately.
@@ -206,6 +227,7 @@ host is a thin adapter over the same core; the HA integration is one of
 them.
 
 **Constraints:**
+
 - Core imports nothing from `homeassistant` and holds no host-specific
   scheduling, config storage or UI.
 - Core's results are plain data (dataclasses), so any adapter can map
@@ -241,6 +263,7 @@ party about the user's network. Both were removed.
 
 **Decision (rule, 2026-11-19):** IHM may use an outside service only if
 all of these hold:
+
 1. **Off by default.** The user turns it on; nothing is sent until then.
 2. **Transparent.** The option's own description names the service and
    what is sent, before the user enables it. README.md documents its
@@ -290,6 +313,7 @@ the interval and users do not get a field for it, in setup or options
 (R16). IHM had a Scan Interval field; it was removed.
 
 **Decision:** IHM polls every 60 seconds.
+
 - **Comparable tools** use 30 to 60 s for "is it working now" monitoring:
   HA Ping 30 s, Uptime Kuma 60 s. SmokePing's 300 s
   suits long-term graphs, too slow for live sensors (R16).
@@ -300,6 +324,7 @@ the interval and users do not get a field for it, in setup or options
   calling `homeassistant.update_entity`; README.md § Polling).
 
 **Constraints:**
+
 - Every interval, timeout and limit lives in Core's `timing.py`; the HA
   coordinator, the forms and the CLI read from it. No host defines its own.
 - A regular poll's worst case (`steady_poll_bound_s`) must stay under
@@ -323,6 +348,7 @@ compatibility imports and suppressed errors.
 
 **Decision:** The minimum is HA 2026.10.0, and forms import `probatio`
 directly, as HA core does (R17).
+
 - IHM is unreleased, so no installed user is cut off; its `brand/` icon
   already needed HA 2026.3.
 - HA's blog says custom integrations may keep `import voluptuous`; IHM
@@ -331,6 +357,7 @@ directly, as HA core does (R17).
   voluptuous on a 2025.1 floor; this decision is IHM's alone (ADR-002).
 
 **Constraints:**
+
 - The floor is stated in `hacs.json`, `requirements-dev.txt` and
   `ha-minimum.txt`; a test fails if they disagree.
 - `make setup` and the CI "minimum" job install with `ha-minimum.txt`;
@@ -360,6 +387,7 @@ unsmoothed form of RFC 3550's estimator, over round-trip rather than
 one-way delay, since ping measures round trips.
 
 **Constraints:**
+
 - Jitter needs at least two replies in a poll; with one ping per target it
   is unknown. The default is three.
 - No latency history is kept; each poll stands alone, and HA's long-term
@@ -385,6 +413,7 @@ Users who want another prefix rename the device in HA, which offers to
 rename the entity ids to match (README.md § Renaming).
 
 **Constraints:**
+
 - Docs use the default ids; `tests/components/test_docs.py` fails if an
   example names an id a new install does not create.
 - The integration's own title stays "Internet Health Monitor"; only the
@@ -402,7 +431,7 @@ The project does not defer work: each is built or cut with a reason.
 **Decision:** None is built.
 
 | Feature | Reason |
-|---------|--------|
+| --------- | -------- |
 | IPv6 path | IHM detects and measures the IPv4 path: gateway, traceroute and DNS. Building IPv6 touches every probe on both platforms and doubles the hop sensors. Stated in README.md § Known Limitations |
 | Custom hop targets | HA's own Ping integration pings any host the user adds, with latency, jitter and packet loss sensors (`homeassistant/components/ping/sensor.py`, HA 2026.10.4). IHM watches the path to the internet, not chosen hosts |
 | Interface selection on multi-interface hosts | IHM follows the default route, the path the host's own internet traffic takes. Measuring another interface would report a path HA does not use |
@@ -426,6 +455,7 @@ every 30 s by default (its `modem_health.py`); a constant faster probe
 costs traffic all the time.
 
 **Decision:** Check faster only while something is failing.
+
 - While healthy, nothing runs between polls.
 - A failed poll result does not turn a sensor off. Quick checks (one
   gateway ping, or one DNS query) follow 5 s apart; only if 2 more fail

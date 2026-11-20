@@ -38,7 +38,7 @@ Same names and defaults in the action, the card's form and the card's
 YAML. One schema in `dashboard.py` validates all three.
 
 | Option | Default | Shows |
-|--------|---------|-------|
+| -------- | --------- | ------- |
 | `include_status` | true | Network Status card: gateway and internet reachable, DNS latency, Refresh diagnostics |
 | `include_hops` | true | One card per hop (Gateway, ISP, Backbone): its current latency, jitter and packet loss |
 | `include_latency` | true | History graphs: hop latency, and DNS latency on its own (its scale would flatten the hops) |
@@ -61,7 +61,7 @@ are left out, and a part with no entities is left out.
 Errors, raised as translated `ServiceValidationError`:
 
 | Key | When |
-|-----|------|
+| ----- | ------ |
 | `not_set_up` | No IHM entry exists |
 | `nothing_to_show` | Every part is off or has no entities |
 

@@ -10,9 +10,8 @@
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
-          "speed_test_backend": "Speedtest-Dienst",
-          "speed_test_data_limit_mb": "Datenlimit pro Test",
-          "speed_test_daily_limit": "Tests pro Tag"
+          "usage_totals": "Nutzungssummen",
+          "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
@@ -20,9 +19,8 @@
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
-          "speed_test_backend": "Standardmäßig aus. Tests laufen nur, wenn du „Speedtest ausführen“ drückst oder eine Automation es tut. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden.",
-          "speed_test_data_limit_mb": "Höchstens so viele Daten darf ein Test verbrauchen, beide Richtungen zusammen (100 bis 10000 MB); jede Richtung stoppt bei der Hälfte. Auf einer schnellen Leitung ergibt ein niedrigeres Limit einen kürzeren, ungenaueren Test.",
-          "speed_test_daily_limit": "Höchstens so viele Tests in 24 Stunden, per Taste oder Automation (1 bis 40). M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen."
+          "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
+          "speed_test_backend": "Standardmäßig aus. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden. Auf der nächsten Seite legst du fest, wann Tests laufen und wie viele Daten sie verbrauchen dürfen."
         }
       },
       "reconfigure": {
@@ -33,9 +31,8 @@
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
-          "speed_test_backend": "Speedtest-Dienst",
-          "speed_test_data_limit_mb": "Datenlimit pro Test",
-          "speed_test_daily_limit": "Tests pro Tag"
+          "usage_totals": "Nutzungssummen",
+          "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
@@ -43,9 +40,24 @@
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
-          "speed_test_backend": "Standardmäßig aus. Tests laufen nur, wenn du „Speedtest ausführen“ drückst oder eine Automation es tut. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden.",
+          "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
+          "speed_test_backend": "Standardmäßig aus. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden. Auf der nächsten Seite legst du fest, wann Tests laufen und wie viele Daten sie verbrauchen dürfen."
+        }
+      },
+      "speed_test": {
+        "title": "Speedtests",
+        "description": "„Speedtest ausführen“ und Automationen starten jederzeit einen Test. Bei {limit_mb} MB pro Test verbraucht allein der nächtliche Test bis zu {monthly_gb} GB in 30 Tagen; die meisten Tests brauchen weniger.",
+        "data": {
+          "speed_test_automatic": "Nächtlicher Test",
+          "speed_test_data_limit_mb": "Datenlimit pro Test",
+          "speed_test_daily_limit": "Tägliches Testlimit",
+          "speed_test_budget_gb": "Datenbudget pro 30 Tage"
+        },
+        "data_description": {
+          "speed_test_automatic": "Ein Test pro Nacht zu einer zufälligen Zeit zwischen 1 und 5 Uhr, wenn die Leitung meist frei ist. Aus: Tests laufen nur per „Speedtest ausführen“ oder Automation.",
           "speed_test_data_limit_mb": "Höchstens so viele Daten darf ein Test verbrauchen, beide Richtungen zusammen (100 bis 10000 MB); jede Richtung stoppt bei der Hälfte. Auf einer schnellen Leitung ergibt ein niedrigeres Limit einen kürzeren, ungenaueren Test.",
-          "speed_test_daily_limit": "Höchstens so viele Tests in 24 Stunden, per Taste oder Automation (1 bis 40). M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen."
+          "speed_test_daily_limit": "Eine Obergrenze, kein Zeitplan: Sind in den letzten 24 Stunden so viele Tests gelaufen, werden weitere abgelehnt, bis der älteste einen Tag alt ist (1 bis 40). Zählt den nächtlichen Test, die Taste und Automationen. M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen.",
+          "speed_test_budget_gb": "0 für keins. Ein Test startet nur, wenn er in den Rest passt, den die Speedtests der letzten 30 Tage übrig lassen. Hat dein Tarif ein Datenlimit, halte dies bei einem kleinen Teil davon."
         }
       },
       "mlab_consent": {
@@ -74,9 +86,8 @@
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
-          "speed_test_backend": "Speedtest-Dienst",
-          "speed_test_data_limit_mb": "Datenlimit pro Test",
-          "speed_test_daily_limit": "Tests pro Tag"
+          "usage_totals": "Nutzungssummen",
+          "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
@@ -84,9 +95,24 @@
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
-          "speed_test_backend": "Standardmäßig aus. Tests laufen nur, wenn du „Speedtest ausführen“ drückst oder eine Automation es tut. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden.",
+          "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
+          "speed_test_backend": "Standardmäßig aus. Ein Test lädt bis zu 10 s je Richtung mit dem gewählten Dienst herunter und hoch; dieser sieht deine öffentliche IP-Adresse. M-Lab veröffentlicht jedes Ergebnis mit dieser Adresse dauerhaft; du wirst um Bestätigung gebeten. Cloudflare speichert ein anonymisiertes Ergebnis. LibreSpeed nutzt Server von Freiwilligen. IHM ist mit keinem davon verbunden. Auf der nächsten Seite legst du fest, wann Tests laufen und wie viele Daten sie verbrauchen dürfen."
+        }
+      },
+      "speed_test": {
+        "title": "Speedtests",
+        "description": "„Speedtest ausführen“ und Automationen starten jederzeit einen Test. Bei {limit_mb} MB pro Test verbraucht allein der nächtliche Test bis zu {monthly_gb} GB in 30 Tagen; die meisten Tests brauchen weniger.",
+        "data": {
+          "speed_test_automatic": "Nächtlicher Test",
+          "speed_test_data_limit_mb": "Datenlimit pro Test",
+          "speed_test_daily_limit": "Tägliches Testlimit",
+          "speed_test_budget_gb": "Datenbudget pro 30 Tage"
+        },
+        "data_description": {
+          "speed_test_automatic": "Ein Test pro Nacht zu einer zufälligen Zeit zwischen 1 und 5 Uhr, wenn die Leitung meist frei ist. Aus: Tests laufen nur per „Speedtest ausführen“ oder Automation.",
           "speed_test_data_limit_mb": "Höchstens so viele Daten darf ein Test verbrauchen, beide Richtungen zusammen (100 bis 10000 MB); jede Richtung stoppt bei der Hälfte. Auf einer schnellen Leitung ergibt ein niedrigeres Limit einen kürzeren, ungenaueren Test.",
-          "speed_test_daily_limit": "Höchstens so viele Tests in 24 Stunden, per Taste oder Automation (1 bis 40). M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen."
+          "speed_test_daily_limit": "Eine Obergrenze, kein Zeitplan: Sind in den letzten 24 Stunden so viele Tests gelaufen, werden weitere abgelehnt, bis der älteste einen Tag alt ist (1 bis 40). Zählt den nächtlichen Test, die Taste und Automationen. M-Lab bittet, automatische Tests auf 4 oder weniger zu begrenzen.",
+          "speed_test_budget_gb": "0 für keins. Ein Test startet nur, wenn er in den Rest passt, den die Speedtests der letzten 30 Tage übrig lassen. Hat dein Tarif ein Datenlimit, halte dies bei einem kleinen Teil davon."
         }
       },
       "mlab_consent": {
@@ -322,7 +348,10 @@
       "message": "Speedtest fehlgeschlagen: {error}"
     },
     "daily_limit_reached": {
-      "message": "Speedtest-Limit erreicht: {limit} Tests in den letzten 24 Stunden. Erhöhe „Tests pro Tag“ in den Optionen oder versuche es später."
+      "message": "Speedtest-Limit erreicht: {limit} Tests in den letzten 24 Stunden. Erhöhe „Tägliches Testlimit“ in den Optionen oder versuche es später."
+    },
+    "budget_reached": {
+      "message": "Speedtest-Datenbudget erreicht: {used} GB von {budget} GB in den letzten 30 Tagen verbraucht, und ein Test kann bis zu {limit} MB nutzen. Erhöhe das Budget in den Optionen oder versuche es später."
     },
     "mlab_automated_limit": {
       "message": "M-Lab erlaubt höchstens {limit} automatische Tests pro Tag, und {limit} liefen in den letzten 24 Stunden. Ein Test, den eine Person im Dashboard startet, ist davon nicht betroffen."

@@ -1,13 +1,15 @@
-"""Speed tests in HA: options and M-Lab consent, sensors, the button, limits and persistence."""
+"""Speed tests in HA: options and M-Lab consent, sensors, the button, the nightly test, limits and persistence."""
 
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import timedelta
+from dataclasses import replace
+from datetime import datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Context, HomeAssistant
@@ -19,12 +21,14 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 from custom_components.internet_health_monitor.config_flow import DEFAULTS
 from custom_components.internet_health_monitor.const import (
     CONF_MLAB_CONSENT,
+    CONF_SPEED_TEST_AUTOMATIC,
     CONF_SPEED_TEST_BACKEND,
+    CONF_SPEED_TEST_BUDGET,
     CONF_SPEED_TEST_DAILY_LIMIT,
     CONF_SPEED_TEST_DATA_LIMIT,
     DOMAIN,
 )
-from custom_components.internet_health_monitor.coordinator import STORAGE_KEY
+from custom_components.internet_health_monitor.coordinator import STORAGE_KEY, next_nightly_test
 from custom_components.internet_health_monitor.diagnostics import async_get_config_entry_diagnostics
 from solentlabs.internet_health_monitor_core.speed_test import SpeedTestError, SpeedTestResult
 
@@ -41,7 +45,8 @@ RESULT = SpeedTestResult(
     data_used_mb=330.4,
     started_at=1_795_000_000.0,
 )
-CLOUDFLARE = {CONF_SPEED_TEST_BACKEND: "cloudflare"}
+# The nightly test is off unless a test is about it, so time moving never starts one by accident.
+CLOUDFLARE = {CONF_SPEED_TEST_BACKEND: "cloudflare", CONF_SPEED_TEST_AUTOMATIC: False}
 SPEED_SENSORS = [
     "speed_test_download",
     "speed_test_upload",
@@ -87,7 +92,7 @@ async def test_off_by_default_creates_nothing(hass: HomeAssistant, setup_entry: 
 
 
 async def test_never_runs_on_its_own(hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock) -> None:
-    """Setup and time passing never start a test; sensors read unknown until one runs."""
+    """With the nightly test off, setup and time passing never start a test; sensors read unknown until one runs."""
     entry = await setup_entry(**CLOUDFLARE)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(days=2))
     await hass.async_block_till_done()
@@ -203,6 +208,8 @@ async def test_options_flow_asks_mlab_consent(hass: HomeAssistant, setup_entry: 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     form = {**entry.options, CONF_SPEED_TEST_BACKEND: "mlab"}
     result = await hass.config_entries.options.async_configure(result["flow_id"], form)
+    assert result.get("step_id") == "speed_test"
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     assert (result.get("type"), result.get("step_id")) == (FlowResultType.FORM, "mlab_consent")
 
     result = await hass.config_entries.options.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: False})
@@ -220,6 +227,7 @@ async def test_mlab_consent_is_asked_once(hass: HomeAssistant, setup_entry: Setu
     result = await hass.config_entries.options.async_init(entry.entry_id)
     form = {key: value for key, value in entry.options.items() if key != CONF_MLAB_CONSENT}
     result = await hass.config_entries.options.async_configure(result["flow_id"], form)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     assert result.get("type") is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_MLAB_CONSENT] is True
 
@@ -261,6 +269,7 @@ async def test_setup_flow_asks_mlab_consent(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {**DEFAULTS, CONF_SPEED_TEST_BACKEND: "mlab"}
     )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result.get("step_id") == "mlab_consent"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: False})
     assert result.get("errors") == {"base": "mlab_consent_required"}
@@ -276,6 +285,7 @@ async def test_reconfigure_asks_mlab_consent(hass: HomeAssistant, setup_entry: S
     result = await entry.start_reconfigure_flow(hass)
     form = {**entry.options, CONF_SPEED_TEST_BACKEND: "mlab"}
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {**DEFAULTS, **form})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result.get("step_id") == "mlab_consent"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MLAB_CONSENT: True})
     await hass.async_block_till_done()
@@ -283,7 +293,7 @@ async def test_reconfigure_asks_mlab_consent(hass: HomeAssistant, setup_entry: S
     assert entry.options[CONF_SPEED_TEST_BACKEND] == "mlab"
 
 
-MLAB = {CONF_SPEED_TEST_BACKEND: "mlab", CONF_MLAB_CONSENT: True, CONF_SPEED_TEST_DAILY_LIMIT: 40}
+MLAB = {**CLOUDFLARE, CONF_SPEED_TEST_BACKEND: "mlab", CONF_MLAB_CONSENT: True, CONF_SPEED_TEST_DAILY_LIMIT: 40}
 WAIT = "custom_components.internet_health_monitor.coordinator.random.uniform"
 
 
@@ -336,3 +346,165 @@ async def test_pending_automated_run_is_cancelled_on_unload(
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=601))
     await hass.async_block_till_done()
     speed_test.assert_not_called()
+
+
+# Nightly test: a random time from 1 to 5 am local. HA's test time zone is US/Pacific.
+NIGHTLY = {**CLOUDFLARE, CONF_SPEED_TEST_AUTOMATIC: True}
+OFFSET = "custom_components.internet_health_monitor.coordinator.random.randint"
+
+
+def _local(text: str) -> datetime:
+    """A local time in HA's time zone."""
+    parsed = dt_util.parse_datetime(text)
+    assert parsed is not None
+    return parsed.replace(tzinfo=dt_util.get_default_time_zone())
+
+
+# ┌────────────────────┬────────────┬──────────────────────┐
+# │ now (local)        │ offset (s) │ next test (local)    │
+# ├────────────────────┼────────────┼──────────────────────┤
+# │ 00:30              │ 3600       │ today 02:00          │
+# │ 02:30              │ 3600       │ tomorrow 02:00       │
+# │ 02:30              │ 7200       │ today 03:00          │
+# │ 12:00              │ 0          │ tomorrow 01:00       │
+# │ 12:00              │ 14400      │ tomorrow 05:00       │
+# └────────────────────┴────────────┴──────────────────────┘
+# fmt: off
+NIGHTLY_CASES: list[tuple[str, int, str]] = [
+    ("2026-11-19 00:30:00", 3600,  "2026-11-19 02:00:00"),
+    ("2026-11-19 02:30:00", 3600,  "2026-11-20 02:00:00"),
+    ("2026-11-19 02:30:00", 7200,  "2026-11-19 03:00:00"),
+    ("2026-11-19 12:00:00", 0,     "2026-11-20 01:00:00"),
+    ("2026-11-19 12:00:00", 14400, "2026-11-20 05:00:00"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("now", "offset", "expected"), NIGHTLY_CASES)
+async def test_next_nightly_test(hass: HomeAssistant, now: str, offset: int, expected: str) -> None:
+    """The next test is in the next 1 to 5 am window still ahead, at the random offset."""
+    with patch(OFFSET, return_value=offset) as randint:
+        assert next_nightly_test(_local(now)) == _local(expected)
+    assert randint.call_args.args == (0, 4 * 3600)
+
+
+async def test_nightly_test_runs_once_a_night(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """On by default: one automated test a night at the random time, and none in between."""
+    freezer.move_to(_local("2026-11-19 12:00:00"))
+    with patch(OFFSET, return_value=3600):
+        entry = await setup_entry(**NIGHTLY)
+        for at, runs in (
+            ("2026-11-20 01:59:00", 0),
+            ("2026-11-20 02:00:01", 1),
+            ("2026-11-20 23:00:00", 1),
+            ("2026-11-21 02:00:01", 2),
+        ):
+            freezer.move_to(_local(at))
+            async_fire_time_changed(hass)
+            await hass.async_block_till_done()
+            assert speed_test.call_count == runs, at
+    assert _state(hass, entry, "speed_test_download") == "245.6"
+
+
+async def test_nightly_test_counts_as_automated(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """With M-Lab, the nightly test starts at its random time (no extra wait) and counts toward M-Lab's 4."""
+    freezer.move_to(_local("2026-11-19 12:00:00"))
+    with patch(OFFSET, return_value=0), patch(WAIT, return_value=0.0) as wait:
+        entry = await setup_entry(**{**MLAB, CONF_SPEED_TEST_AUTOMATIC: True})
+        freezer.move_to(_local("2026-11-20 01:00:01"))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        speed_test.assert_called_once()
+        wait.assert_not_called()
+        for _ in range(3):
+            await _press(hass, entry, by_person=False)
+        with pytest.raises(ServiceValidationError) as err:
+            await _press(hass, entry, by_person=False)
+    assert err.value.translation_key == "mlab_automated_limit"
+
+
+async def test_nightly_test_skipped_at_a_limit(
+    hass: HomeAssistant,
+    setup_entry: SetupEntry,
+    speed_test: AsyncMock,
+    freezer: FrozenDateTimeFactory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A night past a limit is skipped and logged, and the next night is still scheduled."""
+    freezer.move_to(_local("2026-11-20 00:30:00"))
+    with patch(OFFSET, return_value=3600):
+        entry = await setup_entry(**NIGHTLY, **{CONF_SPEED_TEST_DAILY_LIMIT: 1})
+        await _press(hass, entry)
+        freezer.move_to(_local("2026-11-20 02:00:01"))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        assert speed_test.call_count == 1
+        assert "Nightly speed test skipped" in caplog.text
+        freezer.move_to(_local("2026-11-21 02:00:01"))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    assert speed_test.call_count == 2
+
+
+async def test_unload_cancels_nightly_test(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """After unload the nightly test never runs."""
+    freezer.move_to(_local("2026-11-19 12:00:00"))
+    entry = await setup_entry(**NIGHTLY)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    freezer.move_to(_local("2026-11-21 12:00:00"))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    speed_test.assert_not_called()
+
+
+# 330.4 MB a test, as Core reports it in two parts.
+MEASURED = replace(RESULT, downloaded_mb=300.0, uploaded_mb=30.4)
+
+
+async def test_budget_refuses_a_test_that_may_not_fit(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """A test starts only if its data limit fits what is left of the 30-day budget; old tests drop out."""
+    speed_test.return_value = MEASURED
+    entry = await setup_entry(**CLOUDFLARE, **{CONF_SPEED_TEST_BUDGET: 1, CONF_SPEED_TEST_DATA_LIMIT: 500})
+    await _press(hass, entry)  # 0 + 500 fits 1000 MB
+    await _press(hass, entry)  # 330.4 + 500 fits
+    with pytest.raises(ServiceValidationError) as err:
+        await _press(hass, entry)  # 660.8 + 500 does not
+    assert err.value.translation_key == "budget_reached"
+    assert err.value.translation_placeholders == {"used": "0.7", "budget": "1", "limit": "500"}
+    assert speed_test.call_count == 2
+
+    freezer.tick(timedelta(days=30, seconds=1))
+    await _press(hass, entry)
+    assert speed_test.call_count == 3
+
+
+async def test_failed_test_counts_toward_budget(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """The data a failed test moved counts against the budget too."""
+    entry = await setup_entry(**CLOUDFLARE, **{CONF_SPEED_TEST_BUDGET: 1, CONF_SPEED_TEST_DATA_LIMIT: 500})
+    speed_test.side_effect = SpeedTestError("upload refused", downloaded_mb=450.0, uploaded_mb=100.0)
+    with pytest.raises(HomeAssistantError):
+        await _press(hass, entry)  # 550 MB moved
+    with pytest.raises(ServiceValidationError) as err:
+        await _press(hass, entry)
+    assert err.value.translation_key == "budget_reached"
+
+
+async def test_budget_survives_restart(hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock) -> None:
+    """The data each run used is stored with it: a reload keeps the budget spent."""
+    speed_test.return_value = replace(RESULT, downloaded_mb=600.0, uploaded_mb=0.0)
+    entry = await setup_entry(**CLOUDFLARE, **{CONF_SPEED_TEST_BUDGET: 1, CONF_SPEED_TEST_DATA_LIMIT: 500})
+    await _press(hass, entry)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    with pytest.raises(ServiceValidationError):
+        await _press(hass, entry)
