@@ -503,6 +503,23 @@ Read 2026-11-20 [V]:
   (RFC 3927), neither globally reachable; ::1/128 loopback and
   fe80::/10 link-local (RFC 4291), fc00::/7 unique local (RFC 4193).
 
+## R25. PyPI trusted publishing
+
+Read 2026-11-20 [V]:
+
+- <https://docs.pypi.org/trusted-publishers/adding-a-publisher/>: a
+  publisher names "the filename of the GitHub Actions workflow that's
+  authorized to upload to PyPI"; an environment is optional "but
+  **strongly** recommended".
+- <https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/>:
+  a project not yet on PyPI gets a "pending" publisher from the account's
+  Publishing page; it "does not create a project or reserve a project's
+  name until it is actually used to publish", and converts to a normal
+  publisher after first use.
+- Packaging guide
+  (<https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/>):
+  one workflow, `publish-to-pypi` with `needs: build`, on tags only.
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

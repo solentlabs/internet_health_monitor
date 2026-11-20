@@ -1,42 +1,113 @@
 name: Release
 
+# Pushing a tag vX.Y.Z releases that version (docs/RELEASING.md). Each job waits for the one
+# before, so a failure anywhere publishes nothing a user can install: CI on the tagged commit;
+# the tag checked against every version and the CHANGELOG; one Core build, installed and run as
+# the tagged version; Core to PyPI by trusted publishing; and only then the GitHub release with
+# the HACS zip, whose manifest.json pins that Core. Pattern: leadline-metrics' release.yml and
+# PyPA's publishing guide. Run by hand, it builds and publishes to Test PyPI only.
+
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  ci:
+    uses: ./.github/workflows/tests.yml
+
+  build:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the whole history, to tell whether the tagged commit is on main
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
-
-      - name: Install dependencies
+      - name: The tag matches every version, the CHANGELOG and main
+        if: github.event_name == 'push'
+        run: python scripts/check_release.py "$GITHUB_REF_NAME" --on origin/main
+      - run: python -m pip install build
+      - name: Build Core
+        working-directory: packages/internet_health_monitor_core
+        run: python -m build
+      - name: The wheel installs and runs, as the tagged version
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          python -m venv "$RUNNER_TEMP/wheel"
+          "$RUNNER_TEMP/wheel/bin/pip" install packages/internet_health_monitor_core/dist/*.whl
+          "$RUNNER_TEMP/wheel/bin/internet-health-monitor" --help > /dev/null
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            installed=$("$RUNNER_TEMP/wheel/bin/python" -c \
+              'import importlib.metadata as m; print(m.version("solentlabs-internet-health-monitor-core"))')
+            test "$installed" = "${GITHUB_REF_NAME#v}"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-core
+          path: packages/internet_health_monitor_core/dist/
 
-      - name: Run tests
-        run: pytest
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # The GitHub environment PyPI's trusted publisher names; only this job can mint the token.
+    environment:
+      name: pypi-core
+      url: https://pypi.org/p/solentlabs-internet-health-monitor-core
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-core
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
 
-      - name: Zip the integration
-        # One zip of the integration folder, the shape HACS zip releases install.
+  publish-test:
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: test-pypi-core
+      url: https://test.pypi.org/p/solentlabs-internet-health-monitor-core
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-core
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  release:
+    # Last: the zip's manifest.json pins the Core just published, so it must exist first.
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Notes and pre-release flag from the CHANGELOG
+        id: notes
+        run: |
+          python scripts/check_release.py "$GITHUB_REF_NAME" --notes > "$RUNNER_TEMP/notes.md"
+          echo "prerelease=$(python scripts/check_release.py "$GITHUB_REF_NAME" --prerelease)" >> "$GITHUB_OUTPUT"
+      - name: Zip the integration, the file hacs.json names
         run: |
           cd custom_components/internet_health_monitor
-          zip -r "$GITHUB_WORKSPACE/internet_health_monitor.zip" . -x "__pycache__/*"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+          zip -r "$GITHUB_WORKSPACE/internet_health_monitor.zip" . -x "*__pycache__*"
+      - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/notes.md
+          prerelease: ${{ steps.notes.outputs.prerelease }}
           files: internet_health_monitor.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

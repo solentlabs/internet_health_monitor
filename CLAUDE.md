@@ -28,6 +28,7 @@ Cable Modem Monitor (`docs/ARCHITECTURE_DECISIONS.md` § ADR-002).
 | Dashboard card and `generate_dashboard_card` | `docs/DASHBOARD_CARD.md` |
 | User-facing overview | `README.md` |
 | Core package: command line, library use | `packages/internet_health_monitor_core/README.md` |
+| Releasing: versions, the release workflow | `docs/RELEASING.md` |
 
 ## Core Principles
 

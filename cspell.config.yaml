@@ -29,6 +29,7 @@ words:
   - conftest # pytest fixtures file
   - delenv # pytest fixture method
   - LOCALAPPDATA # Windows per-user state directory
+  - leadline # Solent Labs metrics project (leadline-metrics)
   - clientsession # async_get_clientsession
   - pytestmark
   - pyrightconfig # pyright config file

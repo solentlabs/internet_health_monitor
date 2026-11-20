@@ -140,7 +140,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
   - [ ] GitHub repo under solentlabs org (stage 2)
   - [ ] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
   - [ ] Branch protection (stage 2)
-  - [ ] Release automation: `release.yml` and `publish.yml` written, first run at stages 2 and 3
+  - [ ] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stages 2 and 3
 - [ ] HACS submission (stage 5)
 
 ---
