@@ -6,6 +6,10 @@
     "http",
     "websocket_api"
   ],
+  "categories": [
+    "computers_network.monitoring",
+    "computers_network.routers_network"
+  ],
   "codeowners": [
     "@solentlabs",
     "@kwschulz"
