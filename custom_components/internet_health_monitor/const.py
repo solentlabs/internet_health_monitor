@@ -16,13 +16,13 @@ NAME = "Internet Health Monitor"
 DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
 TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet_health_monitor#troubleshooting"
-VERSION = "0.1.0b1"  # must equal manifest.json "version" (tests/components/test_const.py)
+VERSION = "0.1.0b2"  # must equal manifest.json "version" (tests/components/test_const.py)
 
 # Option keys
 CONF_ENABLE_GATEWAY_MONITORING = "enable_gateway_monitoring"
 CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
 CONF_LONG_TERM_STATISTICS = "long_term_statistics"  # state_class on measurement sensors (ADR-013)
-CONF_USAGE_TOTALS = "usage_totals"  # the six usage total sensors (README.md § Usage Totals)
+CONF_USAGE_TOTALS = "usage_totals"  # the six usage total sensors (.github/README.md § Usage Totals)
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)

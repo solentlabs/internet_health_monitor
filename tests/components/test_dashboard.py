@@ -46,12 +46,13 @@ def _graph(title: str, metric: str) -> dict[str, Any]:
 
 
 def _hop_card(hop: int, name: str) -> dict[str, Any]:
-    """A default per-hop card: current latency, jitter and loss."""
+    """A default per-hop card: current latency, jitter and loss, and the hop's address (latency's attribute)."""
     rows = [("latency", "Latency"), ("jitter", "Jitter"), ("packet_loss", "Packet loss")]
+    address = {"type": "attribute", "entity": _hop(hop, "latency"), "attribute": "hop_ip", "name": "Address"}
     return {
         "type": "entities",
         "title": f"Hop {hop} · {name}",
-        "entities": [{"entity": _hop(hop, metric), "name": label} for metric, label in rows],
+        "entities": [*({"entity": _hop(hop, metric), "name": label} for metric, label in rows), address],
     }
 
 
@@ -335,23 +336,48 @@ BANDS: list[tuple[int, str, str]] = [
     (400, "var(--error-color)",   "F"),
 ]
 # fmt: on
-GAUGE = {"type": "gauge", "min": 0, "max": 500, "needle": True}
+# 0 to 100 ms: green up to B is 60% of the arc. D and F start past the end; their bands stay so a
+# larger value is still labeled with its grade (HA labels by the real value, not the needle's).
+GAUGE = {"type": "gauge", "min": 0, "max": 100, "needle": True}
 SENSOR = "sensor.internet_health_speed_test_"
 
 
-def _gauge(key: str, name: str, *, labels: bool = False) -> dict[str, Any]:
-    """One bufferbloat gauge as the card builds it."""
+# A gauge shows an error for a state that is not a number, so each is shown only once measured:
+# not before the first speed test (unknown), nor while its entity is unavailable.
+NOT_MEASURED = ["unknown", "unavailable"]
+
+
+def _gauge(key: str, name: str, *, labels: bool = False, **extra: str) -> dict[str, Any]:
+    """One bufferbloat gauge as the card builds it, inside the card that hides it until measured."""
     segments = [{"from": f, "color": c, **({"label": g} if labels else {})} for f, c, g in BANDS]
-    return {**GAUGE, "entity": f"{SENSOR}{key}", "name": name, "segments": segments}
+    entity = f"{SENSOR}{key}"
+    gauge = {**GAUGE, "entity": entity, "name": name, "segments": segments, **extra}
+    condition = {"condition": "state", "entity": entity, "state_not": NOT_MEASURED}
+    return {"type": "conditional", "conditions": [condition], "card": gauge}
 
 
-GRADE_GAUGE = {
-    **_gauge("bufferbloat_grade", "Bufferbloat", labels=True),
-    "attribute": "latency_increase_ms",
-    "unit": "ms",
-}
+GRADE_GAUGE = _gauge("bufferbloat_grade", "Bufferbloat", labels=True, attribute="latency_increase_ms", unit="ms")
 DOWNLOAD_GAUGE = _gauge("download_latency_increase", "Download bufferbloat")
 UPLOAD_GAUGE = _gauge("upload_latency_increase", "Upload bufferbloat")
+
+
+RUN = "button.internet_health_run_speed_test"
+RUN_CONFIRMATION = (
+    "Run a speed test now? It uses your whole connection for about 20 seconds, "
+    "and its data counts toward your speed test data budget."
+)
+RUN_BUTTON = {
+    "type": "button",
+    "entity": RUN,
+    "name": "Run speed test",
+    "show_state": False,
+    "tap_action": {
+        "action": "perform-action",
+        "perform_action": "button.press",
+        "target": {"entity_id": RUN},
+        "confirmation": {"text": RUN_CONFIRMATION},
+    },
+}
 
 
 async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
@@ -359,12 +385,15 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     side, and a throughput graph; off hides them."""
     await setup_entry(speed_test_backend="cloudflare")
     card = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))
-    speed, grade, directions, throughput = card["cards"][-4:]
+    speed, run, grade, directions, throughput = card["cards"][-5:]
     assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
         "Speed test",
         {"entity": f"{SENSOR}download", "name": "Download"},
-        {"entity": "button.internet_health_run_speed_test", "name": "Run speed test"},
+        {"entity": f"{SENSOR}data_used", "name": "Data used"},
     )
+    # Its own button card, as Cable Modem Monitor's Restart: an entities row's button skips the
+    # confirmation when its own Press is clicked.
+    assert run == RUN_BUTTON
     # The gauges show the grade and the increases, so the list does not repeat them.
     listed = {row["entity"] for row in speed["entities"]}
     gauged = {f"{SENSOR}{key}" for key in ("bufferbloat_grade", "download_latency_increase", "upload_latency_increase")}
@@ -376,7 +405,7 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
         {"entity": f"{SENSOR}upload", "name": "Upload"},
     ]
     hidden = build_card_config(hass, CARD_OPTIONS_SCHEMA({"include_speed_test": False}))
-    assert len(hidden["cards"]) == len(card["cards"]) - 4
+    assert len(hidden["cards"]) == len(card["cards"]) - 5
 
 
 async def test_disabled_sensor_has_no_gauge(hass: HomeAssistant, setup_entry: SetupEntry) -> None:

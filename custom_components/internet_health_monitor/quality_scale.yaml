@@ -10,7 +10,7 @@ rules:
     comment: "generate_dashboard_card is registered in async_setup (services.py async_setup_services), so it exists before any entry loads; it raises a translated ServiceValidationError when no entry exists (tests/components/test_dashboard.py)."
   appropriate-polling:
     status: done
-    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; README.md Polling shows the automation route. Speed tests never poll: update_interval None; they run on a Run speed test press and, with automatic tests on, at a random time from 1 to 5 am, weekly or as often as the user's data budget holds every test (Core data_plan.py); the user sets a budget, never an interval (coordinator.py SpeedTestCoordinator)."
+    comment: "Fixed 60 s from Core timing.POLL_INTERVAL_S (coordinator.py), chosen against comparable tools in ADR-007; not a form field; .github/README.md Polling shows the automation route. Speed tests never poll: update_interval None; they run on a Run speed test press and, with automatic tests on, at a random time from 1 to 5 am, weekly or as often as the user's data budget holds every test (Core data_plan.py); the user sets a budget, never an interval (coordinator.py SpeedTestCoordinator)."
   brands:
     status: done
     comment: brand/icon.png, icon.svg, logo.png and dark variants in the integration directory.
@@ -28,19 +28,19 @@ rules:
     comment: "Core is MIT with .github/workflows/release.yml (trusted publishing after CI and a version check against manifest.json; docs/RELEASING.md), but not yet on PyPI: first publish is the first beta, ROADMAP Path to Release stage 3."
   docs-actions:
     status: done
-    comment: README.md Generate Dashboard Card Action; fields and descriptions in services.yaml, strings.json and all translations.
+    comment: .github/README.md Generate Dashboard Card Action; fields and descriptions in services.yaml, strings.json and all translations.
   docs-conditions:
     status: exempt
     comment: The integration provides no conditions.
   docs-high-level-description:
     status: done
-    comment: README.md introduction and Features.
+    comment: .github/README.md introduction and Features.
   docs-installation-instructions:
     status: done
-    comment: README.md Manual Installation; prerequisites in Requirements (Linux host, traceroute).
+    comment: .github/README.md Installation (Marketplace and beta steps); prerequisites in Requirements (Linux host, traceroute).
   docs-removal-instructions:
     status: done
-    comment: README.md Installation > Removal.
+    comment: .github/README.md Installation > Removal.
   docs-triggers:
     status: exempt
     comment: The integration provides no triggers.
@@ -75,10 +75,10 @@ rules:
     comment: async_unload_entry saves the usage totals and unloads platforms; timers are cancelled through entry.async_on_unload (__init__.py, coordinator.py). The options flow reloads the entry (OptionsFlowWithReload).
   docs-configuration-parameters:
     status: done
-    comment: README.md Configuration and Hop Ownership cover every options-flow field (same fields as setup).
+    comment: .github/README.md Configuration and Hop Ownership cover every options-flow field (same fields as setup).
   docs-installation-parameters:
     status: done
-    comment: README.md Configuration covers every setup field with default and meaning.
+    comment: .github/README.md Configuration covers every setup field with default and meaning.
   entity-unavailable:
     status: done
     comment: A failed poll makes every entity unavailable (CoordinatorEntity); missing ping/ip stops setup instead of reporting off (tests/components/test_binary_sensor.py).
@@ -90,7 +90,7 @@ rules:
     comment: async_update_data raises UpdateFailed; DataUpdateCoordinator logs the first failure and the recovery once (__init__.py).
   parallel-updates:
     status: done
-    comment: PARALLEL_UPDATES = 0 in sensor.py and binary_sensor.py (coordinator-driven), 1 in button.py.
+    comment: PARALLEL_UPDATES = 0 in sensor.py and binary_sensor.py (coordinator-driven) and button.py, so a Run speed test press during a test reaches SpeedTestCoordinator.async_run and is ignored instead of queuing a second test; polls never overlap, since DataUpdateCoordinator.async_refresh holds its own lock.
   reauthentication-flow:
     status: exempt
     comment: The integration needs no authentication.
@@ -113,25 +113,25 @@ rules:
     comment: Nothing to discover (see discovery).
   docs-data-update:
     status: done
-    comment: "README.md Polling: 60 s, and how to change it."
+    comment: ".github/README.md Polling: 60 s, and how to change it."
   docs-examples:
     status: done
-    comment: README.md Dashboard Examples and docs/dashboard-examples.md; tests/components/test_docs.py fails if they name an entity id IHM does not create.
+    comment: .github/README.md Dashboard Examples and docs/dashboard-examples.md; tests/components/test_docs.py fails if they name an entity id IHM does not create.
   docs-known-limitations:
     status: done
-    comment: "README.md Known Limitations: three hops, own path only, Docker Desktop, silent routers, jitter history, fixed polling, hop ownership limits."
+    comment: ".github/README.md Known Limitations: three hops, own path only, Docker Desktop, silent routers, jitter history, fixed polling, hop ownership limits."
   docs-supported-devices:
     status: exempt
     comment: Does not integrate physical devices.
   docs-supported-functions:
     status: done
-    comment: README.md Entities lists every sensor, binary sensor, button and attribute.
+    comment: .github/README.md Entities lists every sensor, binary sensor, button and attribute.
   docs-troubleshooting:
     status: done
-    comment: "README.md Troubleshooting: missing tools, unknown hops (traceroute, Docker Desktop, silent routers), gateway not detected, reporting a problem with the diagnostics download."
+    comment: ".github/README.md Troubleshooting: missing tools, unknown hops (traceroute, Docker Desktop, silent routers), gateway not detected, reporting a problem with the diagnostics download."
   docs-use-cases:
     status: done
-    comment: README.md Features and What Makes This Different; docs/USE_CASES.md.
+    comment: .github/README.md Features and What Makes This Different; docs/USE_CASES.md.
   dynamic-devices:
     status: exempt
     comment: One static device per config entry, tied to the entry's lifecycle.

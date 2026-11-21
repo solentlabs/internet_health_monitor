@@ -17,7 +17,7 @@
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
           "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
-          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
+          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten. Oder eine IPv4- oder IPv6-Adresse eingeben, etwa die eines Pi-hole.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
@@ -40,7 +40,7 @@
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
           "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
-          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
+          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten. Oder eine IPv4- oder IPv6-Adresse eingeben, etwa die eines Pi-hole.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
@@ -79,7 +79,8 @@
     "error": {
       "mlab_consent_required": "Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst.",
       "data_limit_too_small": "0 für automatisch, oder 100 MB oder mehr.",
-      "data_limit_over_budget": "Ein Test könnte mehr als das ganze Datenbudget verbrauchen. Senke das Datenlimit, nutze 0 für automatisch oder erhöhe das Budget."
+      "data_limit_over_budget": "Ein Test könnte mehr als das ganze Datenbudget verbrauchen. Senke das Datenlimit, nutze 0 für automatisch oder erhöhe das Budget.",
+      "invalid_dns_server": "Gib eine IPv4- oder IPv6-Adresse ein oder wähle einen Server aus der Liste."
     }
   },
   "options": {
@@ -99,7 +100,7 @@
         "data_description": {
           "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
           "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
-          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten.",
+          "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten. Oder eine IPv4- oder IPv6-Adresse eingeben, etwa die eines Pi-hole.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
@@ -134,7 +135,8 @@
     "error": {
       "mlab_consent_required": "Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst.",
       "data_limit_too_small": "0 für automatisch, oder 100 MB oder mehr.",
-      "data_limit_over_budget": "Ein Test könnte mehr als das ganze Datenbudget verbrauchen. Senke das Datenlimit, nutze 0 für automatisch oder erhöhe das Budget."
+      "data_limit_over_budget": "Ein Test könnte mehr als das ganze Datenbudget verbrauchen. Senke das Datenlimit, nutze 0 für automatisch oder erhöhe das Budget.",
+      "invalid_dns_server": "Gib eine IPv4- oder IPv6-Adresse ein oder wähle einen Server aus der Liste."
     }
   },
   "selector": {
@@ -370,16 +372,20 @@
         }
       },
       "usage_pings": {
-        "name": "Gesendete Pings"
+        "name": "Gesendete Pings",
+        "unit_of_measurement": "Pings"
       },
       "usage_traceroutes": {
-        "name": "Ausgeführte Traceroutes"
+        "name": "Ausgeführte Traceroutes",
+        "unit_of_measurement": "Traceroutes"
       },
       "usage_dns_queries": {
-        "name": "Gesendete DNS-Anfragen"
+        "name": "Gesendete DNS-Anfragen",
+        "unit_of_measurement": "Abfragen"
       },
       "usage_speed_tests": {
-        "name": "Ausgeführte Speedtests"
+        "name": "Ausgeführte Speedtests",
+        "unit_of_measurement": "Tests"
       },
       "usage_downloaded": {
         "name": "Speedtest-Daten heruntergeladen"
@@ -481,5 +487,10 @@
         }
       }
     }
+  },
+  "common": {
+    "speed_test_done_title": "Speedtest abgeschlossen",
+    "speed_test_done_message": "Download {download} Mbit/s, Upload {upload} Mbit/s, Bufferbloat-Note {grade}.",
+    "speed_test_failed_title": "Speedtest fehlgeschlagen"
   }
 }

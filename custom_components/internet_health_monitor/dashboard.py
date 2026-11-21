@@ -79,16 +79,26 @@ _SPEED_TEST: list[Row] = [
     ("sensor", "speed_test_download_latency", "Download latency"),
     ("sensor", "speed_test_upload_latency", "Upload latency"),
     ("sensor", "speed_test_data_used", "Data used"),
-    ("button", "run_speed_test", "Run speed test"),
 ]
+_RUN: list[Row] = [("button", "run_speed_test", "Run speed test")]
+# Lovelace config is plain text (no translation hook for a custom card): English, as the titles.
+RUN_CONFIRMATION = (
+    "Run a speed test now? It uses your whole connection for about 20 seconds, "
+    "and its data counts toward your speed test data budget."
+)
 # The grade and the increases appear only as gauges: the list above does not repeat them.
 _GRADE: list[Row] = [("sensor", "speed_test_bufferbloat_grade", "Bufferbloat")]
 _BUFFERBLOAT: list[Row] = [
     ("sensor", "speed_test_download_latency_increase", "Download bufferbloat"),
     ("sensor", "speed_test_upload_latency_increase", "Upload bufferbloat"),
 ]
-# Gauge range in ms: past F's lower bound, so its band shows; larger values sit at the end.
-GAUGE_MAX_MS = 500
+# Gauge range in ms: B's upper bound (60, where Waveform's grades start to "affect real-time
+# applications") at 60% of the arc, so a healthy line reads as healthy. A larger value pins the
+# needle at the end; HA picks a segment's label from the real value, so the C, D and F bands stay
+# and the grade gauge still shows the right letter, and the direction gauges their exact ms.
+GAUGE_MAX_MS = 100
+# States with no reading yet: before the first speed test, or when the entity is unavailable.
+NOT_MEASURED = ("unknown", "unavailable")
 _THROUGHPUT: list[Row] = [
     ("sensor", "speed_test_download", "Download"),
     ("sensor", "speed_test_upload", "Upload"),
@@ -128,19 +138,57 @@ def _segments(*, labels: bool) -> list[dict[str, Any]]:
     return segments
 
 
+def _when_measured(entity_id: str, card: dict[str, Any]) -> dict[str, Any]:
+    """Show *card* only once its entity has a value: a gauge shows an error for unknown."""
+    condition = {"condition": "state", "entity": entity_id, "state_not": list(NOT_MEASURED)}
+    return {"type": "conditional", "conditions": [condition], "card": card}
+
+
 def _gauge(row: dict[str, str], *, labels: bool = False) -> dict[str, Any]:
-    """A bufferbloat gauge over Waveform's bands."""
-    return {"type": "gauge", **row, "min": 0, "max": GAUGE_MAX_MS, "needle": True, "segments": _segments(labels=labels)}
+    """A bufferbloat gauge over Waveform's bands, shown once measured."""
+    gauge = {
+        "type": "gauge",
+        **row,
+        "min": 0,
+        "max": GAUGE_MAX_MS,
+        "needle": True,
+        "segments": _segments(labels=labels),
+    }
+    return _when_measured(row["entity"], gauge)
 
 
 def _grade_gauge(row: dict[str, str]) -> dict[str, Any]:
-    """The grade: the larger increase, labeled with its grade, full width."""
-    return {**_gauge(row, labels=True), "attribute": "latency_increase_ms", "unit": "ms"}
+    """The grade: the larger increase, labeled with its grade, full width, shown once graded."""
+    gauge = _gauge(row, labels=True)
+    gauge["card"] |= {"attribute": "latency_increase_ms", "unit": "ms"}
+    return gauge
 
 
 def _direction_gauges(rows: list[dict[str, str]]) -> dict[str, Any]:
     """Each direction's increase in ms, side by side."""
     return {"type": "horizontal-stack", "cards": [_gauge(row) for row in rows]}
+
+
+def _hop_card(hop: int, rows: list[dict[str, str]]) -> dict[str, Any]:
+    """One hop's readings, and its address from the first reading's hop_ip attribute."""
+    address = {"type": "attribute", "entity": rows[0]["entity"], "attribute": "hop_ip", "name": "Address"}
+    return _entities(f"Hop {hop} · {HOP_NAMES[hop]}", [*rows, address])
+
+
+def _run_button(row: dict[str, str]) -> dict[str, Any]:
+    """Run speed test as its own button card, asking first (Cable Modem Monitor's Restart pattern).
+
+    A button row in an entities card presses without the row's confirmation when its own Press
+    is clicked, so only a button card asks every time.
+    """
+    entity = row["entity"]
+    press = {"action": "perform-action", "perform_action": "button.press", "target": {"entity_id": entity}}
+    return {
+        "type": "button",
+        **row,
+        "show_state": False,
+        "tap_action": {**press, "confirmation": {"text": RUN_CONFIRMATION}},
+    }
 
 
 def _graph(title: str, lines: list[dict[str, str]], hours: int) -> dict[str, Any]:
@@ -160,10 +208,11 @@ def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) 
     if options["include_status"] and (status := rows(_STATUS)):
         parts.append(_entities("Network Status", status))
     if options["include_hops"]:
-        parts += [_entities(f"Hop {h} · {HOP_NAMES[h]}", r) for h in _HOPS if (r := rows(_hop_rows(h)))]
+        parts += [_hop_card(h, r) for h in _HOPS if (r := rows(_hop_rows(h)))]
     parts += [_graph(title, lines, hours) for opt, title, t in _GRAPHS if options[opt] and (lines := rows(t))]
     if options["include_speed_test"] and (speed := rows(_SPEED_TEST)):
         parts.append(_entities("Speed test", speed))
+        parts += [_run_button(row) for row in rows(_RUN)]
         parts += [_grade_gauge(row) for row in rows(_GRADE)]
         if directions := rows(_BUFFERBLOAT):
             parts.append(_direction_gauges(directions))

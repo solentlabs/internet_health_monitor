@@ -10,12 +10,14 @@ from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Literal, override
 
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later, async_track_point_in_utc_time
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -44,10 +46,12 @@ from .const import DOMAIN
 from .usage import UsageTracker
 
 _LOGGER = logging.getLogger(__name__)
+# One notification for the latest test a person started; each replaces the last.
+NOTIFICATION_ID = f"{DOMAIN}_speed_test"
 
 # Fixed poll interval from Core (ADR-007; HA quality scale appropriate-polling).
 # Users who want another interval disable polling and call
-# homeassistant.update_entity from an automation (README.md § Polling).
+# homeassistant.update_entity from an automation (.github/README.md § Polling).
 SCAN_INTERVAL = timedelta(seconds=POLL_INTERVAL_S)
 
 ReachabilityTarget = Literal["gateway", "internet"]
@@ -71,7 +75,7 @@ class InternetHealthRuntimeData:
     installation_type: str
     # Present only when the user chose a speed test backend (and, for M-Lab, consented).
     speed_test: SpeedTestCoordinator | None = None
-    # Unique ids of the entities this setup created; setup removes any others (README.md § Configuration).
+    # Unique ids of the entities this setup created; setup removes any others (.github/README.md § Configuration).
     unique_ids: set[str] = field(default_factory=set)
 
 
@@ -206,6 +210,7 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         self._automatic: CALLBACK_TYPE | None = None
         self._last_automatic: float | None = None  # when the last automatic test started
         self._unloaded = False  # a test still running at unload must not touch the entry
+        self._running = False  # a test is moving data now; another press is ignored
         entry.async_on_unload(self._cancel_pending)
 
     async def async_load(self) -> None:
@@ -322,6 +327,10 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
         scheduled after a random wait and this returns at once. Every other run
         happens now and raises a translated error if it fails.
         """
+        if self._running:
+            # A double click, or a press during a test: ignored, so it uses none of the allowance.
+            _LOGGER.warning("A speed test is already running; press ignored")
+            return
         # A run counts when accepted: a failed or waiting run still uses the allowance.
         run = self._accept(dt_util.utcnow().timestamp(), automated=automated)
         if self.backend == "mlab" and automated:
@@ -333,6 +342,8 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
             self._pending[id(run)] = async_call_later(self.hass, delay, job)
             return
         await self._async_test(run)
+        if not automated:
+            await self._async_notify()
         if not self.last_update_success:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
@@ -340,11 +351,35 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
                 translation_placeholders={"error": self._failure},
             )
 
+    async def _async_notify(self) -> None:
+        """Tell the person who started the test how it went, in HA's language."""
+        strings = await async_get_translations(self.hass, self.hass.config.language, "common", {DOMAIN})
+
+        def text(key: str, **values: str) -> str:
+            return str(strings[f"component.{DOMAIN}.common.{key}"]).format(**values)
+
+        if self.last_update_success and self.data:
+            grade = self.data.bufferbloat_grade or "-"
+            title = text("speed_test_done_title")
+            message = text(
+                "speed_test_done_message",
+                download=f"{self.data.download_mbps:g}",
+                upload=f"{self.data.upload_mbps:g}",
+                grade=grade,
+            )
+        else:
+            title, message = text("speed_test_failed_title"), self._failure
+        persistent_notification.async_create(self.hass, message, title, NOTIFICATION_ID)
+
     async def _async_test(self, run: dict[str, Any]) -> None:
         """Run the test, store the history and result, and add its data to the usage totals and the budget."""
         self._last_mb = 0.0
         self._limit = self._limits.pop(id(run))
-        await self.async_refresh()
+        self._running = True
+        try:
+            await self.async_refresh()
+        finally:
+            self._running = False
         if self._unloaded:
             return  # unloaded mid-test: HA dropped the entry's runtime data
         if self.last_update_success and self.data:
@@ -358,6 +393,9 @@ class SpeedTestCoordinator(DataUpdateCoordinator[SpeedTestResult | None]):
     async def _async_run_waiting(self, run: dict[str, Any], _now: datetime) -> None:
         """Start an automated run whose random wait is over; a failure shows on the sensors."""
         self._pending.pop(id(run), None)  # waits are random: runs finish waiting in any order
+        if self._running:
+            _LOGGER.warning("A speed test is already running; the waiting automated test is skipped")
+            return
         await self._async_test(run)
 
     @override

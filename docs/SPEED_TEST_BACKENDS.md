@@ -86,7 +86,7 @@ default once a service is chosen and start at a random time from 1 to
 as the budget holds every test ([Data Use](#data-use)). HA's quality
 rules bar a user-set interval (R16), so the user sets a budget and IHM
 derives the spacing; an automation covers any other time or condition
-(README.md § Speed Testing). Overnight, a test is least likely to slow
+(.github/README.md § Speed Testing). Overnight, a test is least likely to slow
 a call or a game. IHM does not check whether the
 line is busy: the FCC's test units do (R21), but they sit between modem
 and router, and the HA host cannot see other devices' traffic.
@@ -118,7 +118,7 @@ counts toward the 4 and waits a random time of up to an hour. Any run past
 
 ## Data Use
 
-The rules in Core `data_plan.py`; README.md § How Much Data Speed Tests
+The rules in Core `data_plan.py`; .github/README.md § How Much Data Speed Tests
 Use shows them for typical lines. A whole test beats a short one, so
 IHM sizes each test to finish and spaces tests to fit the budget.
 

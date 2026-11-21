@@ -77,7 +77,7 @@ scheduling. It contains no measurement logic.
 | `log_buffer.py` | `LogBuffer`: the newest 200 records from IHM's and Core's loggers, in memory, for the download. |
 | `redact.py` | What the download leaves out (§ Diagnostics). |
 | `strings.json`, `translations/`, `icons.json` | Every form label, entity name, error message and icon; no names or icons in code. |
-| `quality_scale.yaml` | Self-assessment against HA's quality scale; README.md § Quality Scale renders it. |
+| `quality_scale.yaml` | Self-assessment against HA's quality scale; .github/README.md § Quality Scale renders it. |
 
 ## One Poll
 

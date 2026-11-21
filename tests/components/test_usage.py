@@ -1,4 +1,4 @@
-"""Usage totals: what IHM has sent since install, as diagnostic sensors (README.md § Usage Totals)."""
+"""Usage totals: what IHM has sent since install, as diagnostic sensors (.github/README.md § Usage Totals)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.components.logbook.helpers import is_sensor_continuous
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import Context, HomeAssistant
@@ -25,22 +26,26 @@ from .conftest import SetupEntry, entity_id, make_result, set_options
 
 RESULT = SpeedTestResult("cloudflare", "speed.cloudflare.com", 100.0, 20.0, 10.0, 30.0, 40.0, 80.3, 1.0, 50.1, 30.2)
 
+# Every total has a unit: HA's logbook skips a sensor with a unit or a state class
+# (logbook/helpers.py is_sensor_continuous), so the counts, which change every poll, stay out
+# of it. No state class: totals keep no long-term statistics (ADR-013). Count units are
+# translated (strings.json); English shown.
 # ┌──────────────────────────────┬──────────────┬────────────────────┐
 # │ sensor key                   │ unit         │ device class       │
 # ├──────────────────────────────┼──────────────┼────────────────────┤
-# │ usage_pings                  │ none         │ none               │
-# │ usage_traceroutes            │ none         │ none               │
-# │ usage_dns_queries            │ none         │ none               │
-# │ usage_speed_tests            │ none         │ none               │
+# │ usage_pings                  │ pings        │ none               │
+# │ usage_traceroutes            │ traceroutes  │ none               │
+# │ usage_dns_queries            │ queries      │ none               │
+# │ usage_speed_tests            │ tests        │ none               │
 # │ usage_downloaded             │ MB           │ data size          │
 # │ usage_uploaded               │ MB           │ data size          │
 # └──────────────────────────────┴──────────────┴────────────────────┘
 # fmt: off
 SENSOR_CASES: list[tuple[str, str | None, SensorDeviceClass | None]] = [
-    ("usage_pings",       None, None),
-    ("usage_traceroutes", None, None),
-    ("usage_dns_queries", None, None),
-    ("usage_speed_tests", None, None),
+    ("usage_pings",       "pings",       None),
+    ("usage_traceroutes", "traceroutes", None),
+    ("usage_dns_queries", "queries",     None),
+    ("usage_speed_tests", "tests",       None),
     ("usage_downloaded",  "MB", SensorDeviceClass.DATA_SIZE),
     ("usage_uploaded",    "MB", SensorDeviceClass.DATA_SIZE),
 ]
@@ -66,6 +71,8 @@ async def test_usage_sensors_are_diagnostic_totals(
     assert entity is not None
     assert entity.entity_category is EntityCategory.DIAGNOSTIC
     assert entity.disabled_by is None
+    # The logbook leaves it out: a line per poll would flood it.
+    assert is_sensor_continuous(hass, er.async_get(hass), entity.entity_id)
     assert entity.capabilities is None
     assert (entity.unit_of_measurement, entity.original_device_class) == (unit, device_class)
 

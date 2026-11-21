@@ -3,7 +3,7 @@
 
 ``custom_components/internet_health_monitor/quality_scale.yaml`` is the
 single source for each rule's status. This script renders it into the
-marked region of ``README.md`` so the published progress cannot
+marked region of ``.github/README.md`` so the published progress cannot
 drift from the graded file.
 
 Freshness is gated by ``tests/scripts/test_generate_quality_scale_table.py``,
@@ -37,7 +37,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 QUALITY_SCALE = REPO_ROOT / "custom_components" / "internet_health_monitor" / "quality_scale.yaml"
-README = REPO_ROOT / "README.md"
+README = REPO_ROOT / ".github" / "README.md"
 REGION = "quality-scale"
 
 # Rule → tier, copied from HA core's script/hassfest/quality_scale.py

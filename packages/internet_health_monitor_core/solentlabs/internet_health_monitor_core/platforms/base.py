@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
 # Read from the default route's interface name; in a container without host
-# networking it is the container's own interface (README.md § Known Limitations).
+# networking it is the container's own interface (.github/README.md § Known Limitations).
 ConnectionType = Literal["ethernet", "wifi", "bridge", "veth", "unknown"]
 
 

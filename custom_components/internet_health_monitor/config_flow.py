@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 from collections.abc import Mapping
 from typing import Any, override
 
@@ -108,6 +109,7 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
                     options=list(DNS_SERVERS),
                     mode=SelectSelectorMode.DROPDOWN,
                     translation_key=CONF_DNS_SERVER,
+                    custom_value=True,
                 )
             ),
             probatio.Required(CONF_PING_COUNT, default=default(CONF_PING_COUNT)): probatio.All(
@@ -193,6 +195,18 @@ def last_result(entry: ConfigEntry | None) -> SpeedTestResult | None:
     return speed_test.data if speed_test else None
 
 
+def monitoring_errors(user_input: dict[str, Any]) -> dict[str, str]:
+    """Check the monitoring screen; a typed DNS server must be an IP address, and is saved trimmed."""
+    server = user_input[CONF_DNS_SERVER] = str(user_input[CONF_DNS_SERVER]).strip()
+    if server in DNS_SERVERS:
+        return {}
+    try:
+        ipaddress.ip_address(server)
+    except ValueError:
+        return {CONF_DNS_SERVER: "invalid_dns_server"}
+    return {}
+
+
 def needs_consent(options: Mapping[str, Any]) -> bool:
     """M-Lab is chosen and consent was never given."""
     return options[CONF_SPEED_TEST_BACKEND] == "mlab" and not options.get(CONF_MLAB_CONSENT)
@@ -212,18 +226,22 @@ class InternetHealthConfigFlow(ConfigFlow, domain=DOMAIN):
         """Show the monitoring settings; a chosen speed test service leads to its own screen."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
-        if user_input is not None:
+        errors: dict[str, str] = {}
+        if user_input is not None and not (errors := monitoring_errors(user_input)):
             self._options = dict(user_input)
             return await self._async_next()
-        return self.async_show_form(step_id="user", data_schema=build_schema({}))
+        return self.async_show_form(step_id="user", data_schema=build_schema(user_input or {}), errors=errors)
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Change the settings from the entry's Reconfigure menu, then reload."""
         entry = self._get_reconfigure_entry()
-        if user_input is not None:
+        errors: dict[str, str] = {}
+        if user_input is not None and not (errors := monitoring_errors(user_input)):
             self._options = {**entry.options, **user_input}
             return await self._async_next()
-        return self.async_show_form(step_id="reconfigure", data_schema=build_schema(entry.options))
+        return self.async_show_form(
+            step_id="reconfigure", data_schema=build_schema({**entry.options, **(user_input or {})}), errors=errors
+        )
 
     async def async_step_speed_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """When tests run and how much data they may use."""
@@ -281,12 +299,15 @@ class InternetHealthOptionsFlow(OptionsFlowWithReload):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Show the current settings; a chosen speed test service leads to its own screen."""
-        if user_input is not None:
+        errors: dict[str, str] = {}
+        if user_input is not None and not (errors := monitoring_errors(user_input)):
             self._options = {**self.config_entry.options, **user_input}
             if self._options[CONF_SPEED_TEST_BACKEND] != SPEED_TEST_OFF:
                 return await self.async_step_speed_test()
             return self.async_create_entry(data=self._options)
-        return self.async_show_form(step_id="init", data_schema=build_schema(self.config_entry.options))
+        return self.async_show_form(
+            step_id="init", data_schema=build_schema({**self.config_entry.options, **(user_input or {})}), errors=errors
+        )
 
     async def async_step_speed_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """When tests run and how much data they may use."""

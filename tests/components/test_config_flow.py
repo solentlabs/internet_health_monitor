@@ -118,6 +118,47 @@ async def test_options_flow_saves(hass: HomeAssistant, setup_entry: SetupEntry) 
     assert dict(entry.options) == SAVED
 
 
+# DNS server typed into the list -> accepted. A server from the list, or any IPv4 or IPv6
+# address (a Pi-hole, AdGuard Home, the router); never a name, which would need DNS to find DNS.
+# fmt: off
+DNS_CASES: list[tuple[str, bool]] = [
+    ("quad9",            True),   # from the list
+    ("192.168.1.5",      True),   # a Pi-hole on the LAN
+    ("2606:4700::1111",  True),   # IPv6
+    (" 192.168.1.5 ",    True),   # pasted with spaces
+    ("pihole.local",     False),  # a name
+    ("999.1.1.1",        False),  # not an address
+    ("",                 False),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("value", "valid"), DNS_CASES)
+async def test_dns_server_typed_address(hass: HomeAssistant, value: str, valid: bool) -> None:
+    """Any IP address can be typed as the DNS server; anything else is an error on that field."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**USER_INPUT, CONF_DNS_SERVER: value, CONF_SPEED_TEST_BACKEND: "none"}
+    )
+    if valid:
+        assert result.get("type") is FlowResultType.CREATE_ENTRY
+        assert result.get("options", {})[CONF_DNS_SERVER] == value.strip()
+    else:
+        assert (result.get("step_id"), result.get("errors")) == ("user", {CONF_DNS_SERVER: "invalid_dns_server"})
+
+
+async def test_dns_server_checked_on_every_screen(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """Configure and Reconfigure check a typed DNS server as setup does."""
+    entry = await setup_entry()
+    bad = {**USER_INPUT, CONF_DNS_SERVER: "pihole.local", CONF_SPEED_TEST_BACKEND: "none"}
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], bad)
+    assert result.get("errors") == {CONF_DNS_SERVER: "invalid_dns_server"}
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], bad)
+    assert result.get("errors") == {CONF_DNS_SERVER: "invalid_dns_server"}
+
+
 @pytest.mark.parametrize(("description", "stored", "expected"), DEFAULT_CASES, ids=[c[0] for c in DEFAULT_CASES])
 def test_form_defaults(description: str, stored: dict[str, Any], expected: tuple[str, int, bool]) -> None:
     """The form shows stored values, else DEFAULTS; hop ownership is off unless chosen."""

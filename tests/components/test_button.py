@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -16,7 +18,7 @@ from homeassistant.helpers import entity_registry as er
 
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics
 
-from .conftest import SetupEntry, entity_id
+from .conftest import SetupEntry, entity_id, make_result
 
 
 async def _press(hass: HomeAssistant, button: str) -> None:
@@ -38,6 +40,25 @@ async def test_failed_refresh_raises(hass: HomeAssistant, setup_entry: SetupEntr
     poll.side_effect = OSError("boom")
     with pytest.raises(HomeAssistantError):
         await _press(hass, entity_id(hass, "button", entry, "refresh_diagnostics") or "")
+
+
+async def test_poll_presses_take_turns(hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock) -> None:
+    """Presses are not queued by HA (a Run speed test press must reach its guard); polls still take turns."""
+    entry = await setup_entry()
+    running, most = 0, 0
+
+    async def slow(*_args: Any, **_kwargs: Any) -> Any:
+        nonlocal running, most
+        running += 1
+        most = max(most, running)
+        await asyncio.sleep(0.01)
+        running -= 1
+        return make_result()
+
+    poll.side_effect = slow
+    button = entity_id(hass, "button", entry, "refresh_diagnostics") or ""
+    await asyncio.gather(_press(hass, button), _press(hass, button))
+    assert most == 1
 
 
 async def test_reset_cache_is_disabled_by_default(hass: HomeAssistant, setup_entry: SetupEntry) -> None:

@@ -17,7 +17,7 @@
         "data_description": {
           "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
           "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
-          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
+          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。也可以输入 IPv4 或 IPv6 地址，例如 Pi-hole 的地址。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
           "usage_totals": "默认关闭。添加六个诊断传感器：已发送的 ping、已运行的 traceroute、已发送的 DNS 查询、已运行的测速，以及测速下载和上传的数据量，自安装起累计。关闭时仍会继续计数。",
@@ -40,7 +40,7 @@
         "data_description": {
           "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
           "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
-          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
+          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。也可以输入 IPv4 或 IPv6 地址，例如 Pi-hole 的地址。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
           "usage_totals": "默认关闭。添加六个诊断传感器：已发送的 ping、已运行的 traceroute、已发送的 DNS 查询、已运行的测速，以及测速下载和上传的数据量，自安装起累计。关闭时仍会继续计数。",
@@ -79,7 +79,8 @@
     "error": {
       "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。",
       "data_limit_too_small": "自动请填 0，否则至少 100 MB。",
-      "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。"
+      "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。",
+      "invalid_dns_server": "请输入 IPv4 或 IPv6 地址，或从列表中选择服务器。"
     }
   },
   "options": {
@@ -99,7 +100,7 @@
         "data_description": {
           "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
           "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
-          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。",
+          "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。也可以输入 IPv4 或 IPv6 地址，例如 Pi-hole 的地址。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
           "usage_totals": "默认关闭。添加六个诊断传感器：已发送的 ping、已运行的 traceroute、已发送的 DNS 查询、已运行的测速，以及测速下载和上传的数据量，自安装起累计。关闭时仍会继续计数。",
@@ -134,7 +135,8 @@
     "error": {
       "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。",
       "data_limit_too_small": "自动请填 0，否则至少 100 MB。",
-      "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。"
+      "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。",
+      "invalid_dns_server": "请输入 IPv4 或 IPv6 地址，或从列表中选择服务器。"
     }
   },
   "selector": {
@@ -370,16 +372,20 @@
         }
       },
       "usage_pings": {
-        "name": "已发送 Ping"
+        "name": "已发送 Ping",
+        "unit_of_measurement": "次"
       },
       "usage_traceroutes": {
-        "name": "已运行 Traceroute"
+        "name": "已运行 Traceroute",
+        "unit_of_measurement": "次"
       },
       "usage_dns_queries": {
-        "name": "已发送 DNS 查询"
+        "name": "已发送 DNS 查询",
+        "unit_of_measurement": "次"
       },
       "usage_speed_tests": {
-        "name": "已运行测速"
+        "name": "已运行测速",
+        "unit_of_measurement": "次"
       },
       "usage_downloaded": {
         "name": "测速下载数据"
@@ -481,5 +487,10 @@
         }
       }
     }
+  },
+  "common": {
+    "speed_test_done_title": "测速完成",
+    "speed_test_done_message": "下载 {download} Mbit/s，上传 {upload} Mbit/s，缓冲膨胀评级 {grade}。",
+    "speed_test_failed_title": "测速失败"
   }
 }

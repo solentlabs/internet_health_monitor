@@ -4,7 +4,7 @@
 
 The most comprehensive, easiest-to-configure network health monitoring integration for Home Assistant. Zero-config where possible, flexible where needed, rock-solid always.
 
-**Part of the Solent Networks Suite** - designed for future correlation with Cable Modem Monitor and other network integrations.
+A Solent Labs project, alongside Cable Modem Monitor.
 
 ---
 
@@ -40,8 +40,8 @@ specified once, where it is implemented:
 
 | Topic | Doc |
 | ------- | ----- |
-| Entities and attributes | [README.md § Entities](../README.md#entities) |
-| Options | [README.md § Configuration](../README.md#configuration) |
+| Entities and attributes | [.github/README.md § Entities](../.github/README.md#entities) |
+| Options | [.github/README.md § Configuration](../.github/README.md#configuration) |
 | Speed tests, backends, limits | [SPEED_TEST_BACKENDS.md](SPEED_TEST_BACKENDS.md) |
 | Dashboard card and action | [DASHBOARD_CARD.md](DASHBOARD_CARD.md) |
 | Layers, files, one poll, failure isolation, data leaving the host | [ARCHITECTURE.md](ARCHITECTURE.md) |
@@ -116,7 +116,7 @@ Monitor is the reference for how each is done.
       `appropriate-polling`, ADR-003)
 - [x] Data limit per test (automatic by default), daily test limit and
       data budget per 30 days, on their own setup screen, which shows its
-      working (README.md § How Much Data Speed Tests Use)
+      working (.github/README.md § How Much Data Speed Tests Use)
 - [x] Speed test sensors: download, upload (each saying what ended it),
       idle and loaded latency, data used
 - [x] Bufferbloat: latency increase per direction and Waveform's grade
@@ -141,7 +141,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 - [x] Documentation
   - [x] README with examples
   - [x] Dashboard examples
-  - [x] Troubleshooting guide (README.md § Troubleshooting)
+  - [x] Troubleshooting guide (.github/README.md § Troubleshooting)
 - [ ] Local testing
   - [x] Run on dev laptop (Docker HA harness, `make test-all`)
   - [ ] Deploy to a real HA instance (Path to Release stage 3)
@@ -153,11 +153,18 @@ Decided 2026-11-19: build both, as diagnostic sensors.
           while the camera live view runs, against a flat gateway. If the
           60 s poll misses the spikes (ADR-001 item 2), decide a faster
           probe then, with the evidence
-- [ ] DevOps
-  - [ ] GitHub repo under solentlabs org (stage 2)
-  - [ ] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
-  - [ ] Branch protection (stage 2)
-  - [ ] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stage 3
+- [ ] Beta 3
+  - [ ] DNS resolver comparison: opt-in, the same uncached lookup timed
+        against a few public resolvers beside the user's own, one sensor
+        each, and its own card part. A new outside service (ADR-006), so
+        its ADR is written and accepted first.
+  - [ ] Dashboard screenshots in light and dark, with beta 2's gauges and
+        a day of history, in both READMEs
+- [x] DevOps
+  - [x] GitHub repo under solentlabs org (stage 2)
+  - [x] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
+  - [x] Branch protection (stage 2)
+  - [x] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stage 3
 - [ ] HACS submission (stage 5)
 
 ---
@@ -188,7 +195,7 @@ it; ADR-014 names where it would be added.
 **v1.0.0 is ready when:**
 
 1. Zero-config setup works on fresh HA install
-2. Every entity in README.md § Entities functional
+2. Every entity in .github/README.md § Entities functional
 3. Multi-hop latency is unique differentiator
 4. Bandwidth testing is pluggable and runs automatically, from a button or from an automation
 5. Test coverage above 95% for the HA layer and 90% for Core
@@ -201,8 +208,4 @@ it; ADR-014 names where it would be added.
 
 *Created: 2025-11-28*
 *Updated: 2026-11-20*
-*Status: Local stage (Path to Release stage 1)*
-
----
-
-**Solent Labs™** - Network Monitoring Done Right
+*Status: Betas, tested live (Path to Release stage 3)*
