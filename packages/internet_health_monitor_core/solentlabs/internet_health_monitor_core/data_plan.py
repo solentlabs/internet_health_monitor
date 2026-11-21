@@ -1,6 +1,6 @@
 """How much data a speed test may use, and how often automatic tests fit a budget.
 
-The rules behind README.md § How Much Data Speed Tests Use; hosts show their
+The rules behind .github/README.md § How Much Data Speed Tests Use; hosts show their
 working from these, so the user sees why. Each direction runs for
 SPEED_TEST_DIRECTION_S, so a full test moves about that many seconds of each
 direction's speed: 1.25 MB per Mbit/s.

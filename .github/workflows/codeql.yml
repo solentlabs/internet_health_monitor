@@ -1,0 +1,48 @@
+name: "CodeQL Security Scanning"
+
+# On Cable Modem Monitor's pattern (its .github/workflows/codeql.yml): a
+# workflow rather than GitHub's default setup, so the scan is a check the
+# main ruleset requires and the README can show its badge. Python for the
+# integration and Core; JavaScript for the dashboard card.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    # Every Monday at 9:00 UTC, so new queries run against unchanged code too.
+    - cron: "0 9 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze Code Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["python", "javascript-typescript"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended: every security query, high and medium precision;
+          # security-and-quality adds code quality queries.
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

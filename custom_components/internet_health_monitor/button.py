@@ -14,8 +14,10 @@ from .const import DOMAIN
 from .coordinator import InternetHealthConfigEntry, InternetHealthCoordinator, SpeedTestCoordinator
 from .entity import InternetHealthEntity
 
-# Presses run one poll at a time.
-PARALLEL_UPDATES = 1
+# Presses are not queued: a Run speed test press during a test must reach the coordinator to be
+# ignored, not wait and start a second test. Polls still never overlap: the coordinator's
+# async_refresh holds its own lock.
+PARALLEL_UPDATES = 0
 
 REFRESH = ButtonEntityDescription(
     key="refresh_diagnostics", translation_key="refresh_diagnostics", entity_category=EntityCategory.DIAGNOSTIC
@@ -78,7 +80,7 @@ class ResetCacheButton(_PollButton):
 
 
 class RunSpeedTestButton(InternetHealthEntity[SpeedTestCoordinator], ButtonEntity):
-    """Run one speed test now; automations press it to schedule tests (README.md § Speed Testing)."""
+    """Run one speed test now; automations press it to schedule tests (.github/README.md § Speed Testing)."""
 
     def __init__(self, coordinator: SpeedTestCoordinator, description: ButtonEntityDescription) -> None:
         """Attach the description."""

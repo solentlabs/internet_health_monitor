@@ -26,7 +26,8 @@ Cable Modem Monitor (`docs/ARCHITECTURE_DECISIONS.md` § ADR-002).
 | Sources, licenses, evidence labels | `docs/REFERENCES.md` |
 | Speed test backends compared | `docs/SPEED_TEST_BACKENDS.md` |
 | Dashboard card and `generate_dashboard_card` | `docs/DASHBOARD_CARD.md` |
-| User-facing overview | `README.md` |
+| User-facing docs: every setting, sensor and limitation (GitHub page) | `.github/README.md` |
+| Marketplace listing: short, users only (`hacs.json` `render_readme`) | `README.md` |
 | Core package: command line, library use | `packages/internet_health_monitor_core/README.md` |
 | Releasing: versions, the release workflow | `docs/RELEASING.md` |
 

@@ -1,6 +1,6 @@
 """Tests for scripts/generate_quality_scale_table.py.
 
-The freshness test keeps README.md's quality scale table in step with
+The freshness test keeps .github/README.md's quality scale table in step with
 quality_scale.yaml; the rest cover the counting and region replacement.
 Ported from Cable Modem Monitor.
 """

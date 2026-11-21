@@ -57,6 +57,7 @@ words:
   - Gbit
   - kbps # kilobits per second
   - urandom
+  - pihole # a hostname in a test: names are refused as DNS servers
   - ancount
   - arin
   - Bufferbloat
@@ -123,7 +124,6 @@ words:
   - Wayback
 
   # Project and people
-  - kwschulz
   - solentlabs
 
   # Python, packaging and dev tools

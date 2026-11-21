@@ -104,12 +104,15 @@ Workflows ported from Cable Modem Monitor: commit messages
 and an entry for code changed into `main` (`changelog-check.yml`,
 `scripts/check_changelog.py`), a note to contributors whose commits carry
 a personal email (`check-commit-email.yml`; it names the commit, never the
-address), HACS validation (`validate.yaml`), and the devcontainer build
-(`devcontainer.yml`). Set up once on GitHub:
+address), HACS validation (`validate.yaml`), the devcontainer build
+(`devcontainer.yml`), and CodeQL (`codeql.yml`: Python and the card's
+JavaScript, on pushes and PRs to `main` and weekly; a workflow rather
+than GitHub's default setup, so `main`'s ruleset can require it). Set up
+once on GitHub:
 
-- [ ] **CodeQL default setup** (Settings, Advanced Security, CodeQL
-      analysis, Set up, Default): GitHub's recommended setup, with no
-      workflow file to keep.
+- [ ] **CodeQL's checks required** in `main`'s `require-status-checks`
+      ruleset, once the workflow has run: `Analyze Code Security
+      (python)` and `Analyze Code Security (javascript-typescript)`.
 - [ ] **What HACS checks** (hacs.xyz, "Include default repositories"): a
       repository description, topics, issues on, and a full GitHub
       release; `validate.yaml` and `hassfest.yml` pass with no errors or

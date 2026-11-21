@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Context, HomeAssistant
@@ -29,7 +30,7 @@ from custom_components.internet_health_monitor.const import (
     CONF_SPEED_TEST_DATA_LIMIT,
     DOMAIN,
 )
-from custom_components.internet_health_monitor.coordinator import STORAGE_KEY, next_automatic_test
+from custom_components.internet_health_monitor.coordinator import NOTIFICATION_ID, STORAGE_KEY, next_automatic_test
 from custom_components.internet_health_monitor.diagnostics import async_get_config_entry_diagnostics
 from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedTestError, SpeedTestResult
 
@@ -224,6 +225,73 @@ async def test_failed_test_is_visible(hass: HomeAssistant, setup_entry: SetupEnt
         await _press(hass, entry)
     assert err.value.translation_key == "speed_test_failed"
     assert _state(hass, entry, "speed_test_download") == STATE_UNAVAILABLE
+
+
+def _notification(hass: HomeAssistant) -> dict[str, Any] | None:
+    """The speed test notification, if one is showing."""
+    notification = persistent_notification._async_get_or_create_notifications(hass).get(NOTIFICATION_ID)
+    return dict(notification) if notification else None
+
+
+async def test_second_press_while_running_is_ignored(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """A press during a test, a double click, is ignored: no second test, and it uses none of the allowance."""
+    entry = await setup_entry(**CLOUDFLARE, **{CONF_SPEED_TEST_DAILY_LIMIT: 2})
+    release = asyncio.Event()
+
+    async def slow(*_args: Any) -> SpeedTestResult:
+        await release.wait()
+        return RESULT
+
+    speed_test.side_effect = slow
+    first = hass.async_create_task(_press(hass, entry))
+    await asyncio.sleep(0)
+    while speed_test.call_count == 0:
+        await asyncio.sleep(0)
+    await _press(hass, entry)  # returns at once, no error
+    release.set()
+    await first
+    assert speed_test.call_count == 1
+    speed_test.side_effect = None
+    await _press(hass, entry)  # the ignored press did not count: the second of two allowed runs
+    assert speed_test.call_count == 2
+
+
+async def test_person_press_notifies_the_result(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """A test a person started ends with a notification of its result; it replaces the last one."""
+    entry = await setup_entry(**CLOUDFLARE)
+    await _press(hass, entry)
+    notification = _notification(hass)
+    assert notification is not None
+    assert notification["title"] == "Speed test finished"
+    assert notification["message"] == "Download 245.6 Mbit/s, upload 11.2 Mbit/s, bufferbloat grade D."
+
+
+async def test_person_press_notifies_a_failure(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """A failed test a person started leaves a notification with the reason, as well as the error."""
+    entry = await setup_entry(**CLOUDFLARE)
+    speed_test.side_effect = SpeedTestError("no LibreSpeed server answered")
+    with pytest.raises(HomeAssistantError):
+        await _press(hass, entry)
+    notification = _notification(hass)
+    assert notification is not None
+    assert notification["title"] == "Speed test failed"
+    assert notification["message"] == "no LibreSpeed server answered"
+
+
+async def test_automated_press_does_not_notify(
+    hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock
+) -> None:
+    """Automations and automatic tests stay silent: their results are on the sensors."""
+    entry = await setup_entry(**CLOUDFLARE)
+    await _press(hass, entry, by_person=False)
+    assert speed_test.call_count == 1
+    assert _notification(hass) is None
 
 
 async def test_daily_limit(hass: HomeAssistant, setup_entry: SetupEntry, speed_test: AsyncMock) -> None:

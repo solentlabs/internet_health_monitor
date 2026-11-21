@@ -1,4 +1,4 @@
-"""Usage totals: everything IHM has sent since install, kept in HA storage (README.md § Usage Totals)."""
+"""Usage totals: everything IHM has sent since install, kept in HA storage (.github/README.md § Usage Totals)."""
 
 from __future__ import annotations
 

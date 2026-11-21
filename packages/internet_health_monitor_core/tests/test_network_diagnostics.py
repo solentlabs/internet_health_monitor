@@ -51,7 +51,7 @@ REDETECT_CASES: list[tuple[str, dict, dict, float, int, str | None]] = [
 # fmt: on
 
 
-# Monitoring switched off sends nothing for it (README.md § Configuration).
+# Monitoring switched off sends nothing for it (.github/README.md § Configuration).
 # fmt: off
 MONITOR_OFF_CASES: list[tuple[str, dict[str, bool], tuple[int, int, int]]] = [
     # (description,   config,                      (pings, traceroutes, DNS queries) in one poll)

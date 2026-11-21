@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b2] - 2026-11-20
+
+### Fixed
+
+- **Bufferbloat gauges before the first speed test.** The card showed
+  "non-numeric" warnings in place of the three gauges until a test had
+  run. Each gauge now appears once its value is measured.
+- **Bufferbloat gauges looked alarming on a good line.** They ran to
+  500 ms, so 88% of each arc was red past grade B. They now run to
+  100 ms: green up to B fills 60%. A larger value pins the needle at
+  the end, and the grade letter and the ms stay exact.
+- **A double click ran two speed tests.** A press while a test runs is
+  now ignored, and uses none of the daily or data allowance.
+- **Usage totals flooded the logbook.** Pings, traceroutes, DNS queries
+  and speed tests had no unit, so Home Assistant's logbook recorded each
+  count's change every minute. Each now has a unit (pings, traceroutes,
+  queries, tests), which the logbook leaves out.
+
+### Added
+
+- **Run speed test asks first.** The card shows it as its own button,
+  which asks before a test fills your connection.
+- **A notification with the result** when you press Run speed test
+  yourself: download, upload and the bufferbloat grade, or why the test
+  failed. Automatic tests and automations stay silent.
+- **Your own DNS server.** Type any IPv4 or IPv6 address, such as a
+  Pi-hole's, in place of the listed servers.
+- **Hop addresses on the card.** Each hop's card shows its IP address.
+
+### Changed
+
+- **Made by Solent Labs.** The Marketplace and HACS list the integration
+  under solentlabs alone (`manifest.json` code owners).
+- **README.** Two, as Cable Modem Monitor has: a short one for the
+  Marketplace listing, and the full one on GitHub (`.github/README.md`),
+  with badges, a dashboard screenshot, installing from
+  the Marketplace or HACS and testing a beta (replacing the manual copy),
+  and where to get support.
+
+### Security
+
+- **CodeQL** scans the Python and the card's JavaScript on every push and
+  pull request to `main`, and weekly.
+
 ## [0.1.0b1] - 2026-11-20
 
 ### Overview

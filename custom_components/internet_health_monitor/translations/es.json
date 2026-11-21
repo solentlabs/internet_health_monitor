@@ -17,7 +17,7 @@
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
           "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
-          "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
+          "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo. O escribe una dirección IPv4 o IPv6, como la de un Pi-hole.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
           "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
@@ -40,7 +40,7 @@
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
           "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
-          "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
+          "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo. O escribe una dirección IPv4 o IPv6, como la de un Pi-hole.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
           "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
@@ -79,7 +79,8 @@
     "error": {
       "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
       "data_limit_too_small": "Usa 0 para automático, o 100 MB o más.",
-      "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto."
+      "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto.",
+      "invalid_dns_server": "Introduce una dirección IPv4 o IPv6, o elige un servidor de la lista."
     }
   },
   "options": {
@@ -99,7 +100,7 @@
         "data_description": {
           "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
           "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
-          "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo.",
+          "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo. O escribe una dirección IPv4 o IPv6, como la de un Pi-hole.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
           "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
@@ -134,7 +135,8 @@
     "error": {
       "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
       "data_limit_too_small": "Usa 0 para automático, o 100 MB o más.",
-      "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto."
+      "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto.",
+      "invalid_dns_server": "Introduce una dirección IPv4 o IPv6, o elige un servidor de la lista."
     }
   },
   "selector": {
@@ -370,16 +372,20 @@
         }
       },
       "usage_pings": {
-        "name": "Pings enviados"
+        "name": "Pings enviados",
+        "unit_of_measurement": "pings"
       },
       "usage_traceroutes": {
-        "name": "Traceroutes ejecutados"
+        "name": "Traceroutes ejecutados",
+        "unit_of_measurement": "traceroutes"
       },
       "usage_dns_queries": {
-        "name": "Consultas DNS enviadas"
+        "name": "Consultas DNS enviadas",
+        "unit_of_measurement": "consultas"
       },
       "usage_speed_tests": {
-        "name": "Pruebas de velocidad ejecutadas"
+        "name": "Pruebas de velocidad ejecutadas",
+        "unit_of_measurement": "pruebas"
       },
       "usage_downloaded": {
         "name": "Datos descargados en pruebas de velocidad"
@@ -481,5 +487,10 @@
         }
       }
     }
+  },
+  "common": {
+    "speed_test_done_title": "Prueba de velocidad terminada",
+    "speed_test_done_message": "Descarga {download} Mbit/s, subida {upload} Mbit/s, calificación de bufferbloat {grade}.",
+    "speed_test_failed_title": "La prueba de velocidad falló"
   }
 }

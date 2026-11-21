@@ -40,7 +40,7 @@ ADR-003, measure the latency increase under load and grade it on
 Waveform's scale, R3):
 
 - An active test causes the bloat it measures and costs data, about
-  140 MB on a 100/10 line (README.md § How Much Data Speed Tests Use),
+  140 MB on a 100/10 line (.github/README.md § How Much Data Speed Tests Use),
   so IHM runs one at most nightly, overnight. Bloat from household
   traffic comes and goes during the day; only an always-on signal sees
   it.
@@ -294,7 +294,7 @@ all of these hold:
 
 1. **Off by default.** The user turns it on; nothing is sent until then.
 2. **Transparent.** The option's own description names the service and
-   what is sent, before the user enables it. README.md documents its
+   what is sent, before the user enables it. .github/README.md documents its
    benefits and limits.
 3. **Listed.** `docs/ARCHITECTURE.md § Data Leaving the Host` has a row
    for it.
@@ -321,7 +321,7 @@ rule. Current uses: speed test backends (ADR-003) and hop ownership
   Country is not used: Team Cymru says the service "should not be used
   for IP geolocation" (R15). Chosen over a bundled IP-to-ASN database,
   which would add several MB and age between releases. Limits, stated
-  to users in README.md § Hop Ownership: many home paths have no public
+  to users in .github/README.md § Hop Ownership: many home paths have no public
   address in the first three hops, so the option often finds nothing;
   a router at a handoff between networks can carry the other network's
   address.
@@ -349,7 +349,7 @@ the interval and users do not get a field for it, in setup or options
   within a minute either way. Jitter is measured within each poll
   (ADR-009), so the interval does not change it.
 - **Other intervals:** HA's documented route (polling off, an automation
-  calling `homeassistant.update_entity`; README.md § Polling).
+  calling `homeassistant.update_entity`; .github/README.md § Polling).
 
 **Constraints:**
 
@@ -442,7 +442,7 @@ targets Platinum.
 device name, which defaults to "Internet Health" (`const.DEVICE_NAME`),
 short enough for readable ids (`sensor.internet_health_hop_2_latency_isp`).
 Users who want another prefix rename the device in HA, which offers to
-rename the entity ids to match (README.md § Renaming).
+rename the entity ids to match (.github/README.md § Renaming).
 
 **Constraints:**
 
@@ -470,7 +470,7 @@ The project does not defer work: each is built or cut with a reason.
 | Interface selection on multi-interface hosts | IHM follows the default route, the path the host's own internet traffic takes. Measuring another interface would report a path HA does not use |
 | SNMP router counters | Reading the router is a different job from measuring the path, and needs a credential; IHM stores none. HA's SNMP integration exposes router counters as entities to combine with IHM's (as ADR-002 does with Cable Modem Monitor) |
 | Solent Aggregator hook | ADR-002: combining happens in HA over entities, and any telemetry is a separate opt-in consumer. IHM owes an aggregator only its stable entity ids and units (ADR-001, ADR-002) |
-| Reordering the dashboard card's sections in its form | HA's select selector has no reorder option (only the entity selector reorders, home-assistant.io/docs/blueprint/selectors, read 2026-11-20 [V]). A custom editor would be the card's first code CI cannot test, against the card's design as a thin layer over HA's own cards (DASHBOARD_CARD.md). `generate_dashboard_card` gives the card as YAML to reorder freely (README.md § Your Own Order or Layout) |
+| Reordering the dashboard card's sections in its form | HA's select selector has no reorder option (only the entity selector reorders, home-assistant.io/docs/blueprint/selectors, read 2026-11-20 [V]). A custom editor would be the card's first code CI cannot test, against the card's design as a thin layer over HA's own cards (DASHBOARD_CARD.md). `generate_dashboard_card` gives the card as YAML to reorder freely (.github/README.md § Your Own Order or Layout) |
 
 **Constraint:** Building any of these needs a use case in USE_CASES.md
 and a new decision here.

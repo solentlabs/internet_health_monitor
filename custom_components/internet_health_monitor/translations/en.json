@@ -17,7 +17,7 @@
         "data_description": {
           "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
           "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
-          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
+          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with. Or type an IPv4 or IPv6 address, such as a Pi-hole's.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
@@ -40,7 +40,7 @@
         "data_description": {
           "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
           "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
-          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
+          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with. Or type an IPv4 or IPv6 address, such as a Pi-hole's.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
@@ -79,7 +79,8 @@
     "error": {
       "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service.",
       "data_limit_too_small": "Use 0 for automatic, or 100 MB or more.",
-      "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget."
+      "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget.",
+      "invalid_dns_server": "Enter an IPv4 or IPv6 address, or pick a server from the list."
     }
   },
   "options": {
@@ -99,7 +100,7 @@
         "data_description": {
           "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
           "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
-          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with.",
+          "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with. Or type an IPv4 or IPv6 address, such as a Pi-hole's.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
@@ -134,7 +135,8 @@
     "error": {
       "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service.",
       "data_limit_too_small": "Use 0 for automatic, or 100 MB or more.",
-      "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget."
+      "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget.",
+      "invalid_dns_server": "Enter an IPv4 or IPv6 address, or pick a server from the list."
     }
   },
   "selector": {
@@ -370,16 +372,20 @@
         }
       },
       "usage_pings": {
-        "name": "Pings sent"
+        "name": "Pings sent",
+        "unit_of_measurement": "pings"
       },
       "usage_traceroutes": {
-        "name": "Traceroutes run"
+        "name": "Traceroutes run",
+        "unit_of_measurement": "traceroutes"
       },
       "usage_dns_queries": {
-        "name": "DNS queries sent"
+        "name": "DNS queries sent",
+        "unit_of_measurement": "queries"
       },
       "usage_speed_tests": {
-        "name": "Speed tests run"
+        "name": "Speed tests run",
+        "unit_of_measurement": "tests"
       },
       "usage_downloaded": {
         "name": "Speed test data downloaded"
@@ -481,5 +487,10 @@
         }
       }
     }
+  },
+  "common": {
+    "speed_test_done_title": "Speed test finished",
+    "speed_test_done_message": "Download {download} Mbit/s, upload {upload} Mbit/s, bufferbloat grade {grade}.",
+    "speed_test_failed_title": "Speed test failed"
   }
 }

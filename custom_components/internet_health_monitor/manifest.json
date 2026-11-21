@@ -10,8 +10,7 @@
     "computers_network.monitoring"
   ],
   "codeowners": [
-    "@solentlabs",
-    "@kwschulz"
+    "@solentlabs"
   ],
   "config_flow": true,
   "dependencies": [],
@@ -23,7 +22,7 @@
     "solentlabs.internet_health_monitor_core"
   ],
   "requirements": [
-    "solentlabs-internet-health-monitor-core==0.1.0b1"
+    "solentlabs-internet-health-monitor-core==0.1.0b2"
   ],
-  "version": "0.1.0b1"
+  "version": "0.1.0b2"
 }

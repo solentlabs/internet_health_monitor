@@ -40,11 +40,11 @@ YAML. One schema in `dashboard.py` validates all three.
 | Option | Default | Shows |
 | -------- | --------- | ------- |
 | `include_status` | true | Network Status card: gateway and internet reachable, DNS latency, Refresh diagnostics |
-| `include_hops` | true | One card per hop (Gateway, ISP, Backbone): its current latency, jitter and packet loss |
+| `include_hops` | true | One card per hop (Gateway, ISP, Backbone): its current latency, jitter and packet loss, and its address (the latency sensor's `hop_ip`) |
 | `include_latency` | true | History graphs: hop latency, and DNS latency on its own (its scale would flatten the hops) |
 | `include_jitter` | true | History graph: hop jitter |
 | `include_packet_loss` | true | History graph: hop packet loss |
-| `include_speed_test` | true | Entities card: each speed test reading and Run speed test; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
+| `include_speed_test` | true | Entities card: each speed test reading; Run speed test as its own button card, which asks before it starts; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
 | `graph_hours` | 24 | Hours each graph shows, 1 to 168 |
 
 Renaming or removing an option breaks saved dashboards: the card must
@@ -68,24 +68,34 @@ Errors, raised as translated `ServiceValidationError`:
 A failed poll is not an error: the layout comes from the registry, and
 the entities show their own unavailable state.
 
-The bufferbloat gauges are HA gauge cards from 0 to 500 ms (larger
-values sit at the end), banded at Waveform's grade bounds
-(REFERENCES.md § R3, Core `bufferbloat.py`). Waveform publishes no
-colors, only that "Anything worse than a B may affect video calls,
-gaming, and other real-time applications", so bands up to B take the
-theme's success color and those past it the error color. The first
-gauge reads the grade sensor's `latency_increase_ms`, the larger
-increase, and its bands carry the grades as labels, which HA shows in
-place of the value: the letter, as Waveform grades. The download and
-upload gauges carry no labels, since a letter there would grade each
-direction; they show their increase in ms. The entities card lists
-neither the grade nor the increases, since the gauges show them.
+The bufferbloat gauges are HA gauge cards from 0 to 100 ms, banded at
+Waveform's grade bounds (REFERENCES.md § R3, Core `bufferbloat.py`).
+Waveform publishes no colors, only that "Anything worse than a B may
+affect video calls, gaming, and other real-time applications", so bands
+up to B take the theme's success color and those past it the error
+color. Up to B is 60% of the arc, so a healthy line reads as healthy. A
+larger value pins the needle at the end; HA picks a band's label from
+the real value, not the needle's (frontend `src/components/ha-gauge.ts`,
+`_getSegmentLabel`, read 2026-11-20), so the D and F bands, which start
+past 100, stay, and the letter is still right.
 
-Every row and graph line carries a short name ("Latency", "Gateway"),
-so the device name is not repeated on each line; a name the user gave
-the entity in HA replaces it. Titles and these names are English:
-Lovelace config holds plain text, and the frontend has no translation
-hook for a custom integration's card.
+Run speed test is a `button` card, not a row of the entities card,
+with a `confirmation` on its `tap_action`: an entities row's button
+presses without the row's confirmation when its own Press is clicked
+(Cable Modem Monitor found this; its Restart button is built the same
+way). The confirmation says the test fills the connection for about 20
+seconds and counts toward the data budget.
+
+The first gauge reads the grade sensor's `latency_increase_ms`, the
+larger increase, and its bands carry the grades as labels, which HA
+shows in place of the value: the letter, as Waveform grades. The
+download and upload gauges carry no labels, since a letter there would
+grade each direction; they show their increase in ms. The entities card
+lists neither the grade nor the increases, since the gauges show them.
+Each gauge sits in a `conditional` card that shows it only while its
+entity is neither `unknown` nor `unavailable`: HA's gauge shows an error
+for a value that is not a number, which every gauge would show before
+the first speed test.
 
 ## Action
 
@@ -95,7 +105,7 @@ into a dashboard instead of using the card. Registered in `async_setup`.
 It is also how a user reorders the card's sections: the card's form has
 no reordering, since HA's form selectors cannot reorder a list of
 options and a custom editor was cut (ARCHITECTURE_DECISIONS.md §
-ADR-011). README.md § Your Own Order or Layout gives the steps, and the
+ADR-011). .github/README.md § Your Own Order or Layout gives the steps, and the
 README's card section and the action's description point to them.
 
 ## Card

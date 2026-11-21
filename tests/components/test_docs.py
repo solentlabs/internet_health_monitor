@@ -14,7 +14,7 @@ from solentlabs.internet_health_monitor_core.speed_test import SpeedTestResult
 from .conftest import SetupEntry
 
 ROOT = Path(__file__).resolve().parents[2]
-DOCS = [ROOT / "README.md", ROOT / "docs" / "dashboard-examples.md"]
+DOCS = [ROOT / ".github" / "README.md", ROOT / "docs" / "dashboard-examples.md"]
 ENTITY_ID = re.compile(r"\b(?:sensor|binary_sensor|button)\.internet_health_[a-z0-9_]+")
 
 
@@ -45,4 +45,4 @@ def test_readme_data_table_matches_core() -> None:
         cells = [f"{down}/{up}", f"about {round(full_test_mb(down, up), -1):.0f} MB", f"{limit.total_mb} MB"]
         cells += [_spacing(every_days(automatic_limit(last, b), b)) for b in TABLE_BUDGETS_GB]
         rows.append(f"| {' | '.join(cells)} |")
-    assert "\n".join(rows) in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "\n".join(rows) in (ROOT / ".github" / "README.md").read_text(encoding="utf-8")
