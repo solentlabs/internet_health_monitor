@@ -16,15 +16,14 @@ NAME = "Internet Health Monitor"
 DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
 TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet_health_monitor#troubleshooting"
-VERSION = "0.1.0b2"  # must equal manifest.json "version" (tests/components/test_const.py)
+VERSION = "0.1.0b3"  # must equal manifest.json "version" (tests/components/test_const.py)
 
 # Option keys
-CONF_ENABLE_GATEWAY_MONITORING = "enable_gateway_monitoring"
-CONF_ENABLE_DNS_MONITORING = "enable_dns_monitoring"
 CONF_LONG_TERM_STATISTICS = "long_term_statistics"  # state_class on measurement sensors (ADR-013)
 CONF_USAGE_TOTALS = "usage_totals"  # the six usage total sensors (.github/README.md § Usage Totals)
 CONF_DNS_SERVER = "dns_server"
 CONF_PING_COUNT = "ping_count"
+CONF_INTERNET_REFERENCE = "internet_reference"  # pinged every poll; on by default (ADR-015)
 CONF_HOP_OWNERSHIP = "hop_ownership"  # opt-in; sends hop IPs to Team Cymru (ADR-006)
 CONF_SPEED_TEST_BACKEND = "speed_test_backend"  # opt-in; docs/SPEED_TEST_BACKENDS.md (ADR-003, ADR-006)
 CONF_SPEED_TEST_DATA_LIMIT = "speed_test_data_limit_mb"  # 0: automatic, from the last result
@@ -45,4 +44,13 @@ DNS_SERVERS: dict[str, str] = {
     "google": "8.8.8.8",
     "quad9": "9.9.9.9",
     "opendns": "208.67.222.222",
+}
+
+# Internet reference choice -> the address Core pings; None is off. Keys are translation
+# keys (selector.internet_reference); the providers are the DNS server list's (ADR-015).
+INTERNET_REFERENCE_OFF = "off"
+DEFAULT_INTERNET_REFERENCE = "cloudflare"
+INTERNET_REFERENCES: dict[str, str | None] = {
+    INTERNET_REFERENCE_OFF: None,
+    **{name: address for name, address in DNS_SERVERS.items() if name != DEFAULT_DNS_SERVER},
 }

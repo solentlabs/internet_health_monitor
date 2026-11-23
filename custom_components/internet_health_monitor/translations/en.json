@@ -5,46 +5,42 @@
         "title": "Internet Health Monitor",
         "description": "Configure network health monitoring",
         "data": {
-          "enable_gateway_monitoring": "Monitor gateway and hops",
-          "enable_dns_monitoring": "Monitor DNS",
           "dns_server": "DNS server",
           "ping_count": "Pings per target",
+          "internet_reference": "Internet reference",
           "hop_ownership": "Look up who runs each hop",
           "usage_totals": "Usage totals",
           "long_term_statistics": "Long-term statistics",
           "speed_test_backend": "Speed test service"
         },
         "data_description": {
-          "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
-          "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
           "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with. Or type an IPv4 or IPv6 address, such as a Pi-hole's.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
+          "internet_reference": "On by default. Each poll, ping this address like a hop: latency, jitter and packet loss past your ISP, beside the three hops. Sends a few pings a minute to the chosen provider, which sees your public IP address; IHM is not affiliated with any of them. Pick another provider, type a public IPv4 address, or choose Off.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
-          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
+          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them, so they add about 10 to 15 MB to its database each year. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
           "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare says it truncates that address to /24 (IPv4) or /48 (IPv6), and IHM sends it no results. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },
       "reconfigure": {
         "title": "Reconfigure Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Monitor gateway and hops",
-          "enable_dns_monitoring": "Monitor DNS",
           "dns_server": "DNS server",
           "ping_count": "Pings per target",
+          "internet_reference": "Internet reference",
           "hop_ownership": "Look up who runs each hop",
           "usage_totals": "Usage totals",
           "long_term_statistics": "Long-term statistics",
           "speed_test_backend": "Speed test service"
         },
         "data_description": {
-          "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
-          "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
           "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with. Or type an IPv4 or IPv6 address, such as a Pi-hole's.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
+          "internet_reference": "On by default. Each poll, ping this address like a hop: latency, jitter and packet loss past your ISP, beside the three hops. Sends a few pings a minute to the chosen provider, which sees your public IP address; IHM is not affiliated with any of them. Pick another provider, type a public IPv4 address, or choose Off.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
-          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
+          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them, so they add about 10 to 15 MB to its database each year. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
           "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare says it truncates that address to /24 (IPv4) or /48 (IPv6), and IHM sends it no results. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },
@@ -80,7 +76,8 @@
       "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service.",
       "data_limit_too_small": "Use 0 for automatic, or 100 MB or more.",
       "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget.",
-      "invalid_dns_server": "Enter an IPv4 or IPv6 address, or pick a server from the list."
+      "invalid_dns_server": "Enter an IPv4 or IPv6 address, or pick a server from the list.",
+      "invalid_internet_reference": "Enter a public IPv4 address, or pick a provider from the list."
     }
   },
   "options": {
@@ -88,23 +85,21 @@
       "init": {
         "title": "Internet Health Monitor Options",
         "data": {
-          "enable_gateway_monitoring": "Monitor gateway and hops",
-          "enable_dns_monitoring": "Monitor DNS",
           "dns_server": "DNS server",
           "ping_count": "Pings per target",
+          "internet_reference": "Internet reference",
           "hop_ownership": "Look up who runs each hop",
           "usage_totals": "Usage totals",
           "long_term_statistics": "Long-term statistics",
           "speed_test_backend": "Speed test service"
         },
         "data_description": {
-          "enable_gateway_monitoring": "Each poll, ping the gateway and the next two hops toward the internet: latency, jitter and packet loss.",
-          "enable_dns_monitoring": "Each poll, time one uncached lookup at the DNS server below.",
           "dns_server": "Server whose lookup time is measured. Auto-detect uses the one this host is configured with. Or type an IPv4 or IPv6 address, such as a Pi-hole's.",
           "ping_count": "Pings sent to each target every poll (1 to 10). More pings give steadier readings and finer packet loss.",
+          "internet_reference": "On by default. Each poll, ping this address like a hop: latency, jitter and packet loss past your ISP, beside the three hops. Sends a few pings a minute to the chosen provider, which sees your public IP address; IHM is not affiliated with any of them. Pick another provider, type a public IPv4 address, or choose Off.",
           "hop_ownership": "Off by default. Shows the network operator (ASN) of each public hop. Sends those hop addresses (your ISP's routers, not your own address) to Team Cymru's free IP-to-ASN service, through your DNS server. Private and shared ISP addresses have no owner and are never sent.",
           "usage_totals": "Off by default. Adds six diagnostic sensors: pings sent, traceroutes run, DNS queries sent, speed tests run, and speed test data downloaded and uploaded, counted since install. Counting goes on while this is off.",
-          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
+          "long_term_statistics": "Off by default. Keeps hourly statistics of latency, jitter, packet loss, DNS latency and speed test readings, for trends over months; Home Assistant never deletes them, so they add about 10 to 15 MB to its database each year. Off, history still covers the last 10 days. Turning it off later makes Home Assistant warn once per sensor until you delete its statistics in Developer tools > Statistics.",
           "speed_test_backend": "Off by default. A test downloads and uploads for up to 10 s each way with the chosen service, which sees your public IP address. M-Lab publishes every result with that address, permanently; you are asked to confirm. Cloudflare says it truncates that address to /24 (IPv4) or /48 (IPv6), and IHM sends it no results. LibreSpeed uses volunteer servers. IHM is not affiliated with any of them. The next screen sets when tests run and how much data they may use."
         }
       },
@@ -136,13 +131,23 @@
       "mlab_consent_required": "Confirm to use M-Lab, or close this dialog and choose another service.",
       "data_limit_too_small": "Use 0 for automatic, or 100 MB or more.",
       "data_limit_over_budget": "One test could use more than the whole data budget. Lower the data limit, use 0 for automatic, or raise the budget.",
-      "invalid_dns_server": "Enter an IPv4 or IPv6 address, or pick a server from the list."
+      "invalid_dns_server": "Enter an IPv4 or IPv6 address, or pick a server from the list.",
+      "invalid_internet_reference": "Enter a public IPv4 address, or pick a provider from the list."
     }
   },
   "selector": {
     "dns_server": {
       "options": {
         "auto": "Auto-detect",
+        "cloudflare": "Cloudflare (1.1.1.1)",
+        "google": "Google (8.8.8.8)",
+        "quad9": "Quad9 (9.9.9.9)",
+        "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "internet_reference": {
+      "options": {
+        "off": "Off",
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
@@ -179,16 +184,25 @@
         "name": "Hop 2 packet loss (ISP)"
       },
       "hop_3_latency": {
-        "name": "Hop 3 latency (backbone)"
+        "name": "Hop 3 latency"
       },
       "hop_3_jitter": {
-        "name": "Hop 3 jitter (backbone)"
+        "name": "Hop 3 jitter"
       },
       "hop_3_packet_loss": {
-        "name": "Hop 3 packet loss (backbone)"
+        "name": "Hop 3 packet loss"
       },
       "dns_latency": {
         "name": "DNS latency"
+      },
+      "internet_latency": {
+        "name": "Internet latency"
+      },
+      "internet_jitter": {
+        "name": "Internet jitter"
+      },
+      "internet_packet_loss": {
+        "name": "Internet packet loss"
       },
       "connection_type": {
         "name": "Connection type",

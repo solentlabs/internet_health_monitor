@@ -14,7 +14,12 @@ from typing import TextIO
 import aiohttp
 
 from . import mlab_runs
-from .network_diagnostics import DEFAULT_DNS_SERVER, NetworkDiagnostics, NetworkDiagnosticsConfig
+from .network_diagnostics import (
+    DEFAULT_DNS_SERVER,
+    DEFAULT_INTERNET_REFERENCE,
+    NetworkDiagnostics,
+    NetworkDiagnosticsConfig,
+)
 from .speed_test import BACKEND_NAMES, DataLimit, SpeedTestError, run_speed_test
 from .timing import (
     DEFAULT_PING_COUNT,
@@ -67,6 +72,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="look up each public hop's network operator (sends hop IPs to Team Cymru)",
     )
     parser.add_argument(
+        "--internet-reference",
+        default=DEFAULT_INTERNET_REFERENCE,
+        help="public IPv4 address pinged each poll as a reading past your ISP, or 'off'",
+    )
+    parser.add_argument(
         "--speed-test",
         choices=BACKEND_NAMES,
         help="run one speed test with this service and exit (docs/SPEED_TEST_BACKENDS.md); the service sees your IP",
@@ -101,13 +111,19 @@ async def speed_test(args: argparse.Namespace, out: TextIO, err: TextIO, delay_s
     return 0
 
 
+def diagnostics_config(args: argparse.Namespace) -> NetworkDiagnosticsConfig:
+    """The diagnostics config the parsed options describe."""
+    return NetworkDiagnosticsConfig(
+        ping_count=args.ping_count,
+        dns_server=args.dns_server,
+        hop_ownership=args.hop_ownership,
+        internet_reference=None if args.internet_reference == "off" else args.internet_reference,
+    )
+
+
 async def run(args: argparse.Namespace, out: TextIO) -> None:
     """Poll once, or every interval seconds, writing each result as a JSON line."""
-    diagnostics = NetworkDiagnostics(
-        config=NetworkDiagnosticsConfig(
-            ping_count=args.ping_count, dns_server=args.dns_server, hop_ownership=args.hop_ownership
-        )
-    )
+    diagnostics = NetworkDiagnostics(config=diagnostics_config(args))
     while True:
         result = await diagnostics.run_diagnostics()
         out.write(json.dumps(result.to_dict()) + "\n")

@@ -65,8 +65,6 @@ class InternetHealthRuntimeData:
 
     coordinator: InternetHealthCoordinator
     diagnostics: NetworkDiagnostics
-    enable_gateway: bool
-    enable_dns: bool
     # Usage total sensors exist only when chosen; the totals are kept either way.
     usage_totals: bool
     # Measurement sensors carry state_class only when chosen: HA never purges their statistics (ADR-013).

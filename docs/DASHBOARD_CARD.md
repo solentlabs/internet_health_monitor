@@ -40,11 +40,11 @@ YAML. One schema in `dashboard.py` validates all three.
 | Option | Default | Shows |
 | -------- | --------- | ------- |
 | `include_status` | true | Network Status card: gateway and internet reachable, DNS latency, Refresh diagnostics |
-| `include_hops` | true | One card per hop (Gateway, ISP, Backbone): its current latency, jitter and packet loss, and its address (the latency sensor's `hop_ip`) |
-| `include_latency` | true | History graphs: hop latency, and DNS latency on its own (its scale would flatten the hops) |
-| `include_jitter` | true | History graph: hop jitter |
-| `include_packet_loss` | true | History graph: hop packet loss |
-| `include_speed_test` | true | Entities card: each speed test reading; Run speed test as its own button card, which asks before it starts; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
+| `include_hops` | true | One card per hop (Gateway, ISP, Hop 3), then an Internet reference card: current latency, jitter and packet loss, and the address (the latency sensor's `hop_ip`, or `reference_ip`) |
+| `include_latency` | true | History graphs: latency for the hops and the internet reference (line "Internet"), and DNS latency on its own (its scale would flatten the hops) |
+| `include_jitter` | true | History graph: jitter for the hops and the internet reference |
+| `include_packet_loss` | true | History graph: packet loss for the hops and the internet reference |
+| `include_speed_test` | true | Entities card: each speed test reading except data used (one test's use says little; usage totals keep the running total); Run speed test as its own button card, which asks before it starts; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
 | `graph_hours` | 24 | Hours each graph shows, 1 to 168 |
 
 Renaming or removing an option breaks saved dashboards: the card must
@@ -55,7 +55,7 @@ map the old key, and CHANGELOG.md records it.
 `build_card_config` returns one `vertical-stack` holding the parts
 switched on, in the order of the table above. Entity ids come from the entity registry by unique id, so a
 renamed device or entity still resolves (ADR-010). Entities that were
-not created (gateway or DNS monitoring off) or that the user disabled
+not created (internet reference Off) or that the user disabled
 are left out, and a part with no entities is left out.
 
 Errors, raised as translated `ServiceValidationError`:

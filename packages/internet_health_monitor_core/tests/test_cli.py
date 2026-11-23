@@ -52,6 +52,13 @@ PARSE_CASES = [
     ("hop ownership", ["--hop-ownership"],                  ("auto", 3, None, True)),
 ]
 
+# argv -> internet reference in the diagnostics config (ADR-015): on by default, "off" turns it off
+INTERNET_REFERENCE_CASES: list[tuple[str, list[str], str | None]] = [
+    ("default",  [],                                  "1.1.1.1"),
+    ("chosen",   ["--internet-reference", "9.9.9.9"], "9.9.9.9"),
+    ("off",      ["--internet-reference", "off"],     None),
+]
+
 # argv rejected by the parser
 REJECT_CASES = [
     ("ping count 0",     ["--ping-count", "0"]),
@@ -84,6 +91,15 @@ def test_parse(description: str, argv: list[str], expected: tuple[str, int, int 
     assert (args.dns_server, args.ping_count, args.interval, args.hop_ownership) == expected
 
 
+@pytest.mark.parametrize(
+    ("description", "argv", "expected"), INTERNET_REFERENCE_CASES, ids=[c[0] for c in INTERNET_REFERENCE_CASES]
+)
+def test_internet_reference_option(description: str, argv: list[str], expected: str | None) -> None:
+    """The command line pings the same default reference as the integration, unless told otherwise."""
+    args = cli.build_parser().parse_args(argv)
+    assert cli.diagnostics_config(args).internet_reference == expected
+
+
 @pytest.mark.parametrize(("description", "argv"), REJECT_CASES, ids=[c[0] for c in REJECT_CASES])
 def test_parse_rejects(description: str, argv: list[str]) -> None:
     """Out-of-range values match the integration's limits and are refused."""
@@ -94,7 +110,9 @@ def test_parse_rejects(description: str, argv: list[str]) -> None:
 async def test_single_poll_prints_one_json_line() -> None:
     """Without --interval, one poll runs and its result is one JSON line."""
     out = io.StringIO()
-    args = argparse.Namespace(dns_server="auto", ping_count=3, interval=None, hop_ownership=False)
+    args = argparse.Namespace(
+        dns_server="auto", ping_count=3, interval=None, hop_ownership=False, internet_reference="1.1.1.1"
+    )
     with patch.object(NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())):
         await cli.run(args, out)
 
@@ -117,7 +135,9 @@ async def test_interval_polls_until_stopped() -> None:
             raise StopLoopError
 
     out = io.StringIO()
-    args = argparse.Namespace(dns_server="auto", ping_count=3, interval=60, hop_ownership=False)
+    args = argparse.Namespace(
+        dns_server="auto", ping_count=3, interval=60, hop_ownership=False, internet_reference="1.1.1.1"
+    )
     with (
         patch.object(NetworkDiagnostics, "run_diagnostics", AsyncMock(return_value=_result())),
         patch.object(asyncio, "sleep", fake_sleep),

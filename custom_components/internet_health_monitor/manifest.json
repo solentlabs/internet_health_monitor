@@ -3,6 +3,7 @@
   "name": "Internet Health Monitor",
   "after_dependencies": [
     "frontend",
+    "hassio",
     "http",
     "websocket_api"
   ],
@@ -22,7 +23,7 @@
     "solentlabs.internet_health_monitor_core"
   ],
   "requirements": [
-    "solentlabs-internet-health-monitor-core==0.1.0b2"
+    "solentlabs-internet-health-monitor-core==0.1.0b3"
   ],
-  "version": "0.1.0b2"
+  "version": "0.1.0b3"
 }

@@ -588,3 +588,64 @@ asks for it (ADR-011's constraint). Until then:
 **Constraint:** Code that takes an address accepts either family and
 checks the family where it matters, through `PATH_IP_VERSION`; no new
 IPv4-only parsing.
+
+---
+
+## ADR-015: Internet reference ping, on by default, to Cloudflare
+
+**Status:** Accepted 2026-11-23
+
+**Context:** Hops 1 and 2 place a slowdown at home or on the line
+(UC-3, UC-8). Nothing places one past the ISP (UC-9). Hop 3 is the
+router after the ISP's first one, often still inside the ISP; a router
+answers pings to itself as a side task, and the router at a given
+position can change. DNS latency includes the resolver's own lookup
+work, and on auto it may time a resolver at home (ARCHITECTURE.md
+§ One Poll).
+
+**Decision:**
+
+- **A fourth ping target, the internet reference.** Each poll sends it
+  `ping_count` pings and reports latency, jitter and packet loss, like a
+  hop. It is a probe, not an outside service (ADR-006); the option's
+  description still names the provider and how often it is pinged.
+- **On by default, Cloudflare 1.1.1.1.** The user can pick Google,
+  Quad9 or OpenDNS, type any public IPv4 address, or turn it off.
+  Cloudflare because its terms name the 1.1.1.1 resolver and limit only
+  use that would "overburden" or "disrupt" it; Google's terms admit use
+  only "by the means described in the documentation"; Quad9's and
+  OpenDNS's current terms could not be found
+  ([REFERENCES.md § R27](REFERENCES.md#r27-public-resolver-terms)). It
+  also matches IHM's DNS fallback and default speed test service.
+- **A public IPv4 address only**, so it is past the ISP and on the
+  measured path (ADR-014).
+- **The traceroute aims at it.** Trace target: the reference when set,
+  else the DNS server if public, else `DEFAULT_TRACE_TARGET`.
+- **Off is its only switch.** Gateway, hops and DNS always run
+  (ADR-016); choosing Off stops the reference and removes its sensors.
+
+**Constraint:** A new default provider needs its terms read and this
+ADR updated first.
+
+---
+
+## ADR-016: Gateway, hops and DNS always run
+
+**Status:** Accepted 2026-11-23
+
+**Context:** "Monitor gateway and hops" and "Monitor DNS" switches came
+with the code IHM started from. No use case, ADR or doc gave a reason to
+turn either off: the probes are small (UC-5), and a network that blocks
+them shows that as unknown or loss, which is itself the reading. The
+internet reference (ADR-015) made the question concrete: its own Off
+switch sat beside two others, so turning "monitoring" off still pinged
+Cloudflare.
+
+**Decision:** Remove both switches. The gateway, hops 1 to 3 and DNS are
+measured on every install. The internet reference's Off is the only
+probe switch, for the one reason with weight: not contacting an outside
+provider. Hop ownership and speed tests keep their own opt-in options
+(ADR-006). Old option values left in an entry are ignored; IHM is
+unreleased, so no migration.
+
+**Constraint:** A new switch for a probe needs a use case first.

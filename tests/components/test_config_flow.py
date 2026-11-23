@@ -18,9 +18,8 @@ from custom_components.internet_health_monitor.config_flow import (
 )
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
-    CONF_ENABLE_DNS_MONITORING,
-    CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_INTERNET_REFERENCE,
     CONF_LONG_TERM_STATISTICS,
     CONF_PING_COUNT,
     CONF_SPEED_TEST_AUTOMATIC,
@@ -46,11 +45,10 @@ def speed_test_result(hass_storage: dict[str, Any]) -> None:
 
 
 USER_INPUT: dict[str, Any] = {
-    CONF_ENABLE_GATEWAY_MONITORING: True,
-    CONF_ENABLE_DNS_MONITORING: False,
     CONF_DNS_SERVER: "cloudflare",
     CONF_PING_COUNT: 5,
     CONF_HOP_OWNERSHIP: True,
+    CONF_INTERNET_REFERENCE: "quad9",
     CONF_USAGE_TOTALS: True,
     CONF_LONG_TERM_STATISTICS: True,
     CONF_SPEED_TEST_BACKEND: "cloudflare",
@@ -145,6 +143,45 @@ async def test_dns_server_typed_address(hass: HomeAssistant, value: str, valid: 
         assert result.get("options", {})[CONF_DNS_SERVER] == value.strip()
     else:
         assert (result.get("step_id"), result.get("errors")) == ("user", {CONF_DNS_SERVER: "invalid_dns_server"})
+
+
+# Internet reference typed into the list -> accepted: a provider from the list, Off, or a
+# public IPv4 address, so it is past the ISP and on the measured path (ADR-014, ADR-015).
+# fmt: off
+REFERENCE_CASES: list[tuple[str, bool]] = [
+    ("cloudflare",       True),   # from the list
+    ("off",              True),
+    ("8.8.4.4",          True),   # a public IPv4 address
+    (" 8.8.4.4 ",        True),   # pasted with spaces
+    ("192.168.1.5",      False),  # at home, not past the ISP
+    ("100.64.0.1",       False),  # ISP shared space
+    ("2606:4700::1111",  False),  # IPv6 (ADR-014)
+    ("one.one.one.one",  False),  # a name
+    ("",                 False),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("value", "valid"), REFERENCE_CASES)
+async def test_internet_reference_typed_address(hass: HomeAssistant, value: str, valid: bool) -> None:
+    """The internet reference is a listed provider, Off, or a typed public IPv4 address."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**USER_INPUT, CONF_INTERNET_REFERENCE: value, CONF_SPEED_TEST_BACKEND: "none"}
+    )
+    if valid:
+        assert result.get("type") is FlowResultType.CREATE_ENTRY
+        assert result.get("options", {})[CONF_INTERNET_REFERENCE] == value.strip()
+    else:
+        assert (result.get("step_id"), result.get("errors")) == (
+            "user",
+            {CONF_INTERNET_REFERENCE: "invalid_internet_reference"},
+        )
+
+
+def test_internet_reference_defaults_to_cloudflare() -> None:
+    """A new install pings Cloudflare as its internet reference (ADR-015)."""
+    assert _defaults(build_schema({}))[CONF_INTERNET_REFERENCE] == "cloudflare"
 
 
 async def test_dns_server_checked_on_every_screen(hass: HomeAssistant, setup_entry: SetupEntry) -> None:

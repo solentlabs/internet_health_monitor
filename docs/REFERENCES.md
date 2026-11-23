@@ -525,6 +525,76 @@ Read 2026-11-20 [V]:
   (<https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/>):
   one workflow, `publish-to-pypi` with `needs: build`, on tags only.
 
+## R26. Local DNS relays
+
+Read 2026-11-22 [V]:
+
+- Home Assistant Supervisor network info, `aiohasupervisor` 0.6.0
+  `models/network.py` (local copy): each interface reports `primary`
+  and `ipv4.nameservers`, the host's own DNS servers; `docker.dns` is
+  the Supervisor's DNS address on its internal network. On an HA OS
+  host that address, 172.30.32.3, is what `/etc/resolv.conf` names
+  inside HA [V, a user's diagnostics download, 2026-11-22].
+- Docker (<https://docs.docker.com/engine/network/>, "DNS services"):
+  containers on a custom network "use Docker's embedded DNS server";
+  "The embedded DNS server address is `127.0.0.11`", and it "forwards
+  external DNS lookups to the DNS servers configured on the host."
+- systemd-resolved
+  (<https://www.freedesktop.org/software/systemd/man/latest/systemd-resolved.service.html>):
+  "provides a local DNS stub listener on the IP addresses 127.0.0.53
+  and 127.0.0.54"; its stub `resolv.conf` "lists the 127.0.0.53 DNS
+  stub (see above) as the only DNS server."
+
+## R27. Public resolver terms
+
+Read 2026-11-23 for pinging a resolver address every poll
+(ARCHITECTURE_DECISIONS.md § ADR-015). None of the pages mentions ICMP
+or ping as permitted or prohibited, and none publishes a client rate
+limit [V].
+
+- **Cloudflare.** Website and Online Services Terms
+  (<https://www.cloudflare.com/website-terms/>, effective 2025-08-01):
+  Online Services include "the 1.1.1.1 Public DNS Resolver service";
+  § 7: "You may not use the Websites or Online Services in any manner
+  that could damage, disable, overburden, disrupt or impair any
+  Cloudflare servers". Resolver privacy
+  (<https://developers.cloudflare.com/1.1.1.1/privacy/public-dns-resolver/>):
+  "Cloudflare will not retain the source IP from DNS queries to the
+  Public Resolver in non-volatile storage."
+- **Google Public DNS.** Terms
+  (<https://developers.google.com/speed/public-dns/terms>) bind users to
+  the Google APIs Terms of Service
+  (<https://developers.google.com/terms>, 2021-11-09): "You will only
+  access (or attempt to access) an API by the means described in the
+  documentation of that API." The FAQ
+  (<https://developers.google.com/speed/public-dns/faq>) discusses users
+  who "run `ping` or `traceroute` against the Google Public DNS
+  resolvers", without permitting or forbidding it.
+- **Quad9.** No terms page found: <https://quad9.net/service/terms-of-use>
+  returns 404, and the privacy policy and FAQ do not link one. Privacy
+  policy (<https://quad9.net/privacy/policy/>): "Quad9 does not collect
+  or record user IP addresses."
+- **OpenDNS.** <https://www.opendns.com/terms-of-service/> redirects to
+  Cisco Umbrella, whose current terms are the Cisco End User License
+  Agreement (not read); the archived 2016 terms cover enterprise
+  services only.
+
+## R28. Database space, measured
+
+Measured 2026-11-23 [V, local measurement] with
+`scripts/dev/measure_recorder_size.py`: Home Assistant's own recorder
+tables (schema 53, HA 2026.10), SQLite, vacuumed before each size.
+
+- **State history** (10 days, purged after; always recorded): one row
+  per change, assuming each reading that changes most polls changes
+  every poll. Default options (9 such readings): 18.6 MB; internet
+  reference Off (7): 14.4 MB; Usage totals on adds 2: +4.2 MB.
+- **Long-term statistics** (option on): hourly mean, min and max per
+  measurement sensor, never purged: 19 sensors with a speed test
+  service, 14.4 MB a year; 13 without, 9.8 MB; internet reference Off,
+  12.1 and 7.5 MB. Their 5-minute rows, kept 10 days: 2.4 to 4.7 MB,
+  held level.
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

@@ -27,13 +27,13 @@ from homeassistant.helpers.selector import (
 
 from solentlabs.internet_health_monitor_core import timing
 from solentlabs.internet_health_monitor_core.data_plan import automatic_limit, every_days, most_tests
+from solentlabs.internet_health_monitor_core.network_diagnostics import is_traceable
 from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedTestResult
 
 from .const import (
     CONF_DNS_SERVER,
-    CONF_ENABLE_DNS_MONITORING,
-    CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_INTERNET_REFERENCE,
     CONF_LONG_TERM_STATISTICS,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
@@ -44,9 +44,11 @@ from .const import (
     CONF_SPEED_TEST_DATA_LIMIT,
     CONF_USAGE_TOTALS,
     DEFAULT_DNS_SERVER,
+    DEFAULT_INTERNET_REFERENCE,
     DEFAULT_PING_COUNT,
     DNS_SERVERS,
     DOMAIN,
+    INTERNET_REFERENCES,
     NAME,
     PING_COUNT_MAX,
     PING_COUNT_MIN,
@@ -57,10 +59,9 @@ from .const import (
 # Field -> default when the user has never set it. One list for setup and
 # options, so the two forms cannot drift.
 DEFAULTS: dict[str, Any] = {
-    CONF_ENABLE_GATEWAY_MONITORING: True,
-    CONF_ENABLE_DNS_MONITORING: True,
     CONF_DNS_SERVER: DEFAULT_DNS_SERVER,
     CONF_PING_COUNT: DEFAULT_PING_COUNT,
+    CONF_INTERNET_REFERENCE: DEFAULT_INTERNET_REFERENCE,
     CONF_HOP_OWNERSHIP: False,
     CONF_USAGE_TOTALS: False,
     CONF_LONG_TERM_STATISTICS: False,
@@ -98,12 +99,6 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
 
     return probatio.Schema(
         {
-            probatio.Required(CONF_ENABLE_GATEWAY_MONITORING, default=default(CONF_ENABLE_GATEWAY_MONITORING)): (
-                BooleanSelector()
-            ),
-            probatio.Required(
-                CONF_ENABLE_DNS_MONITORING, default=default(CONF_ENABLE_DNS_MONITORING)
-            ): BooleanSelector(),
             probatio.Required(CONF_DNS_SERVER, default=default(CONF_DNS_SERVER)): SelectSelector(
                 SelectSelectorConfig(
                     options=list(DNS_SERVERS),
@@ -117,6 +112,14 @@ def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
                     NumberSelectorConfig(min=PING_COUNT_MIN, max=PING_COUNT_MAX, step=1, mode=NumberSelectorMode.BOX)
                 ),
                 probatio.Coerce(int),
+            ),
+            probatio.Required(CONF_INTERNET_REFERENCE, default=default(CONF_INTERNET_REFERENCE)): SelectSelector(
+                SelectSelectorConfig(
+                    options=list(INTERNET_REFERENCES),
+                    mode=SelectSelectorMode.DROPDOWN,
+                    translation_key=CONF_INTERNET_REFERENCE,
+                    custom_value=True,
+                )
             ),
             probatio.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),
             probatio.Required(CONF_USAGE_TOTALS, default=default(CONF_USAGE_TOTALS)): BooleanSelector(),
@@ -196,15 +199,23 @@ def last_result(entry: ConfigEntry | None) -> SpeedTestResult | None:
 
 
 def monitoring_errors(user_input: dict[str, Any]) -> dict[str, str]:
-    """Check the monitoring screen; a typed DNS server must be an IP address, and is saved trimmed."""
+    """Check the monitoring screen; typed addresses are saved trimmed.
+
+    A typed DNS server must be an IP address; a typed internet reference a public
+    IPv4 address, so it is past the ISP and on the measured path (ADR-014, ADR-015).
+    """
+    errors: dict[str, str] = {}
     server = user_input[CONF_DNS_SERVER] = str(user_input[CONF_DNS_SERVER]).strip()
-    if server in DNS_SERVERS:
-        return {}
-    try:
-        ipaddress.ip_address(server)
-    except ValueError:
-        return {CONF_DNS_SERVER: "invalid_dns_server"}
-    return {}
+    if server not in DNS_SERVERS:
+        try:
+            ipaddress.ip_address(server)
+        except ValueError:
+            errors[CONF_DNS_SERVER] = "invalid_dns_server"
+    reference = str(user_input.get(CONF_INTERNET_REFERENCE, DEFAULT_INTERNET_REFERENCE)).strip()
+    user_input[CONF_INTERNET_REFERENCE] = reference
+    if reference not in INTERNET_REFERENCES and not is_traceable(reference):
+        errors[CONF_INTERNET_REFERENCE] = "invalid_internet_reference"
+    return errors
 
 
 def needs_consent(options: Mapping[str, Any]) -> bool:

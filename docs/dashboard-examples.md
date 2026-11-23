@@ -16,7 +16,7 @@ entities:
     name: Hop 1
   - entity: sensor.internet_health_hop_2_latency_isp
     name: Hop 2
-  - entity: sensor.internet_health_hop_3_latency_backbone
+  - entity: sensor.internet_health_hop_3_latency
     name: Hop 3
   - entity: sensor.internet_health_dns_latency
     name: DNS
@@ -35,8 +35,8 @@ entities:
     name: Hop 1 (Gateway)
   - entity: sensor.internet_health_hop_2_latency_isp
     name: Hop 2 (ISP)
-  - entity: sensor.internet_health_hop_3_latency_backbone
-    name: Hop 3 (Backbone)
+  - entity: sensor.internet_health_hop_3_latency
+    name: Hop 3
   - entity: sensor.internet_health_dns_latency
     name: DNS
 ```
@@ -91,7 +91,7 @@ entities:
   - entity: sensor.internet_health_hop_2_latency_isp
     name: Hop 2
     color: "#2196F3"
-  - entity: sensor.internet_health_hop_3_latency_backbone
+  - entity: sensor.internet_health_hop_3_latency
     name: Hop 3
     color: "#FF9800"
   - entity: sensor.internet_health_dns_latency
@@ -127,8 +127,8 @@ entities:
     name: Hop 1 (Gateway)
   - entity: sensor.internet_health_hop_2_latency_isp
     name: Hop 2 (ISP)
-  - entity: sensor.internet_health_hop_3_latency_backbone
-    name: Hop 3 (Backbone)
+  - entity: sensor.internet_health_hop_3_latency
+    name: Hop 3
   - type: divider
   - entity: sensor.internet_health_dns_latency
   - type: divider
@@ -171,7 +171,7 @@ content: >
   |-----|--------|---------|
   | 1 | Gateway | {{ states('sensor.internet_health_hop_1_latency_gateway') }} ms |
   | 2 | ISP | {{ states('sensor.internet_health_hop_2_latency_isp') }} ms |
-  | 3 | Backbone | {{ states('sensor.internet_health_hop_3_latency_backbone') }} ms |
+  | 3 | Next router | {{ states('sensor.internet_health_hop_3_latency') }} ms |
   | - | DNS | {{ states('sensor.internet_health_dns_latency') }} ms |
 
   ---
@@ -210,7 +210,7 @@ cards:
         name: Hop 1
       - entity: sensor.internet_health_hop_2_latency_isp
         name: Hop 2
-      - entity: sensor.internet_health_hop_3_latency_backbone
+      - entity: sensor.internet_health_hop_3_latency
         name: Hop 3
       - entity: sensor.internet_health_dns_latency
         name: DNS
@@ -244,7 +244,7 @@ cards:
     entities:
       - entity: sensor.internet_health_hop_1_latency_gateway
       - entity: sensor.internet_health_hop_2_latency_isp
-      - entity: sensor.internet_health_hop_3_latency_backbone
+      - entity: sensor.internet_health_hop_3_latency
 
   # Controls
   - type: horizontal-stack

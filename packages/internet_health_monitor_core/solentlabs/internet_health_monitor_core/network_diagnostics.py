@@ -9,7 +9,7 @@ Provides lightweight network performance monitoring including:
 
 Network path visualization:
     [HA Host] --Gateway--> [Hop 1] --Hop 2--> [Hop 3] --...--> [DNS Server]
-              (local)      (ISP)     (backbone)  (internet)
+              (local)      (ISP)     (next hop)  (internet)
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ import socket
 import time
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import Any
+from typing import Any, Literal
 
 from . import dns_probe
 from .hop_owner import HopOwner, lookup_owner, origin_query_name
@@ -41,10 +41,26 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_DNS_SERVER = "auto"  # Auto-detect from system
 FALLBACK_DNS_SERVER = "1.1.1.1"  # Fallback if detection fails
 DEFAULT_TRACE_TARGET = "8.8.8.8"  # Default traceroute target
-NUM_HOPS = 3  # Fixed: always trace 3 hops (gateway, ISP, backbone)
+# Pinged every poll as a reading past the ISP; Cloudflare's terms (ADR-015, REFERENCES.md § R27)
+DEFAULT_INTERNET_REFERENCE = "1.1.1.1"
+NUM_HOPS = 3  # Fixed: always trace 3 hops (gateway, ISP, the next hop)
+
+# Where the timed DNS server came from: the user's choice, the host's own settings as the
+# caller found them (the Supervisor's network info in HA), /etc/resolv.conf, or the fallback.
+DnsSource = Literal["chosen", "host", "system", "fallback"]
+
+# What a hop's address says about where it is (REFERENCES.md § R24): a private block
+# (RFC 1918), ISP shared space for carrier-grade NAT (RFC 6598), or globally reachable.
+AddressType = Literal["private", "shared", "public"]
+PRIVATE_NETWORKS = tuple(ipaddress.ip_network(net) for net in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
+SHARED_NETWORK = ipaddress.ip_network("100.64.0.0/10")
 
 # IHM measures the IPv4 path (ADR-014): the family of every traced and pinged address.
 PATH_IP_VERSION = 4
+
+# Reported precision: finer than any display, coarse enough that float noise never shows.
+MS_DECIMALS = 3  # latency and jitter, 0.001 ms
+PERCENT_DECIMALS = 1  # packet loss, 0.1 %
 
 
 def consecutive_jitter(rtts: list[float]) -> float | None:
@@ -56,6 +72,31 @@ def consecutive_jitter(rtts: list[float]) -> float | None:
     if len(rtts) < 2:
         return None
     return sum(abs(b - a) for a, b in zip(rtts, rtts[1:], strict=False)) / (len(rtts) - 1)
+
+
+def round_or_none(value: float | None, decimals: int) -> float | None:
+    """Round a measurement to the reported precision; a missing one stays None."""
+    return None if value is None else round(value, decimals)
+
+
+def loss_percent(sent: int, received: int) -> float | None:
+    """Packet loss to 0.1 %; None when nothing was sent."""
+    return round((sent - received) / sent * 100, PERCENT_DECIMALS) if sent > 0 else None
+
+
+def address_type(ip: str | None) -> AddressType | None:
+    """The kind of address *ip* is; None for none, or a special range (loopback, documentation)."""
+    try:
+        address = ipaddress.ip_address(ip) if ip else None
+    except ValueError:
+        return None
+    if address is None:
+        return None
+    if any(address in net for net in PRIVATE_NETWORKS):
+        return "private"
+    if address in SHARED_NETWORK:
+        return "shared"
+    return "public" if address.is_global else None
 
 
 def format_ms(value: float | None) -> str:
@@ -102,15 +143,10 @@ class HopInfo:
     asn: int | None = None
     as_name: str | None = None
 
-    # Typical location based on hop number
     @property
-    def typical_location(self) -> str:
-        """Return typical network location based on hop number."""
-        if self.hop_number == 1:
-            return "gateway"
-        if self.hop_number == 2:
-            return "isp"
-        return "backbone"
+    def address_type(self) -> AddressType | None:
+        """What the hop's address says about where it is, whatever its position."""
+        return address_type(self.ip)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -126,9 +162,39 @@ class HopInfo:
             "hostname": self.hostname,
             "asn": self.asn,
             "as_name": self.as_name,
-            "typical_location": self.typical_location,
+            "address_type": self.address_type,
         }
         return result
+
+
+@dataclass
+class ReferenceInfo:
+    """The internet reference's readings in one poll: pinged like a hop (ADR-015)."""
+
+    ip: str
+    latency_ms: float | None
+    jitter_ms: float | None
+    packet_loss_percent: float | None
+    packets_sent: int
+    packets_received: int
+
+    @property
+    def reachable(self) -> bool:
+        """Whether any ping was answered."""
+        return self.packets_received > 0
+
+    def to_dict(self) -> dict[str, Any]:
+        """Plain data for JSON output and diagnostics."""
+        return {
+            "ip": self.ip,
+            "latency_ms": self.latency_ms,
+            "jitter_ms": self.jitter_ms,
+            "packet_loss_percent": self.packet_loss_percent,
+            "packets_sent": self.packets_sent,
+            "packets_received": self.packets_received,
+            "reachable": self.reachable,
+            "address_type": address_type(self.ip),
+        }
 
 
 @dataclass
@@ -151,11 +217,15 @@ class NetworkDiagnosticsResult:
 
     # DNS metrics (internet connectivity)
     dns_server: str = "unknown"
+    dns_source: DnsSource | None = None
     dns_success: bool = False
     dns_latency_ms: float | None = None
 
     # Host environment info
     host_environment: HostEnvironment | None = None
+
+    # Internet reference (ADR-015); None when off
+    internet: ReferenceInfo | None = None
 
     # Trace target used
     trace_target: str = DEFAULT_TRACE_TARGET
@@ -198,10 +268,12 @@ class NetworkDiagnosticsResult:
             "packets_received": self.packets_received,
             "hops": [hop.to_dict() for hop in self.hops],
             "dns_server": self.dns_server,
+            "dns_source": self.dns_source,
             "dns_success": self.dns_success,
             "dns_latency_ms": self.dns_latency_ms,
             "trace_target": self.trace_target,
             "host_environment": self.host_environment.to_dict() if self.host_environment else None,
+            "internet": self.internet.to_dict() if self.internet else None,
         }
 
 
@@ -212,12 +284,13 @@ class NetworkDiagnosticsConfig:
     ping_count: int = DEFAULT_PING_COUNT
     ping_timeout: int = DEFAULT_PING_TIMEOUT
     dns_server: str = DEFAULT_DNS_SERVER
+    # Set by a caller that resolved dns_server itself from the host's settings ("host")
+    dns_source: DnsSource | None = None
     dns_timeout: int = DEFAULT_DNS_TIMEOUT
     # Opt-in: send public hop IPs to Team Cymru to learn their owner (ADR-006)
     hop_ownership: bool = False
-    # Off sends nothing for that kind: no pings, traceroutes or hop lookups; no DNS latency query
-    monitor_gateway: bool = True
-    monitor_dns: bool = True
+    # A public IPv4 address pinged every poll as a reading past the ISP; None is off (ADR-015)
+    internet_reference: str | None = DEFAULT_INTERNET_REFERENCE
 
 
 class NetworkDiagnostics:
@@ -225,7 +298,7 @@ class NetworkDiagnostics:
 
     Performs lightweight network checks including:
     - Gateway ping (auto-detected or configured)
-    - 3-hop latency monitoring (gateway, ISP, backbone)
+    - 3-hop latency monitoring (gateway, ISP, the next hop)
     - Per-hop jitter from consecutive ping round-trip times (ADR-009)
     - Packet loss tracking
     - DNS resolution timing
@@ -275,6 +348,7 @@ class NetworkDiagnostics:
 
         # DNS server - resolved lazily on first run_diagnostics() to avoid blocking I/O in __init__
         self._dns_server: str | None = None
+        self._dns_source: DnsSource | None = None
         self._dns_server_resolved = False
 
         # Trace target - resolved lazily based on DNS server
@@ -288,29 +362,22 @@ class NetworkDiagnostics:
         """The OS probes in use."""
         return self._platform
 
-    async def _resolve_dns_server(self) -> str:
-        """Resolve the DNS server to use.
-
-        If config.dns_server is "auto", detect from system.
-        Otherwise, use the configured value.
-
-        Returns:
-            DNS server IP to use for testing.
-        """
+    async def _resolve_dns_server(self) -> tuple[str, DnsSource]:
+        """Return the DNS server to time and where it came from; auto reads the system resolver."""
         if self.config.dns_server == "auto":
             detected = await self._platform.system_dns()
             if detected:
                 _LOGGER.info("Using system DNS server: %s", detected)
-                return detected
+                return detected, "system"
             _LOGGER.warning(
                 "Could not detect system DNS, falling back to %s",
                 FALLBACK_DNS_SERVER,
             )
-            return FALLBACK_DNS_SERVER
+            return FALLBACK_DNS_SERVER, "fallback"
         if not is_ip(self.config.dns_server):  # it also becomes a traceroute target
             _LOGGER.warning("DNS server %r is not an IP address; using %s", self.config.dns_server, FALLBACK_DNS_SERVER)
-            return FALLBACK_DNS_SERVER
-        return self.config.dns_server
+            return FALLBACK_DNS_SERVER, "fallback"
+        return self.config.dns_server, self.config.dns_source or "chosen"
 
     def _resolve_trace_target(self) -> str:
         """Determine the traceroute target.
@@ -321,6 +388,8 @@ class NetworkDiagnostics:
         Returns:
             IP address to use as traceroute target.
         """
+        if self._reference:
+            return self._reference
         if self._dns_server and is_traceable(self._dns_server):
             _LOGGER.debug("Using DNS server as trace target: %s", self._dns_server)
             return self._dns_server
@@ -332,6 +401,25 @@ class NetworkDiagnostics:
         )
         return DEFAULT_TRACE_TARGET
 
+    @property
+    def _reference(self) -> str | None:
+        """The internet reference to ping: a public IPv4 address, else none (ADR-014, ADR-015)."""
+        reference = self.config.internet_reference
+        return reference if reference and is_traceable(reference) else None
+
+    async def _check_reference(self) -> ReferenceInfo | None:
+        """Ping the internet reference like a hop; None when it is off or not a public IPv4 address."""
+        reference = self._reference
+        if reference is None:
+            if self.config.internet_reference:
+                _LOGGER.warning(
+                    "Internet reference %r is not a public IPv4 address; not pinged", self.config.internet_reference
+                )
+            return None
+        received, latency, jitter = await self._ping_target(reference)
+        sent = self.config.ping_count
+        return ReferenceInfo(reference, latency, jitter, loss_percent(sent, received), sent, received)
+
     async def run_diagnostics(self) -> NetworkDiagnosticsResult:
         """Run all network diagnostics.
 
@@ -340,15 +428,14 @@ class NetworkDiagnostics:
         """
         # Resolve DNS server lazily on first run (to avoid blocking I/O in __init__)
         if not self._dns_server_resolved:
-            self._dns_server = await self._resolve_dns_server()
+            self._dns_server, self._dns_source = await self._resolve_dns_server()
             self._trace_target = self._resolve_trace_target()
             self._dns_server_resolved = True
 
-        if self.config.monitor_gateway:
-            await self._refresh_path()
+        await self._refresh_path()
 
         # Look up hop hostnames on first run (or after a cache reset)
-        if self.config.monitor_gateway and self._hop_ips and not self._hostnames_collected:
+        if self._hop_ips and not self._hostnames_collected:
             await self._collect_hostnames()
             self._hostnames_collected = True
 
@@ -356,16 +443,15 @@ class NetworkDiagnostics:
         if not self._host_environment:
             self._host_environment = await self._detect_host_environment()
 
-        # Run checks in parallel; monitoring switched off sends nothing
-        gateway_task = self._check_gateway() if self.config.monitor_gateway else self._not_monitored_gateway()
-        hops_task = self._check_all_hops() if self.config.monitor_gateway and self._hop_ips else self._empty_hops()
-        if self.config.monitor_dns:
-            self.counts.dns_queries += 1
-            dns_task = self._check_dns()
-        else:
-            dns_task = self._not_monitored_dns()
+        # Run checks in parallel
+        gateway_task = self._check_gateway()
+        hops_task = self._check_all_hops() if self._hop_ips else self._empty_hops()
+        self.counts.dns_queries += 1
+        dns_task = self._check_dns()
 
-        results = await asyncio.gather(gateway_task, hops_task, dns_task, return_exceptions=True)
+        results = await asyncio.gather(
+            gateway_task, hops_task, dns_task, self._check_reference(), return_exceptions=True
+        )
 
         # Handle gateway result
         if isinstance(results[0], BaseException):
@@ -394,16 +480,15 @@ class NetworkDiagnostics:
         else:
             dns_result = results[2]
 
+        if isinstance(results[3], BaseException):
+            _LOGGER.debug("Internet reference check failed: %s", results[3])
+            reference_result: ReferenceInfo | None = None
+        else:
+            reference_result = results[3]
+
         gateway_jitter = gateway_result["jitter_ms"]
 
-        # Calculate packet loss
-        packet_loss = None
-        if gateway_result["packets_sent"] > 0:
-            packet_loss = (
-                (gateway_result["packets_sent"] - gateway_result["packets_received"])
-                / gateway_result["packets_sent"]
-                * 100
-            )
+        packet_loss = loss_percent(gateway_result["packets_sent"], gateway_result["packets_received"])
 
         result = NetworkDiagnosticsResult(
             timestamp=time.time(),
@@ -416,10 +501,12 @@ class NetworkDiagnostics:
             packets_received=gateway_result["packets_received"],
             hops=hops_result,
             dns_server=self._dns_server or "unknown",
+            dns_source=self._dns_source,
             dns_success=dns_result["success"],
             dns_latency_ms=dns_result["latency_ms"],
             host_environment=self._host_environment,
             trace_target=self._trace_target or DEFAULT_TRACE_TARGET,
+            internet=reference_result,
         )
 
         # Log summary
@@ -446,14 +533,6 @@ class NetworkDiagnostics:
     async def _empty_hops(self) -> list[HopInfo]:
         """Return empty hops list."""
         return []
-
-    async def _not_monitored_gateway(self) -> dict[str, Any]:
-        """Gateway monitoring is off: nothing was sent, so nothing was lost."""
-        return {"reachable": False, "latency_ms": None, "jitter_ms": None, "packets_sent": 0, "packets_received": 0}
-
-    async def _not_monitored_dns(self) -> dict[str, Any]:
-        """DNS monitoring is off: no query was sent."""
-        return {"success": False, "latency_ms": None}
 
     async def _refresh_path(self) -> None:
         """Read the gateway (local and cheap) every poll; trace until all hops are known.
@@ -558,10 +637,7 @@ class NetworkDiagnostics:
         packets_sent = self.config.ping_count
         packets_received, avg_latency, jitter = await self._ping_target(ip)
 
-        # Calculate packet loss
-        packet_loss = None
-        if packets_sent > 0:
-            packet_loss = ((packets_sent - packets_received) / packets_sent) * 100
+        packet_loss = loss_percent(packets_sent, packets_received)
 
         return HopInfo(
             hop_number=hop_number,
@@ -616,7 +692,7 @@ class NetworkDiagnostics:
                 if rtt is not None:
                     rtts.append(rtt)
         mean = sum(rtts) / len(rtts) if rtts else None
-        return replies, mean, consecutive_jitter(rtts)
+        return replies, round_or_none(mean, MS_DECIMALS), round_or_none(consecutive_jitter(rtts), MS_DECIMALS)
 
     async def check_gateway(self) -> bool:
         """One ping to the detected gateway, between polls (ADR-012); False if none was detected."""
@@ -643,7 +719,7 @@ class NetworkDiagnostics:
         except (OSError, ValueError) as e:
             _LOGGER.debug("DNS probe to %s failed: %s", server, e)
             latency_ms = None
-        return {"success": latency_ms is not None, "latency_ms": latency_ms}
+        return {"success": latency_ms is not None, "latency_ms": round_or_none(latency_ms, MS_DECIMALS)}
 
     def reset_gateway(self) -> None:
         """Reset cached gateway to force re-detection.

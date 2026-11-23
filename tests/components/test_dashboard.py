@@ -31,27 +31,43 @@ GATEWAY_REACHABLE = "binary_sensor.internet_health_gateway_reachable"
 INTERNET_REACHABLE = "binary_sensor.internet_health_internet_reachable"
 DNS_LATENCY = "sensor.internet_health_dns_latency"
 REFRESH = "button.internet_health_refresh_diagnostics"
-SUFFIX = {1: "gateway", 2: "isp", 3: "backbone"}
+SUFFIX = {1: "_gateway", 2: "_isp", 3: ""}
 
 
 def _hop(hop: int, metric: str) -> str:
     """A hop sensor's default entity id."""
-    return f"sensor.internet_health_hop_{hop}_{metric}_{SUFFIX[hop]}"
+    return f"sensor.internet_health_hop_{hop}_{metric}{SUFFIX[hop]}"
 
 
 def _graph(title: str, metric: str) -> dict[str, Any]:
-    """A default hop graph: one line per hop, named for the hop."""
-    lines = [{"entity": _hop(h, metric), "name": n} for h, n in ((1, "Gateway"), (2, "ISP"), (3, "Backbone"))]
+    """A default path graph: one line per hop, named for the hop, then the internet reference."""
+    lines = [{"entity": _hop(h, metric), "name": n} for h, n in ((1, "Gateway"), (2, "ISP"), (3, "Hop 3"))]
+    lines.append({"entity": f"sensor.internet_health_internet_{metric}", "name": "Internet"})
     return {"type": "history-graph", "title": title, "hours_to_show": 24, "entities": lines}
 
 
-def _hop_card(hop: int, name: str) -> dict[str, Any]:
+def _reference_card() -> dict[str, Any]:
+    """The internet reference's card: its readings and the address it pings (ADR-015)."""
+    rows = [("latency", "Latency"), ("jitter", "Jitter"), ("packet_loss", "Packet loss")]
+    latency = "sensor.internet_health_internet_latency"
+    address = {"type": "attribute", "entity": latency, "attribute": "reference_ip", "name": "Address"}
+    return {
+        "type": "entities",
+        "title": "Internet reference",
+        "entities": [
+            *({"entity": f"sensor.internet_health_internet_{m}", "name": label} for m, label in rows),
+            address,
+        ],
+    }
+
+
+def _hop_card(hop: int, name: str | None) -> dict[str, Any]:
     """A default per-hop card: current latency, jitter and loss, and the hop's address (latency's attribute)."""
     rows = [("latency", "Latency"), ("jitter", "Jitter"), ("packet_loss", "Packet loss")]
     address = {"type": "attribute", "entity": _hop(hop, "latency"), "attribute": "hop_ip", "name": "Address"}
     return {
         "type": "entities",
-        "title": f"Hop {hop} · {name}",
+        "title": f"Hop {hop} · {name}" if name else f"Hop {hop}",
         "entities": [*({"entity": _hop(hop, metric), "name": label} for metric, label in rows), address],
     }
 
@@ -71,7 +87,8 @@ DEFAULT_CARD: dict[str, Any] = {
         },
         _hop_card(1, "Gateway"),
         _hop_card(2, "ISP"),
-        _hop_card(3, "Backbone"),
+        _hop_card(3, None),
+        _reference_card(),
         _graph("Hop latency", "latency"),
         {
             "type": "history-graph",
@@ -84,24 +101,21 @@ DEFAULT_CARD: dict[str, Any] = {
     ],
 }
 
-HOPS = ["Hop 1 · Gateway", "Hop 2 · ISP", "Hop 3 · Backbone"]
+HOPS = ["Hop 1 · Gateway", "Hop 2 · ISP", "Hop 3", "Internet reference"]
 STATUS = "Network Status"
 GRAPHS = ["Hop latency", "DNS latency", "Jitter", "Packet loss"]
 NO_JITTER = ["Hop latency", "DNS latency", "Packet loss"]
-HOP_GRAPHS = ["Hop latency", "Jitter", "Packet loss"]
 NO_GRAPHS = {"include_latency": False, "include_jitter": False, "include_packet_loss": False}
-NO_GATEWAY = {"enable_gateway_monitoring": False}
-NO_DNS = {"enable_dns_monitoring": False}
+NO_REFERENCE = {"internet_reference": "off"}
 
 # ┌──────────────────────────┬──────────────────────┬──────────────────────────────────────────────┬──────────────┐
 # │ entry options            │ card options         │ expected part titles                         │ description  │
 # ├──────────────────────────┼──────────────────────┼──────────────────────────────────────────────┼──────────────┤
-# │ defaults                 │ {}                   │ status, 3 hops, 4 graphs                     │ everything   │
+# │ defaults                 │ {}                   │ status, 3 hops, reference card, 4 graphs     │ everything   │
 # │ defaults                 │ include_hops off     │ status, 4 graphs                             │ hops off     │
 # │ defaults                 │ include_jitter off   │ status, 3 hops, latency, dns, loss           │ one graph    │
 # │ defaults                 │ graphs off           │ status, 3 hops                               │ graphs off   │
-# │ gateway monitoring off   │ {}                   │ status, dns graph                            │ no hops      │
-# │ dns monitoring off       │ {}                   │ status, 3 hops, hop graphs (no dns graph)    │ no dns       │
+# │ internet reference off   │ {}                   │ status, 3 hops, 4 graphs                     │ no reference │
 # └──────────────────────────┴──────────────────────┴──────────────────────────────────────────────┴──────────────┘
 # fmt: off
 LAYOUT_CASES: list[tuple[dict[str, Any], dict[str, Any], list[str], str]] = [
@@ -109,8 +123,7 @@ LAYOUT_CASES: list[tuple[dict[str, Any], dict[str, Any], list[str], str]] = [
     ({},         {"include_hops": False},   [STATUS, *GRAPHS],                "hops_off"),
     ({},         {"include_jitter": False}, [STATUS, *HOPS, *NO_JITTER],      "one_graph_off"),
     ({},         NO_GRAPHS,                 [STATUS, *HOPS],                  "graphs_off"),
-    (NO_GATEWAY, {},                        [STATUS, "DNS latency"],          "no_hops"),
-    (NO_DNS,     {},                        [STATUS, *HOPS, *HOP_GRAPHS],     "no_dns"),
+    (NO_REFERENCE, {},                      [STATUS, *HOPS[:3], *GRAPHS],     "no_reference"),
 ]
 # fmt: on
 
@@ -149,10 +162,11 @@ async def test_layout_uses_registry_ids_names_and_skips_disabled(hass: HomeAssis
     assert hop_1 and hop_3
     registry.async_update_entity(hop_1, new_entity_id="sensor.my_router", name="My router")
     registry.async_update_entity(hop_3, disabled_by=er.RegistryEntryDisabler.USER)
-    graph = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))["cards"][4]
+    graph = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))["cards"][5]
     assert graph["entities"] == [
         {"entity": "sensor.my_router", "name": "My router"},
         {"entity": _hop(2, "latency"), "name": "ISP"},
+        {"entity": "sensor.internet_health_internet_latency", "name": "Internet"},
     ]
 
 
@@ -389,8 +403,10 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
         "Speed test",
         {"entity": f"{SENSOR}download", "name": "Download"},
-        {"entity": f"{SENSOR}data_used", "name": "Data used"},
+        {"entity": f"{SENSOR}upload_latency", "name": "Upload latency"},
     )
+    # One test's data use says little on its own; usage totals carry the running total.
+    assert f"{SENSOR}data_used" not in {row["entity"] for row in speed["entities"]}
     # Its own button card, as Cable Modem Monitor's Restart: an entities row's button skips the
     # confirmation when its own Press is clicked.
     assert run == RUN_BUTTON

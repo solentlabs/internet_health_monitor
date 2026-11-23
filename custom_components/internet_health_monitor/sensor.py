@@ -88,7 +88,54 @@ DNS_SENSOR = ResultSensorEntityDescription(
     state_class=SensorStateClass.MEASUREMENT,
     suggested_display_precision=1,
     value_fn=lambda r: r.dns_latency_ms,
-    attrs_fn=lambda r: {"dns_server": r.dns_server, "success": r.dns_success},
+    attrs_fn=lambda r: {"dns_server": r.dns_server, "dns_source": r.dns_source, "success": r.dns_success},
+)
+
+
+def _reference_attrs(r: NetworkDiagnosticsResult) -> dict[str, Any]:
+    """The internet reference's address, reachability and packet counts."""
+    ref = r.internet
+    if ref is None:
+        return {"reference_ip": None, "reachable": False}
+    return {
+        "reference_ip": ref.ip,
+        "reachable": ref.reachable,
+        "packets_sent": ref.packets_sent,
+        "packets_received": ref.packets_received,
+    }
+
+
+# The internet reference, pinged like a hop (ADR-015); created only when one is set.
+REFERENCE_SENSORS: tuple[ResultSensorEntityDescription, ...] = (
+    ResultSensorEntityDescription(
+        key="internet_latency",
+        translation_key="internet_latency",
+        native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda r: r.internet.latency_ms if r.internet else None,
+        attrs_fn=_reference_attrs,
+    ),
+    ResultSensorEntityDescription(
+        key="internet_jitter",
+        translation_key="internet_jitter",
+        native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda r: r.internet.jitter_ms if r.internet else None,
+        attrs_fn=_reference_attrs,
+    ),
+    ResultSensorEntityDescription(
+        key="internet_packet_loss",
+        translation_key="internet_packet_loss",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda r: r.internet.packet_loss_percent if r.internet else None,
+        attrs_fn=_reference_attrs,
+    ),
 )
 
 # Connection types Core can classify; "unknown" reads as the unknown state.
@@ -255,10 +302,10 @@ async def async_setup_entry(
     keep = data.long_term_statistics
     if data.speed_test:
         entities.extend(SpeedTestSensor(data.speed_test, _statistics(d, keep)) for d in SPEED_TEST_SENSORS)
-    if data.enable_gateway:
-        entities.extend(HopSensor(data.coordinator, _statistics(d, keep)) for d in HOP_SENSORS)
-    if data.enable_dns:
-        entities.append(ResultSensor(data.coordinator, _statistics(DNS_SENSOR, keep)))
+    entities.extend(HopSensor(data.coordinator, _statistics(d, keep)) for d in HOP_SENSORS)
+    entities.append(ResultSensor(data.coordinator, _statistics(DNS_SENSOR, keep)))
+    if data.diagnostics.config.internet_reference:
+        entities.extend(ResultSensor(data.coordinator, _statistics(d, keep)) for d in REFERENCE_SENSORS)
     async_add_entities(entities)
 
 
@@ -387,7 +434,7 @@ class HopSensor(InternetHealthEntity[InternetHealthCoordinator], SensorEntity):
             "hop_number": hop.hop_number,
             "hop_ip": hop.ip,
             "reachable": hop.reachable,
-            "typical_location": hop.typical_location,
+            "address_type": hop.address_type,
             "packets_sent": hop.packets_sent,
             "packets_received": hop.packets_received,
         }

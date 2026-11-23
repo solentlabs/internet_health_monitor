@@ -68,7 +68,7 @@ def test_parsers_keep_only_addresses() -> None:
 async def test_configured_dns_server_must_be_an_address() -> None:
     """A stored or typed DNS server that is not an IP falls back instead of reaching traceroute."""
     diagnostics = NetworkDiagnostics(config=NetworkDiagnosticsConfig(dns_server="--help"))
-    assert await diagnostics._resolve_dns_server() == "1.1.1.1"
+    assert await diagnostics._resolve_dns_server() == ("1.1.1.1", "fallback")
 
 
 # ┌──────────────────────────────────────────────┬──────────────────────────┐

@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b3] - 2026-11-23
+
+### Fixed
+
+- **DNS latency on HA OS timed the Supervisor's relay.** Auto-detect
+  picked 172.30.32.3, a relay inside Home Assistant, not your DNS
+  server. On HA OS and Supervised it now times the host's own DNS
+  server, which the Supervisor reports.
+
+### Added
+
+- **Database space, stated.** The Long-term statistics option says what
+  it adds (about 10 to 15 MB a year), and the README's Database Space
+  section gives the figures per option, measured with Home Assistant's
+  own recorder tables.
+- **Internet reference.** A fourth ping target past your ISP, on by
+  default: Cloudflare's 1.1.1.1. It reports latency, jitter and packet
+  loss like a hop, in its own sensors, card and graph lines, so a
+  slowdown can be placed at home, on your line, or beyond it. Pick
+  another provider, type a public IPv4 address, or turn it off. The
+  traceroute now aims at it.
+- **Where the DNS server came from.** The DNS latency sensor and the
+  diagnostics download report `dns_source`: chosen, host, system or
+  fallback.
+
+### Removed
+
+- **"Monitor gateway and hops" and "Monitor DNS" options.** Nothing
+  needed them, and they made the setup form longer. The gateway, hops
+  and DNS are always measured; the internet reference is the one probe
+  you can turn off.
+
+### Changed
+
+- **The card's speed test list leaves out Data used.** One test's data
+  use says little on its own; the Usage totals keep the running total.
+  The sensor stays.
+- **Hop 3 is no longer called "backbone".** It is the router after your
+  ISP's first one, often still inside your ISP. Its sensors are now
+  "Hop 3 latency", "Hop 3 jitter" and "Hop 3 packet loss"; existing
+  entity ids are kept.
+- **Each hop reports its address type** (`address_type`: private,
+  shared or public, from the address itself) in place of
+  `typical_location`, which guessed from the hop's position.
+- **Rounded measurements.** Latency, jitter and DNS latency are
+  reported to 0.001 ms and packet loss to 0.1 %, so long float tails
+  no longer appear in attributes or diagnostics.
+
 ## [0.1.0b2] - 2026-11-20
 
 ### Fixed

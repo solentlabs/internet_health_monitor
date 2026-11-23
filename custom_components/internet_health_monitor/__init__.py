@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 
+from aiohasupervisor import SupervisorError
+from homeassistant.components.hassio import get_supervisor_client
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError
@@ -12,21 +14,25 @@ from homeassistant.helpers import (
     entity_registry as er,
     issue_registry as ir,
 )
+from homeassistant.helpers.hassio import is_hassio
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.system_info import async_get_system_info
 from homeassistant.helpers.typing import ConfigType
 
 from solentlabs.internet_health_monitor_core import timing
-from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics, NetworkDiagnosticsConfig
+from solentlabs.internet_health_monitor_core.network_diagnostics import (
+    DnsSource,
+    NetworkDiagnostics,
+    NetworkDiagnosticsConfig,
+)
 from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
 from solentlabs.internet_health_monitor_core.platforms.linux import OPTIONAL_TOOLS
 
 from .card import async_register_card
 from .const import (
     CONF_DNS_SERVER,
-    CONF_ENABLE_DNS_MONITORING,
-    CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_INTERNET_REFERENCE,
     CONF_LONG_TERM_STATISTICS,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
@@ -37,9 +43,11 @@ from .const import (
     CONF_SPEED_TEST_DATA_LIMIT,
     CONF_USAGE_TOTALS,
     DEFAULT_DNS_SERVER,
+    DEFAULT_INTERNET_REFERENCE,
     DEFAULT_PING_COUNT,
     DNS_SERVERS,
     DOMAIN,
+    INTERNET_REFERENCES,
     NAME,
     SPEED_TEST_OFF,
     TROUBLESHOOTING_URL,
@@ -78,12 +86,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
     """Set up from a config entry; fail clearly if this host cannot measure anything."""
     _LOGGER.info("%s version %s is starting", NAME, VERSION)
     options = entry.options
+    dns_server, dns_source = await _async_dns_server(hass, options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER))
     config = NetworkDiagnosticsConfig(
         ping_count=options.get(CONF_PING_COUNT, DEFAULT_PING_COUNT),
-        dns_server=dns_server_address(options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER)),
+        dns_server=dns_server,
+        dns_source=dns_source,
         hop_ownership=options.get(CONF_HOP_OWNERSHIP, False),
-        monitor_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
-        monitor_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
+        internet_reference=reference_address(options.get(CONF_INTERNET_REFERENCE, DEFAULT_INTERNET_REFERENCE)),
     )
 
     try:
@@ -104,19 +113,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
 
     usage = UsageTracker(hass)
     await usage.async_load()
-    targets: list[ReachabilityTarget] = []
-    if options.get(CONF_ENABLE_GATEWAY_MONITORING, True):
-        targets.append("gateway")
-    if options.get(CONF_ENABLE_DNS_MONITORING, True):
-        targets.append("internet")
-    coordinator = InternetHealthCoordinator(hass, entry, diagnostics, usage, tuple(targets))
+    coordinator = InternetHealthCoordinator(hass, entry, diagnostics, usage)
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = InternetHealthRuntimeData(
         coordinator=coordinator,
         diagnostics=diagnostics,
-        enable_gateway=options.get(CONF_ENABLE_GATEWAY_MONITORING, True),
-        enable_dns=options.get(CONF_ENABLE_DNS_MONITORING, True),
         usage_totals=options.get(CONF_USAGE_TOTALS, False),
         long_term_statistics=options.get(CONF_LONG_TERM_STATISTICS, False),
         installation_type=(await async_get_system_info(hass))["installation_type"],
@@ -203,6 +205,30 @@ async def async_remove_entry(hass: HomeAssistant, entry: InternetHealthConfigEnt
 def dns_server_address(choice: str) -> str:
     """The server for a DNS choice; a stored address (older entries) passes through."""
     return DNS_SERVERS.get(choice, choice)
+
+
+def reference_address(choice: str) -> str | None:
+    """The address for an internet reference choice; None is off, and a typed address passes through."""
+    return INTERNET_REFERENCES.get(choice, choice)
+
+
+async def _async_dns_server(hass: HomeAssistant, choice: str) -> tuple[str, DnsSource | None]:
+    """The server to time and, if found here, its source; under the Supervisor auto is the host's resolver."""
+    address = dns_server_address(choice)
+    if address != DEFAULT_DNS_SERVER or not is_hassio(hass):
+        return address, None
+    try:
+        info = await get_supervisor_client(hass).network.info()
+    except SupervisorError as err:
+        _LOGGER.debug("Supervisor network info unavailable, using the system resolver: %s", err)
+        return address, None
+    for interface in info.interfaces:
+        if interface.primary and interface.ipv4 and interface.ipv4.nameservers:
+            server = str(interface.ipv4.nameservers[0])
+            _LOGGER.info("Using the host's DNS server %s, as the Supervisor reports it", server)
+            return server, "host"
+    _LOGGER.debug("Supervisor reports no host DNS server, using the system resolver")
+    return address, None
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:

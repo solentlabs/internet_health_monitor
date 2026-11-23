@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from custom_components.internet_health_monitor.const import DOMAIN, VERSION
 
 MANIFEST = Path(__file__).resolve().parents[2] / "custom_components" / DOMAIN / "manifest.json"
@@ -31,3 +33,21 @@ def test_minimum_ha_agrees() -> None:
         "requirements-dev.txt": hacs,
         "ha-minimum.txt": hacs,
     }
+
+
+TRANSLATIONS = MANIFEST.parent / "translations"
+
+
+def _keys(tree: object, prefix: str = "") -> set[str]:
+    """Every leaf key path in a strings tree."""
+    if not isinstance(tree, dict):
+        return {prefix}
+    return {path for key, value in tree.items() for path in _keys(value, f"{prefix}.{key}" if prefix else key)}
+
+
+@pytest.mark.parametrize("language", sorted(p.stem for p in TRANSLATIONS.glob("*.json")))
+def test_translation_has_every_string(language: str) -> None:
+    """Each translation has exactly strings.json's keys: none missing, none left over."""
+    source = _keys(json.loads((MANIFEST.parent / "strings.json").read_text(encoding="utf-8")))
+    translated = _keys(json.loads((TRANSLATIONS / f"{language}.json").read_text(encoding="utf-8")))
+    assert (sorted(source - translated), sorted(translated - source)) == ([], [])
