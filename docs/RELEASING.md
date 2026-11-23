@@ -58,8 +58,9 @@ The workflow then runs, each step only if the one before passed:
    notes and the integration zip. It comes last because the zip's
    `manifest.json` pins the Core just published.
 
-Run by hand (Actions, Release, Run workflow), it builds and publishes to
-Test PyPI (environment `test-pypi-core`) and creates no release.
+There is no Test PyPI run: betas on the real PyPI are the rehearsal, each
+one the whole path a final release takes (decided 2026-11-23, after five
+betas).
 
 ## Beta Releases
 
@@ -83,15 +84,12 @@ Set up once, outside the repository, before the first tag. PyPI trusts
 one workflow file by name, so each entry names `release.yml`
 (REFERENCES.md § R25).
 
-- [x] **GitHub environments** `pypi-core` and `test-pypi-core` in the
-      repository's settings.
+- [x] **GitHub environment** `pypi-core` in the repository's settings.
 - [x] **PyPI pending publisher** (account sidebar, Publishing): project
       `solentlabs-internet-health-monitor-core`, owner `solentlabs`,
       repository `internet_health_monitor`, workflow `release.yml`,
       environment `pypi-core`.
-- [ ] **Test PyPI pending publisher**: the same, environment
-      `test-pypi-core`.
-- [ ] **The first tag soon after**, a beta: a pending publisher does not
+- [x] **The first tag soon after**, a beta: a pending publisher does not
       reserve the project name on PyPI until its first upload.
 
 A project that moves publishing into another workflow file must change
