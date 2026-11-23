@@ -19,7 +19,7 @@ NAME = "Internet Health Monitor"
 DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
 TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet_health_monitor#troubleshooting"
-VERSION = "0.1.0b3"  # must equal manifest.json "version" (tests/components/test_const.py)
+VERSION = "0.1.0b4"  # must equal manifest.json "version" (tests/components/test_const.py)
 
 # Option keys
 CONF_LONG_TERM_STATISTICS = "long_term_statistics"  # state_class on measurement sensors (ADR-013)

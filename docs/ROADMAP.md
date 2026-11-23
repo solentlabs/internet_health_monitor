@@ -89,7 +89,7 @@ Monitor is the reference for how each is done.
 - [x] Multi-hop: hops 1 to 3, each with latency, jitter and loss sensors;
       hop IPs cached; re-traced when the gateway changes and every 10
       minutes while hops are missing
-- [x] Config toggles (gateway, DNS)
+- [x] Internet reference: a fourth ping target past the ISP (ADR-015)
 - [x] Binary sensors (gateway reachable, internet reachable)
 - [x] Solent Labs branding in device info and integration icon
 - [x] Core as a portable package with a command line (ADR-005)

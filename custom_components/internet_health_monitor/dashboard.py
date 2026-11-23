@@ -210,6 +210,11 @@ PATH_ICONS = {
 _READINGS = ("latency", "jitter", "packet_loss")
 
 
+def _value(entity_id: str) -> str:
+    """A reading with its unit at the sensor's display precision; a dash while unknown or unavailable."""
+    return f"{{{{ states('{entity_id}', rounded=True, with_unit=True) if has_value('{entity_id}') else '–' }}}}"
+
+
 def _path_table(registry: er.EntityRegistry, entry_id: str) -> dict[str, Any] | None:
     """One markdown card: a row per point with its icon, its readings with units, and its address.
 
@@ -225,7 +230,7 @@ def _path_table(registry: er.EntityRegistry, entry_id: str) -> dict[str, Any] | 
         latency = ids["latency"]
         if not latency:
             continue
-        values = [f"{{{{ states('{ids[r]}', rounded=True, with_unit=True) }}}}" if ids[r] else "–" for r in _READINGS]
+        values = [_value(entity) if (entity := ids[r]) else "–" for r in _READINGS]
         icon = f'<ha-icon icon="{PATH_ICONS[f"{prefix}_latency"]}"></ha-icon>'
         address = f"{{{{ state_attr('{latency}', '{attribute}') or '–' }}}}"
         lines.append(f"| {icon} {name} | " + " | ".join(values) + f" | {address} |")

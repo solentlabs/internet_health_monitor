@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b4] - 2026-11-23
+
 ### Fixed
 
 - **Six sensors had no icon:** internet latency, jitter and packet loss,
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Combined path card.** A *Hop layout* card option: a card per hop as
   before, or one card with a row each for the gateway, ISP, hop 3 and the
   internet reference: its icon, latency, jitter, packet loss and address.
+  A reading or address not known yet shows a dash.
 
 ### Changed
 

@@ -490,16 +490,16 @@ async def test_combined_path_card_leaves_out_the_reference_when_off(
     assert rendered.splitlines()[-1].startswith('| <ha-icon icon="mdi:server-network"></ha-icon> Hop 3 |')
 
 
-async def test_combined_path_card_shows_a_dash_for_a_missing_address(
+async def test_combined_path_card_shows_dashes_until_measured(
     hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock
 ) -> None:
-    """A hop not found yet has no address: a dash, not the word None."""
+    """A hop not found yet reads a dash for each value and its address: not "unknown ms" or "None"."""
     poll.return_value = make_result(hops=[])
     await setup_entry()
     path = build_card_config(hass, CARD_OPTIONS_SCHEMA({"hop_layout": "table"}))["cards"][1]
     rendered = Template(path["content"], hass).async_render(parse_result=False)
-    assert "None" not in rendered
-    assert rendered.splitlines()[3].endswith("| – |")
+    assert rendered.splitlines()[3] == '| <ha-icon icon="mdi:wan"></ha-icon> ISP | – | – | – | – |'
+    assert "unknown" not in rendered and "None" not in rendered
 
 
 def test_path_icons_match_the_sensors() -> None:
