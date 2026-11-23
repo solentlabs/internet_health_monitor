@@ -214,7 +214,7 @@ It needs no backend and uses almost no data.
 ## Adding a Backend
 
 One module in Core's `backends/` implementing `SpeedTestBackend`, one
-entry in `speed_test.BACKENDS`, tests against an in-process fake of the
+entry in `speed_test_runner._backends` and its name in `speed_test.BACKEND_NAMES`, tests against an in-process fake of the
 provider, and a row in each table here and in
 [ARCHITECTURE.md § Data Leaving the Host](ARCHITECTURE.md#data-leaving-the-host).
 HTTP providers reuse the shared engine by describing their URLs.

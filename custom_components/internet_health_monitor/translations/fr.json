@@ -154,6 +154,12 @@
         "opendns": "OpenDNS (208.67.222.222)"
       }
     },
+    "hop_layout": {
+      "options": {
+        "cards": "Une carte par saut",
+        "table": "Une carte combinée"
+      }
+    },
     "speed_test_backend": {
       "options": {
         "none": "Désactivé",
@@ -478,6 +484,10 @@
         "include_hops": {
           "name": "Chaque saut",
           "description": "Une carte par saut avec sa latence, sa gigue et sa perte de paquets actuelles."
+        },
+        "hop_layout": {
+          "name": "Disposition des sauts",
+          "description": "Une carte par saut, ou une carte combinée avec une ligne par saut et pour la référence internet : latence, gigue, perte de paquets et adresse."
         },
         "include_latency": {
           "name": "Graphiques de latence",

@@ -13,7 +13,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer
 
-from solentlabs.internet_health_monitor_core import speed_test, timing
+from solentlabs.internet_health_monitor_core import speed_test, speed_test_runner, timing
 from solentlabs.internet_health_monitor_core.backends import _http, cloudflare
 from solentlabs.internet_health_monitor_core.backends.cloudflare import CloudflareBackend
 from solentlabs.internet_health_monitor_core.backends.librespeed import LibreSpeedBackend
@@ -25,8 +25,8 @@ from solentlabs.internet_health_monitor_core.speed_test import (
     SpeedTestError,
     SpeedTestResult,
     Transfer,
-    run_speed_test,
 )
+from solentlabs.internet_health_monitor_core.speed_test_runner import run_speed_test
 
 # Loopback only: in-process servers on 127.0.0.1. The fixture, not the enable_socket marker: it
 # runs after every plugin's setup hook, so HA's socket block cannot follow it.
@@ -234,7 +234,7 @@ async def session() -> AsyncIterator[aiohttp.ClientSession]:
 
 
 BACKENDS: dict[str, Callable[[str], SpeedTestBackend]] = {
-    "cloudflare": lambda base: CloudflareBackend(base),
+    "cloudflare": CloudflareBackend,
     "librespeed": lambda base: LibreSpeedBackend(f"{base}/servers.php", require_tls=False),
     "mlab": lambda base: Ndt7Backend(f"{base}/locate", require_tls=False),
 }
@@ -408,20 +408,20 @@ async def test_run_speed_test_wraps_errors_and_timeouts(monkeypatch: pytest.Monk
             await asyncio.sleep(10)
             raise AssertionError
 
-    monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": Broken})
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {"cloudflare": Broken})
     with pytest.raises(SpeedTestError, match="refused"):
         await run_speed_test("cloudflare", None, DataLimit(300, 200))  # type: ignore[arg-type]  # rationale: unused by the stub
     assert seen == [DataLimit(300, 200)]
 
-    monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": Slow})
-    monkeypatch.setattr(speed_test, "SPEED_TEST_TIMEOUT_S", 0.05)
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {"cloudflare": Slow})
+    monkeypatch.setattr(speed_test_runner, "SPEED_TEST_TIMEOUT_S", 0.05)
     with pytest.raises(SpeedTestError, match="did not finish"):
         await run_speed_test("cloudflare", None)  # type: ignore[arg-type]  # rationale: unused by the stub
 
 
 def test_every_backend_is_registered() -> None:
     """BACKEND_NAMES and the registry agree, and each backend reports its own name."""
-    backends = speed_test._backends()
+    backends = speed_test_runner._backends()
     assert tuple(backends) == speed_test.BACKEND_NAMES
     assert all(factory().name == name for name, factory in backends.items())
 
@@ -441,7 +441,7 @@ async def test_request_timeout_is_not_reported_as_test_timeout(monkeypatch: pyte
         async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
             raise TimeoutError
 
-    monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": RequestTimesOut})
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {"cloudflare": RequestTimesOut})
     with pytest.raises(SpeedTestError, match="a request timed out"):
         await run_speed_test("cloudflare", None)  # type: ignore[arg-type]  # rationale: unused by the stub
 
@@ -459,7 +459,7 @@ async def test_failed_test_reports_data_it_moved(
     fake.fail.add("/__up")  # download completes, then every upload is refused after it is sent
     # Bodies smaller than the limit, so each stream waits for its refusal before the limit is reached.
     monkeypatch.setattr(_http, "UPLOAD_REQUEST_BYTES", _http.READ_CHUNK)
-    monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": lambda: CloudflareBackend(fake.base)})
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {"cloudflare": lambda: CloudflareBackend(fake.base)})
     with pytest.raises(SpeedTestError) as err:
         await run_speed_test("cloudflare", session, DataLimit.even(8))
     # Half the limit, plus the chunk each of the four streams had in flight when it was reached.
@@ -477,7 +477,7 @@ async def test_failure_before_connecting_moved_nothing(monkeypatch: pytest.Monke
         async def run(self, session: aiohttp.ClientSession, limit: DataLimit, transfer: Transfer) -> SpeedTestResult:
             raise aiohttp.ClientConnectionError("refused")
 
-    monkeypatch.setattr(speed_test, "_backends", lambda: {"cloudflare": Refused})
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {"cloudflare": Refused})
     with pytest.raises(SpeedTestError) as err:
         await run_speed_test("cloudflare", None)  # type: ignore[arg-type]  # rationale: unused by the stub
     assert (err.value.downloaded_mb, err.value.uploaded_mb) == (0.0, 0.0)
@@ -493,7 +493,7 @@ async def test_redirects_are_not_followed(
     reply arrives); what must hold is that the redirect target gets nothing.
     """
     fake.redirect.add(path)
-    monkeypatch.setattr(speed_test, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
     with contextlib.suppress(SpeedTestError):
         await run_speed_test(name, session, DataLimit.even(8))  # type: ignore[arg-type]
     assert fake.paths.count(path) >= 1  # the redirecting endpoint was used
@@ -508,6 +508,6 @@ async def test_malformed_server_data_is_a_speed_test_error(
 ) -> None:
     """Whatever shape a server's JSON takes, the test fails with SpeedTestError, never another exception."""
     fake.malformed[path] = body
-    monkeypatch.setattr(speed_test, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
+    monkeypatch.setattr(speed_test_runner, "_backends", lambda: {name: lambda: BACKENDS[name](fake.base)})
     with pytest.raises(SpeedTestError):
         await run_speed_test(name, session, DataLimit.even(8))  # type: ignore[arg-type]

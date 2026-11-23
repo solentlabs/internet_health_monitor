@@ -41,6 +41,8 @@ jobs:
           # security-extended: every security query, high and medium precision;
           # security-and-quality adds code quality queries.
           queries: security-extended,security-and-quality
+          # Rules Ruff already enforces, excluded with their rationale.
+          config-file: .github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

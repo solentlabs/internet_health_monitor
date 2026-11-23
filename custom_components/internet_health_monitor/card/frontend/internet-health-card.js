@@ -12,10 +12,15 @@ const UNAVAILABLE = "card_unavailable";
 // After a failed load, retry no sooner than this: hass updates arrive many times a second.
 const RETRY_MS = 30000;
 const GRAPH_HOURS_MAX = 168;
+const HOP_LAYOUTS = [
+  { value: "cards", label: "A card per hop" },
+  { value: "table", label: "One combined card" },
+];
 
 const LABELS = {
   include_status: "Network status",
   include_hops: "Each hop",
+  hop_layout: "Hop layout",
   include_latency: "Latency graphs",
   include_jitter: "Jitter graph",
   include_packet_loss: "Packet loss graph",
@@ -34,6 +39,7 @@ class InternetHealthCard extends HTMLElement {
       schema: [
         { name: "include_status", default: true, selector: { boolean: {} } },
         { name: "include_hops", default: true, selector: { boolean: {} } },
+        { name: "hop_layout", default: "cards", selector: { select: { mode: "dropdown", options: HOP_LAYOUTS } } },
         { name: "include_latency", default: true, selector: { boolean: {} } },
         { name: "include_jitter", default: true, selector: { boolean: {} } },
         { name: "include_packet_loss", default: true, selector: { boolean: {} } },

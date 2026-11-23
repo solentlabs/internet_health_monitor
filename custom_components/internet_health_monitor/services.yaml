@@ -8,6 +8,14 @@ generate_dashboard_card:
       default: true
       selector:
         boolean:
+    hop_layout:
+      default: cards
+      selector:
+        select:
+          translation_key: hop_layout
+          options:
+            - cards
+            - table
     include_latency:
       default: true
       selector:

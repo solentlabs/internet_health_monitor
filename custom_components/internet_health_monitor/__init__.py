@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import logging
+from importlib.metadata import (
+    PackageNotFoundError,
+    version as package_version,
+)
 
 from aiohasupervisor import SupervisorError
 from homeassistant.components.hassio import get_supervisor_client
@@ -72,6 +76,7 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+CORE_PACKAGE = "solentlabs-internet-health-monitor-core"  # manifest.json requirements
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -84,7 +89,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntry) -> bool:
     """Set up from a config entry; fail clearly if this host cannot measure anything."""
-    _LOGGER.info("%s version %s is starting", NAME, VERSION)
+    installation_type = (await async_get_system_info(hass))["installation_type"]
+    core = await hass.async_add_executor_job(_core_version)
+    _LOGGER.info("%s v%s starting [%s] — core: %s", NAME, VERSION, installation_type, core)
     options = entry.options
     dns_server, dns_source = await _async_dns_server(hass, options.get(CONF_DNS_SERVER, DEFAULT_DNS_SERVER))
     config = NetworkDiagnosticsConfig(
@@ -121,7 +128,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InternetHealthConfigEntr
         diagnostics=diagnostics,
         usage_totals=options.get(CONF_USAGE_TOTALS, False),
         long_term_statistics=options.get(CONF_LONG_TERM_STATISTICS, False),
-        installation_type=(await async_get_system_info(hass))["installation_type"],
+        installation_type=installation_type,
         speed_test=await _async_speed_test(hass, entry, usage),
     )
     _show_hidden_usage_sensors(hass, entry)
@@ -200,6 +207,14 @@ async def async_remove_entry(hass: HomeAssistant, entry: InternetHealthConfigEnt
         ir.async_delete_issue(hass, DOMAIN, f"{tool}_missing")
     await Store[dict[str, object]](hass, 1, STORAGE_KEY).async_remove()
     await Store[dict[str, object]](hass, 1, USAGE_STORAGE_KEY).async_remove()
+
+
+def _core_version() -> str:
+    """The installed Core's version, as the startup line shows it (reads package metadata: run in an executor)."""
+    try:
+        return f"v{package_version(CORE_PACKAGE)}"
+    except PackageNotFoundError:
+        return "not installed"
 
 
 def dns_server_address(choice: str) -> str:

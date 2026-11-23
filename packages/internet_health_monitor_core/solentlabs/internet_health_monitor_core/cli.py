@@ -20,7 +20,8 @@ from .network_diagnostics import (
     NetworkDiagnostics,
     NetworkDiagnosticsConfig,
 )
-from .speed_test import BACKEND_NAMES, DataLimit, SpeedTestError, run_speed_test
+from .speed_test import BACKEND_NAMES, DataLimit, SpeedTestError
+from .speed_test_runner import run_speed_test
 from .timing import (
     DEFAULT_PING_COUNT,
     PING_COUNT_MAX,

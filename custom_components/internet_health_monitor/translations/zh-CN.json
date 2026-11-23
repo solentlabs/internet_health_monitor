@@ -154,6 +154,12 @@
         "opendns": "OpenDNS (208.67.222.222)"
       }
     },
+    "hop_layout": {
+      "options": {
+        "cards": "每跳一张卡片",
+        "table": "一张合并卡片"
+      }
+    },
     "speed_test_backend": {
       "options": {
         "none": "关闭",
@@ -478,6 +484,10 @@
         "include_hops": {
           "name": "每一跳",
           "description": "每一跳一张卡片，显示当前延迟、抖动和丢包。"
+        },
+        "hop_layout": {
+          "name": "跳点布局",
+          "description": "每跳一张卡片，或一张合并卡片：每跳及互联网参考点各占一行，显示延迟、抖动、丢包率和地址。"
         },
         "include_latency": {
           "name": "延迟图",

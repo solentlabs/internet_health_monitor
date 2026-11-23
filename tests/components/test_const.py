@@ -51,3 +51,10 @@ def test_translation_has_every_string(language: str) -> None:
     source = _keys(json.loads((MANIFEST.parent / "strings.json").read_text(encoding="utf-8")))
     translated = _keys(json.loads((TRANSLATIONS / f"{language}.json").read_text(encoding="utf-8")))
     assert (sorted(source - translated), sorted(translated - source)) == ([], [])
+
+
+def test_every_sensor_has_an_icon() -> None:
+    """Each sensor in strings.json has an icon in icons.json, so none falls back to a default."""
+    strings = json.loads((MANIFEST.parent / "strings.json").read_text(encoding="utf-8"))
+    icons = json.loads((MANIFEST.parent / "icons.json").read_text(encoding="utf-8"))
+    assert sorted(set(strings["entity"]["sensor"]) - set(icons["entity"]["sensor"])) == []

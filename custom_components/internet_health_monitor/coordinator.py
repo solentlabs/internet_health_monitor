@@ -29,8 +29,8 @@ from solentlabs.internet_health_monitor_core.speed_test import (
     DataLimit,
     SpeedTestError,
     SpeedTestResult,
-    run_speed_test,
 )
+from solentlabs.internet_health_monitor_core.speed_test_runner import run_speed_test
 from solentlabs.internet_health_monitor_core.timing import (
     POLL_INTERVAL_S,
     SPEED_TEST_AUTO_START_HOUR,

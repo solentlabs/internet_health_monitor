@@ -287,7 +287,7 @@ def wait_for_http(port: int, timeout: int = 60) -> bool:
                 if b"HTTP" in response:
                     return True
         except (TimeoutError, OSError):
-            pass
+            pass  # not listening yet: wait and try again until the timeout
         time.sleep(1)
         print(".", end="", flush=True)
     return False

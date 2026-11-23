@@ -113,14 +113,13 @@ def main() -> int:
     parser.add_argument("--format", action="store_true", help="Run format check only")
     args = parser.parse_args()
 
-    run_all = not (args.lint or args.format)
-
+    # With neither flag, run both.
     results = []
 
-    if run_all or args.lint:
+    if args.lint or not args.format:
         results.append(("Lint", check_lint()))
 
-    if run_all or args.format:
+    if args.format or not args.lint:
         results.append(("Format", check_format()))
 
     print("")

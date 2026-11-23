@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -14,16 +15,17 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.template import Template
 from homeassistant.util.yaml import parse_yaml
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.internet_health_monitor.card import CARD_MODULE, CARD_URL_BASE, async_register_card
 from custom_components.internet_health_monitor.card.commands import CARD_CONFIG_COMMAND, ERR_CARD_UNAVAILABLE
 from custom_components.internet_health_monitor.const import DOMAIN, VERSION
-from custom_components.internet_health_monitor.dashboard import CARD_OPTIONS_SCHEMA, build_card_config
+from custom_components.internet_health_monitor.dashboard import CARD_OPTIONS_SCHEMA, PATH_ICONS, build_card_config
 from custom_components.internet_health_monitor.services import SERVICE_GENERATE_DASHBOARD_CARD
 
-from .conftest import SetupEntry, entity_id
+from .conftest import SetupEntry, entity_id, make_result
 
 FRONTEND = Path(__file__).parents[2] / "custom_components" / DOMAIN / "card" / "frontend"
 
@@ -123,6 +125,8 @@ LAYOUT_CASES: list[tuple[dict[str, Any], dict[str, Any], list[str], str]] = [
     ({},         {"include_hops": False},   [STATUS, *GRAPHS],                "hops_off"),
     ({},         {"include_jitter": False}, [STATUS, *HOPS, *NO_JITTER],      "one_graph_off"),
     ({},         NO_GRAPHS,                 [STATUS, *HOPS],                  "graphs_off"),
+    ({},         {"hop_layout": "table"},   [STATUS, "Network path", *GRAPHS], "combined"),
+    (NO_REFERENCE, {"hop_layout": "table"}, [STATUS, "Network path", *GRAPHS], "combined_no_reference"),
     (NO_REFERENCE, {},                      [STATUS, *HOPS[:3], *GRAPHS],     "no_reference"),
 ]
 # fmt: on
@@ -216,6 +220,7 @@ INVALID_OPTIONS: list[tuple[dict[str, Any], str]] = [
     ({"graph_hours": 0},      "hours_below_range"),
     ({"graph_hours": 169},    "hours_above_range"),
     ({"include_graphs": True}, "unknown_key"),
+    ({"hop_layout": "grid"},  "unknown_hop_layout"),
 ]
 # fmt: on
 
@@ -326,7 +331,7 @@ async def test_register_card_failure_is_contained(caplog: pytest.LogCaptureFixtu
     assert "monitoring is unaffected" in caplog.text
 
 
-FORM_FIELD = re.compile(r'\{ name: "(\w+)", default: ([\w.]+),')
+FORM_FIELD = re.compile(r'\{ name: "(\w+)", default: ("?[\w.]+"?),')
 
 
 def test_card_form_matches_schema() -> None:
@@ -452,3 +457,52 @@ async def test_card_import_failure_does_not_stop_monitoring(
     assert "monitoring is unaffected" in caplog.text
     entry = await setup_entry()
     assert entry.state is ConfigEntryState.LOADED
+
+
+# The combined path card (hop_layout: table), rendered by HA's template engine as the
+# dashboard would: a row per point with its sensor's icon, readings with their units, and
+# its address in a column of its own.
+COMBINED = """| | Latency | Jitter | Loss | Address |
+|:--|--:|--:|--:|:--|
+| <ha-icon icon="mdi:router-wireless"></ha-icon> Gateway | 1.2 ms | 0.30 ms | 0.0 % | 192.168.1.1 |
+| <ha-icon icon="mdi:wan"></ha-icon> ISP | 8.5 ms | 1.10 ms | 0.0 % | 10.0.0.1 |
+| <ha-icon icon="mdi:server-network"></ha-icon> Hop 3 | 12.4 ms | 2.00 ms | 33.3 % | 198.51.100.1 |
+| <ha-icon icon="mdi:earth"></ha-icon> Internet | 15.2 ms | 0.40 ms | 0.0 % | 1.1.1.1 |"""
+
+
+async def test_combined_path_card_renders(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """One markdown card: a row per point, its latency, jitter, loss and address across."""
+    await setup_entry()
+    card = build_card_config(hass, CARD_OPTIONS_SCHEMA({"hop_layout": "table"}))
+    path = card["cards"][1]
+    assert (path["type"], path["title"]) == ("markdown", "Network path")
+    assert Template(path["content"], hass).async_render(parse_result=False) == COMBINED
+
+
+async def test_combined_path_card_leaves_out_the_reference_when_off(
+    hass: HomeAssistant, setup_entry: SetupEntry
+) -> None:
+    """With the internet reference off there is no Internet row."""
+    await setup_entry(internet_reference="off")
+    path = build_card_config(hass, CARD_OPTIONS_SCHEMA({"hop_layout": "table"}))["cards"][1]
+    rendered = Template(path["content"], hass).async_render(parse_result=False)
+    assert "Internet" not in rendered
+    assert rendered.splitlines()[-1].startswith('| <ha-icon icon="mdi:server-network"></ha-icon> Hop 3 |')
+
+
+async def test_combined_path_card_shows_a_dash_for_a_missing_address(
+    hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock
+) -> None:
+    """A hop not found yet has no address: a dash, not the word None."""
+    poll.return_value = make_result(hops=[])
+    await setup_entry()
+    path = build_card_config(hass, CARD_OPTIONS_SCHEMA({"hop_layout": "table"}))["cards"][1]
+    rendered = Template(path["content"], hass).async_render(parse_result=False)
+    assert "None" not in rendered
+    assert rendered.splitlines()[3].endswith("| – |")
+
+
+def test_path_icons_match_the_sensors() -> None:
+    """Each row's icon is its latency sensor's icon in icons.json."""
+    icons = json.loads((FRONTEND.parents[1] / "icons.json").read_text(encoding="utf-8"))["entity"]["sensor"]
+    assert {key: icon for key, icon in PATH_ICONS.items()} == {key: icons[key]["default"] for key in PATH_ICONS}

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Six sensors had no icon:** internet latency, jitter and packet loss,
+  the bufferbloat grade, and the download and upload latency increases.
+  A test now checks every sensor has one.
+
+### Added
+
+- **Combined path card.** A *Hop layout* card option: a card per hop as
+  before, or one card with a row each for the gateway, ISP, hop 3 and the
+  internet reference: its icon, latency, jitter, packet loss and address.
+
+### Changed
+
+- **Startup log line** names the integration's version, Home Assistant's
+  install type and the installed Core's version, as Cable Modem Monitor
+  does: `Internet Health Monitor v0.1.0b4 starting [Home Assistant OS] —
+  core: v0.1.0b4`. A mismatch between the two shows in the first line.
+
+- **Core: `run_speed_test` moved** to
+  `solentlabs.internet_health_monitor_core.speed_test_runner`, with the
+  backend registry, so the speed test interface no longer imports the
+  backends that implement it. Import it from there.
+
 ## [0.1.0b3] - 2026-11-23
 
 ### Fixed
