@@ -64,6 +64,17 @@ Wi-Fi rather than the WAN.
 same amount points to the LAN; ISP hop rising alone points to the WAN.
 Both readings come from the same poll.
 
+## UC-9: Tell a problem on the line from one past it
+
+**Who:** Any user whose connection feels slow.
+**Need:** A reading past the ISP's first routers, from a target built to
+answer, so a slowdown can be placed at home (hop 1), on the line (hop
+2), or beyond it.
+**Done when:** An internet reference, on by default, reports latency,
+jitter and packet loss from the same poll as the hops; the user can
+change its provider or turn it off
+([ARCHITECTURE_DECISIONS.md § ADR-015](ARCHITECTURE_DECISIONS.md#adr-015-internet-reference-ping-on-by-default-to-cloudflare)).
+
 ## Out of Scope
 
 - Fixing bloat (router configuration, SQM).

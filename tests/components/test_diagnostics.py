@@ -40,5 +40,6 @@ async def test_diagnostics_carry_redacted_logs(hass: HomeAssistant, setup_entry:
     hops = data["result"]["hops"]
     assert hops[1]["hostname"] == REDACTED
     assert hops[2]["ip"] == REDACTED
-    assert (hops[0]["ip"], data["result"]["trace_target"]) == ("192.168.1.1", "8.8.8.8")
+    assert (hops[0]["ip"], data["result"]["trace_target"]) == ("192.168.1.1", "1.1.1.1")
+    assert data["result"]["internet"]["ip"] == "1.1.1.1"  # a listed provider places no one
     assert hops[2]["asn"] == 64500  # the network a hop belongs to stays

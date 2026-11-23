@@ -24,6 +24,7 @@ internet-health-monitor --speed-test cloudflare   # one speed test, one JSON lin
 | -------- | --------- | --------- |
 | `--dns-server` | `auto` | DNS server to time; `auto` reads `/etc/resolv.conf` |
 | `--ping-count` | 3 | Pings per target per poll (1 to 10) |
+| `--internet-reference` | `1.1.1.1` | Public IPv4 address pinged each poll as a reading past your ISP, like a hop, or `off` |
 | `--interval` | none | Seconds between polls (up to 3600, and at least as long as a poll can take: 5 s per ping per target). Without it, one poll and exit. The HA integration uses 60 |
 | `--hop-ownership` | off | Add each public hop's network operator; sends those hop addresses to Team Cymru |
 | `--speed-test` | none | Run one speed test with `cloudflare`, `mlab` or `librespeed`, print it, and exit. The service sees your public IP address |

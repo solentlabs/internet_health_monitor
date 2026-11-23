@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
+from ipaddress import IPv4Address
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from aiohasupervisor import SupervisorError
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
-    CONF_ENABLE_DNS_MONITORING,
-    CONF_ENABLE_GATEWAY_MONITORING,
     CONF_HOP_OWNERSHIP,
+    CONF_INTERNET_REFERENCE,
     CONF_PING_COUNT,
     DOMAIN,
 )
@@ -32,6 +34,56 @@ OPTION_CASES = [
     ("stored address", {CONF_DNS_SERVER: "1.1.1.1"},                         ("1.1.1.1", 3, False)),
 ]
 # fmt: on
+
+
+def _interface(primary: bool, *nameservers: str, ipv4: bool = True) -> SimpleNamespace:
+    """A Supervisor network interface with the given IPv4 nameservers."""
+    v4 = SimpleNamespace(nameservers=[IPv4Address(n) for n in nameservers]) if ipv4 else None
+    return SimpleNamespace(primary=primary, ipv4=v4)
+
+
+# Auto DNS under the Supervisor -> (server, source) passed to Core: the host's own
+# resolver from the Supervisor's network info, not its DNS forwarder (ARCHITECTURE.md
+# § One Poll). Otherwise auto is left to Core, which reports the source itself (None).
+ROUTER = [_interface(True, "192.168.1.1", "192.168.1.2")]
+SECOND = [_interface(False, "10.0.0.1"), _interface(True, "192.168.1.1")]
+NO_IPV4 = [_interface(True, ipv4=False)]
+HOST = ("192.168.1.1", "host")
+CORE = ("auto", None)
+# fmt: off
+SUPERVISOR_DNS_CASES: list[tuple[str, bool, dict[str, Any], Any, tuple[str, str | None]]] = [
+    # (description,               supervisor, options,                    network info,            expected)
+    ("not a Supervisor install",  False, {},                              ROUTER,                  CORE),
+    ("primary's first server",    True,  {},                              ROUTER,                  HOST),
+    ("primary listed second",     True,  {},                              SECOND,                  HOST),
+    ("primary has no servers",    True,  {},                              [_interface(True)],      CORE),
+    ("primary has no IPv4",       True,  {},                              NO_IPV4,                 CORE),
+    ("Supervisor error",          True,  {},                              SupervisorError("down"), CORE),
+    ("chosen server kept",        True,  {CONF_DNS_SERVER: "quad9"},      ROUTER,                  ("9.9.9.9", None)),
+]
+# fmt: on
+
+
+# Internet reference option -> address the core pings (ADR-015)
+# fmt: off
+REFERENCE_OPTION_CASES: list[tuple[str, dict[str, Any], str | None]] = [
+    ("default",          {},                                   "1.1.1.1"),
+    ("listed provider",  {CONF_INTERNET_REFERENCE: "google"},  "8.8.8.8"),
+    ("typed address",    {CONF_INTERNET_REFERENCE: "8.8.4.4"}, "8.8.4.4"),
+    ("off",              {CONF_INTERNET_REFERENCE: "off"},     None),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    ("description", "options", "expected"), REFERENCE_OPTION_CASES, ids=[c[0] for c in REFERENCE_OPTION_CASES]
+)
+async def test_internet_reference_reaches_core(
+    setup_entry: SetupEntry, description: str, options: dict[str, Any], expected: str | None
+) -> None:
+    """The chosen internet reference, or none, is what the core pings."""
+    entry = await setup_entry(**options)
+    assert entry.runtime_data.diagnostics.config.internet_reference == expected
 
 
 async def test_setup_and_unload(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
@@ -52,6 +104,35 @@ async def test_options_reach_core(
     entry = await setup_entry(**options)
     config = entry.runtime_data.diagnostics.config
     assert (config.dns_server, config.ping_count, config.hop_ownership) == expected
+
+
+@pytest.mark.parametrize(
+    ("description", "supervisor", "options", "network", "expected"),
+    SUPERVISOR_DNS_CASES,
+    ids=[c[0] for c in SUPERVISOR_DNS_CASES],
+)
+async def test_auto_dns_under_supervisor(
+    setup_entry: SetupEntry,
+    description: str,
+    supervisor: bool,
+    options: dict[str, Any],
+    network: Any,
+    expected: tuple[str, str | None],
+) -> None:
+    """Auto times the host's resolver, which the Supervisor reports, not its own forwarder."""
+    info = (
+        AsyncMock(side_effect=network)
+        if isinstance(network, Exception)
+        else AsyncMock(return_value=SimpleNamespace(interfaces=network))
+    )
+    client = SimpleNamespace(network=SimpleNamespace(info=info))
+    with (
+        patch("custom_components.internet_health_monitor.is_hassio", return_value=supervisor),
+        patch("custom_components.internet_health_monitor.get_supervisor_client", return_value=client),
+    ):
+        entry = await setup_entry(**options)
+    config = entry.runtime_data.diagnostics.config
+    assert (config.dns_server, config.dns_source) == expected
 
 
 async def test_missing_tools_is_a_setup_error(setup_entry: SetupEntry) -> None:
@@ -131,15 +212,13 @@ async def test_poll_interval_comes_from_core(setup_entry: SetupEntry) -> None:
 # ┌──────────────────────────────────┬──────────────────────────────┬──────────────────────────────────┐
 # │ options changed to               │ removed                      │ description                      │
 # ├──────────────────────────────────┼──────────────────────────────┼──────────────────────────────────┤
-# │ gateway monitoring off           │ hop sensors, gateway binary  │ hop entities no longer created   │
-# │ dns monitoring off               │ dns sensor, internet binary  │ dns entities no longer created   │
+# │ internet reference off           │ the three internet sensors   │ reference entities not created   │
 # └──────────────────────────────────┴──────────────────────────────┴──────────────────────────────────┘
 # fmt: off
 STALE_CASES: list[tuple[dict[str, Any], set[tuple[str, str]], str]] = [
-    ({CONF_ENABLE_GATEWAY_MONITORING: False},
-     {("sensor", "hop_2_latency"), ("binary_sensor", "gateway_reachable")}, "gateway_off"),
-    ({CONF_ENABLE_DNS_MONITORING: False},
-     {("sensor", "dns_latency"), ("binary_sensor", "internet_reachable")},  "dns_off"),
+    ({CONF_INTERNET_REFERENCE: "off"},
+     {("sensor", "internet_latency"), ("sensor", "internet_jitter"), ("sensor", "internet_packet_loss")},
+                                                                          "reference_off"),
 ]
 # fmt: on
 
@@ -159,10 +238,3 @@ async def test_entities_no_longer_created_are_removed(
 
     await set_options(hass, entry, {})
     assert {key: entity_id(hass, platform, entry, key) for platform, key in removed} == before
-
-
-async def test_monitoring_switches_reach_core(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """Gateway and DNS monitoring off are passed to Core, which then sends nothing for them."""
-    entry = await setup_entry(**{CONF_ENABLE_GATEWAY_MONITORING: False, CONF_ENABLE_DNS_MONITORING: False})
-    config = entry.runtime_data.diagnostics.config
-    assert (config.monitor_gateway, config.monitor_dns) == (False, False)

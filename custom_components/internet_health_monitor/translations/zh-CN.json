@@ -5,20 +5,18 @@
         "title": "互联网健康监控",
         "description": "配置网络健康监控",
         "data": {
-          "enable_gateway_monitoring": "监控网关和跳点",
-          "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
           "ping_count": "每个目标的 ping 次数",
+          "internet_reference": "互联网参考点",
           "hop_ownership": "查询每一跳的运营方",
           "usage_totals": "使用量统计",
           "long_term_statistics": "长期统计",
           "speed_test_backend": "测速服务"
         },
         "data_description": {
-          "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
-          "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
           "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。也可以输入 IPv4 或 IPv6 地址，例如 Pi-hole 的地址。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
+          "internet_reference": "默认开启。每次轮询时像对待一跳一样 ping 此地址：显示运营商之外的延迟、抖动和丢包，与三跳并列。每分钟向所选提供商发送几个 ping，对方会看到你的公网 IP 地址；IHM 与其中任何一家均无关联。可选择其他提供商、输入一个公网 IPv4 地址，或选择关闭。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
           "usage_totals": "默认关闭。添加六个诊断传感器：已发送的 ping、已运行的 traceroute、已发送的 DNS 查询、已运行的测速，以及测速下载和上传的数据量，自安装起累计。关闭时仍会继续计数。",
           "long_term_statistics": "默认关闭。保存延迟、抖动、丢包、DNS 延迟和测速结果的每小时统计，用于数月的趋势；Home Assistant 永不删除它们。关闭时，历史记录仍覆盖最近 10 天。之后再关闭时，Home Assistant 会为每个传感器发出一次警告，直到您在“开发者工具 > 统计”中删除其统计。",
@@ -28,20 +26,18 @@
       "reconfigure": {
         "title": "重新配置互联网健康监控",
         "data": {
-          "enable_gateway_monitoring": "监控网关和跳点",
-          "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
           "ping_count": "每个目标的 ping 次数",
+          "internet_reference": "互联网参考点",
           "hop_ownership": "查询每一跳的运营方",
           "usage_totals": "使用量统计",
           "long_term_statistics": "长期统计",
           "speed_test_backend": "测速服务"
         },
         "data_description": {
-          "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
-          "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
           "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。也可以输入 IPv4 或 IPv6 地址，例如 Pi-hole 的地址。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
+          "internet_reference": "默认开启。每次轮询时像对待一跳一样 ping 此地址：显示运营商之外的延迟、抖动和丢包，与三跳并列。每分钟向所选提供商发送几个 ping，对方会看到你的公网 IP 地址；IHM 与其中任何一家均无关联。可选择其他提供商、输入一个公网 IPv4 地址，或选择关闭。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
           "usage_totals": "默认关闭。添加六个诊断传感器：已发送的 ping、已运行的 traceroute、已发送的 DNS 查询、已运行的测速，以及测速下载和上传的数据量，自安装起累计。关闭时仍会继续计数。",
           "long_term_statistics": "默认关闭。保存延迟、抖动、丢包、DNS 延迟和测速结果的每小时统计，用于数月的趋势；Home Assistant 永不删除它们。关闭时，历史记录仍覆盖最近 10 天。之后再关闭时，Home Assistant 会为每个传感器发出一次警告，直到您在“开发者工具 > 统计”中删除其统计。",
@@ -80,7 +76,8 @@
       "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。",
       "data_limit_too_small": "自动请填 0，否则至少 100 MB。",
       "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。",
-      "invalid_dns_server": "请输入 IPv4 或 IPv6 地址，或从列表中选择服务器。"
+      "invalid_dns_server": "请输入 IPv4 或 IPv6 地址，或从列表中选择服务器。",
+      "invalid_internet_reference": "请输入一个公网 IPv4 地址，或从列表中选择一个提供商。"
     }
   },
   "options": {
@@ -88,20 +85,18 @@
       "init": {
         "title": "互联网健康监控选项",
         "data": {
-          "enable_gateway_monitoring": "监控网关和跳点",
-          "enable_dns_monitoring": "监控 DNS",
           "dns_server": "DNS 服务器",
           "ping_count": "每个目标的 ping 次数",
+          "internet_reference": "互联网参考点",
           "hop_ownership": "查询每一跳的运营方",
           "usage_totals": "使用量统计",
           "long_term_statistics": "长期统计",
           "speed_test_backend": "测速服务"
         },
         "data_description": {
-          "enable_gateway_monitoring": "每次轮询时 ping 网关及通往互联网的后两跳：延迟、抖动和丢包率。",
-          "enable_dns_monitoring": "每次轮询时，在下方 DNS 服务器上测量一次不经缓存的解析。",
           "dns_server": "测量其解析时间的服务器。自动检测使用本机已配置的服务器。也可以输入 IPv4 或 IPv6 地址，例如 Pi-hole 的地址。",
           "ping_count": "每次轮询向每个目标发送的 ping 次数（1 到 10）。次数越多，读数越稳定，丢包率越精细。",
+          "internet_reference": "默认开启。每次轮询时像对待一跳一样 ping 此地址：显示运营商之外的延迟、抖动和丢包，与三跳并列。每分钟向所选提供商发送几个 ping，对方会看到你的公网 IP 地址；IHM 与其中任何一家均无关联。可选择其他提供商、输入一个公网 IPv4 地址，或选择关闭。",
           "hop_ownership": "默认关闭。显示每个公网跳点的网络运营方 (ASN)。会通过您的 DNS 服务器，将这些跳点地址（您运营商的路由器，而非您自己的地址）发送到 Team Cymru 的免费 IP 到 ASN 服务。私有地址和运营商共享地址没有归属，永远不会发送。",
           "usage_totals": "默认关闭。添加六个诊断传感器：已发送的 ping、已运行的 traceroute、已发送的 DNS 查询、已运行的测速，以及测速下载和上传的数据量，自安装起累计。关闭时仍会继续计数。",
           "long_term_statistics": "默认关闭。保存延迟、抖动、丢包、DNS 延迟和测速结果的每小时统计，用于数月的趋势；Home Assistant 永不删除它们。关闭时，历史记录仍覆盖最近 10 天。之后再关闭时，Home Assistant 会为每个传感器发出一次警告，直到您在“开发者工具 > 统计”中删除其统计。",
@@ -136,13 +131,23 @@
       "mlab_consent_required": "请确认以使用 M-Lab，或关闭此对话框并选择其他服务。",
       "data_limit_too_small": "自动请填 0，否则至少 100 MB。",
       "data_limit_over_budget": "一次测试可能用掉超过整个数据预算。请降低数据上限、填 0 使用自动上限，或提高预算。",
-      "invalid_dns_server": "请输入 IPv4 或 IPv6 地址，或从列表中选择服务器。"
+      "invalid_dns_server": "请输入 IPv4 或 IPv6 地址，或从列表中选择服务器。",
+      "invalid_internet_reference": "请输入一个公网 IPv4 地址，或从列表中选择一个提供商。"
     }
   },
   "selector": {
     "dns_server": {
       "options": {
         "auto": "自动检测",
+        "cloudflare": "Cloudflare (1.1.1.1)",
+        "google": "Google (8.8.8.8)",
+        "quad9": "Quad9 (9.9.9.9)",
+        "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "internet_reference": {
+      "options": {
+        "off": "关闭",
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
@@ -179,16 +184,25 @@
         "name": "第 2 跳丢包率（运营商）"
       },
       "hop_3_latency": {
-        "name": "第 3 跳延迟（骨干网）"
+        "name": "第 3 跳延迟"
       },
       "hop_3_jitter": {
-        "name": "第 3 跳抖动（骨干网）"
+        "name": "第 3 跳抖动"
       },
       "hop_3_packet_loss": {
-        "name": "第 3 跳丢包率（骨干网）"
+        "name": "第 3 跳丢包率"
       },
       "dns_latency": {
         "name": "DNS 延迟"
+      },
+      "internet_latency": {
+        "name": "互联网延迟"
+      },
+      "internet_jitter": {
+        "name": "互联网抖动"
+      },
+      "internet_packet_loss": {
+        "name": "互联网丢包率"
       },
       "connection_type": {
         "name": "连接类型",

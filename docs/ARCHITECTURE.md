@@ -10,11 +10,15 @@ Use cases: [USE_CASES.md](USE_CASES.md).
 IHM watches the path from the Home Assistant host to the internet:
 
 ```text
-HA host ──> hop 1 (gateway) ──> hop 2 (ISP) ──> hop 3 (backbone)
+HA host ──> hop 1 (gateway) ──> hop 2 (ISP) ──> hop 3 (next router)
+   ├──────────────────────────────────────────> internet reference
    └──────────────────────────────────────────> DNS server
 ```
 
-For each hop it reports latency, jitter and packet loss; for DNS, the
+For each hop it reports latency, jitter and packet loss, and its
+`address_type` (private, shared or public, from the address itself:
+[REFERENCES.md § R24](REFERENCES.md#r24-addresses-that-place-no-one));
+for DNS, the
 time to resolve a query. Comparing hops localizes a problem: hop 2
 rising while hop 1 stays flat points past the router, which is how IHM
 detects bufferbloat passively (ADR-001).
@@ -64,11 +68,11 @@ scheduling. It contains no measurement logic.
 
 | File | Role |
 | ------ | ------ |
-| `__init__.py` | Builds `NetworkDiagnostics` from the entry's options. Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`. The options flow and Reconfigure reload the entry. |
+| `__init__.py` | Builds `NetworkDiagnostics` from the entry's options; with DNS server on auto under the Supervisor, passes the host's own DNS server (§ One Poll). Fails setup with a translated error on an unsupported OS or when `ip` or `ping` is missing; a failed first poll retries. Stores runtime data on `entry.runtime_data`. The options flow and Reconfigure reload the entry. |
 | `coordinator.py` | `InternetHealthCoordinator` polls every `POLL_INTERVAL_S` (60 s, from Core's `timing.py`; ADR-007). `SpeedTestCoordinator` runs a speed test when the button is pressed and, with automatic tests on, overnight at the spacing Core's `data_plan.py` derives from the budget; sizes each test's data limit (automatic from the last result, or the user's); enforces the data limit, daily limit, 30-day data budget and M-Lab's automated-client rules; and stores each run's time and data, the last automatic test and the last result (HA storage `internet_health_monitor.speed_test`). Also the typed config entry and runtime data. |
 | `entity.py` | `InternetHealthEntity`: unique id and the entry's single service device, shared by every entity. |
-| `config_flow.py` | Setup and options, two screens: `build_schema` (gateway and DNS monitoring, DNS server, pings per target 1 to 10, hop ownership, usage totals, speed test service), then, with a service chosen, `build_speed_test_schema` (automatic tests, data limit with 0 for automatic, daily test limit, data budget), with the working shown from the last result and a data limit no test could use refused; an M-Lab consent step. One entry per HA. |
-| `sensor.py` | Per hop (1 to 3): latency, jitter, packet loss. Plus DNS latency and, with a service chosen, six speed test readings, `state_class: measurement` only with the Long-term statistics option on (ADR-013). Usage totals: no `state_class`, so no long-term statistics. Diagnostic enums: Connection type (Core's host environment) and Install type (HA's own `system_info`). |
+| `config_flow.py` | Setup and options, two screens: `build_schema` (DNS server, pings per target 1 to 10, internet reference, hop ownership, usage totals, speed test service), then, with a service chosen, `build_speed_test_schema` (automatic tests, data limit with 0 for automatic, daily test limit, data budget), with the working shown from the last result and a data limit no test could use refused; an M-Lab consent step. One entry per HA. |
+| `sensor.py` | Per hop (1 to 3), and for the internet reference when set: latency, jitter, packet loss. Plus DNS latency and, with a service chosen, six speed test readings, `state_class: measurement` only with the Long-term statistics option on (ADR-013). Usage totals: no `state_class`, so no long-term statistics. Diagnostic enums: Connection type (Core's host environment) and Install type (HA's own `system_info`). |
 | `binary_sensor.py` | `gateway_reachable` (gateway ping answered), `internet_reachable` (DNS query succeeded). |
 | `button.py` | Refresh diagnostics; Reset network cache (disabled by default); Run speed test (with a service chosen; a press with no user counts as automated). A failed press raises a translated error. |
 | `dashboard.py`, `services.py`, `card/` | Dashboard card: one layout builder behind the `generate_dashboard_card` action and the bundled Lovelace card; additive, so a card failure never stops monitoring ([DASHBOARD_CARD.md](DASHBOARD_CARD.md)). Registered once in `async_setup`. |
@@ -81,16 +85,26 @@ scheduling. It contains no measurement logic.
 
 ## One Poll
 
-1. **First run only:** resolve the DNS server (system `/etc/resolv.conf`
-   when set to auto, else the chosen server; fallback `1.1.1.1`). Pick
-   the traceroute target: the DNS server if it is a public IPv4 address, else `8.8.8.8` (ADR-014).
+1. **First run only:** resolve the DNS server and note its source,
+   which the DNS latency sensor and diagnostics report as `dns_source`:
+   the chosen server (`chosen`); with auto under the Supervisor, the
+   primary interface's first IPv4 nameserver from the Supervisor's
+   network info (`host`), since `/etc/resolv.conf` inside HA names the
+   Supervisor's own DNS relay; otherwise system `/etc/resolv.conf`
+   (`system`), which may itself be a local relay such as Docker's
+   127.0.0.11 or systemd-resolved's 127.0.0.53
+   ([REFERENCES.md § R26](REFERENCES.md#r26-local-dns-relays)); fallback
+   `1.1.1.1` (`fallback`). Pick the traceroute target: the internet
+   reference when set (ADR-015), else the DNS server if it is a public
+   IPv4 address, else `8.8.8.8` (ADR-014).
 2. **Until cached:** detect the gateway (`ip route`), then hops 1 to 3
    (`traceroute -n -q 1 -w 2 -m 3 <target>`).
 3. **Once, after hops are known:** look up each hop's hostname by
    reverse DNS and detect the host environment (container, connection
    type).
-4. **Every poll, in parallel:** ping the gateway, ping each hop, query
-   DNS. The DNS query is one UDP message Core builds itself (RFC 1035,
+4. **Every poll, in parallel:** ping the gateway, ping each hop, ping
+   the internet reference (a public IPv4 address, Cloudflare's 1.1.1.1
+   by default, or none: ADR-015), query DNS. The DNS query is one UDP message Core builds itself (RFC 1035,
    [REFERENCES.md § R14](REFERENCES.md#r14-dns-message-format)), sent to the
    configured server for a random name (`_ihm-<random>.cloudflare.com`),
    so no cache can answer; latency is the time to its reply, NOERROR or
@@ -104,7 +118,10 @@ scheduling. It contains no measurement logic.
    A hop's latency is the mean of its replies' round-trip times; loss is
    the share of pings with no reply. Jitter is the mean absolute
    difference between consecutive round-trip times within the poll
-   (ADR-009, [REFERENCES.md § R18](REFERENCES.md#r18-jitter)).
+   (ADR-009, [REFERENCES.md § R18](REFERENCES.md#r18-jitter)). Core
+   rounds latency, jitter and DNS latency to 0.001 ms and loss to
+   0.1 % where it produces them, so float noise never reaches entities
+   or diagnostics.
 
 **Reachability between polls** (ADR-012): the binary sensors show a
 confirmed state. A failed result starts quick checks (one gateway ping or

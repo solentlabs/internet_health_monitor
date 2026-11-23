@@ -39,7 +39,8 @@ CARD_OPTIONS_SCHEMA = probatio.Schema(
 # a name the user gave the entity replaces the label.
 Row = tuple[str, str, str]
 
-HOP_NAMES = {1: "Gateway", 2: "ISP", 3: "Backbone"}
+# Where hops 1 and 2 usually are; hop 3 has no such place, so it is named by number only.
+HOP_PLACES = {1: "Gateway", 2: "ISP"}
 _HOPS = range(1, NUM_HOPS + 1)
 
 _STATUS: list[Row] = [
@@ -59,9 +60,19 @@ def _hop_rows(hop: int) -> list[Row]:
     ]
 
 
+def _reference_rows() -> list[Row]:
+    """The internet reference's current readings (ADR-015)."""
+    return [
+        ("sensor", "internet_latency", "Latency"),
+        ("sensor", "internet_jitter", "Jitter"),
+        ("sensor", "internet_packet_loss", "Packet loss"),
+    ]
+
+
 def _hop_lines(metric: str) -> list[Row]:
-    """One metric across the hops, for a graph."""
-    return [("sensor", f"hop_{hop}_{metric}", HOP_NAMES[hop]) for hop in _HOPS]
+    """One metric along the path, for a graph: each hop, then the internet reference."""
+    hops = [("sensor", f"hop_{hop}_{metric}", HOP_PLACES.get(hop, f"Hop {hop}")) for hop in _HOPS]
+    return [*hops, ("sensor", f"internet_{metric}", "Internet")]
 
 
 # Option -> (graph title, lines).
@@ -172,7 +183,14 @@ def _direction_gauges(rows: list[dict[str, str]]) -> dict[str, Any]:
 def _hop_card(hop: int, rows: list[dict[str, str]]) -> dict[str, Any]:
     """One hop's readings, and its address from the first reading's hop_ip attribute."""
     address = {"type": "attribute", "entity": rows[0]["entity"], "attribute": "hop_ip", "name": "Address"}
-    return _entities(f"Hop {hop} · {HOP_NAMES[hop]}", [*rows, address])
+    title = f"Hop {hop} · {HOP_PLACES[hop]}" if hop in HOP_PLACES else f"Hop {hop}"
+    return _entities(title, [*rows, address])
+
+
+def _reference_card(rows: list[dict[str, str]]) -> dict[str, Any]:
+    """The internet reference's readings, and the address it pings from the first reading's attribute."""
+    address = {"type": "attribute", "entity": rows[0]["entity"], "attribute": "reference_ip", "name": "Address"}
+    return _entities("Internet reference", [*rows, address])
 
 
 def _run_button(row: dict[str, str]) -> dict[str, Any]:
@@ -209,6 +227,8 @@ def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) 
         parts.append(_entities("Network Status", status))
     if options["include_hops"]:
         parts += [_hop_card(h, r) for h in _HOPS if (r := rows(_hop_rows(h)))]
+        if reference := rows(_reference_rows()):
+            parts.append(_reference_card(reference))
     parts += [_graph(title, lines, hours) for opt, title, t in _GRAPHS if options[opt] and (lines := rows(t))]
     if options["include_speed_test"] and (speed := rows(_SPEED_TEST)):
         parts.append(_entities("Speed test", speed))

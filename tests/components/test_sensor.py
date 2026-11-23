@@ -11,7 +11,7 @@ from homeassistant.const import STATE_UNKNOWN, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from custom_components.internet_health_monitor.const import CONF_ENABLE_DNS_MONITORING, CONF_ENABLE_GATEWAY_MONITORING
+from custom_components.internet_health_monitor.const import CONF_INTERNET_REFERENCE
 from solentlabs.internet_health_monitor_core.platforms.base import HostEnvironment
 
 from .conftest import SetupEntry, entity_id, make_result
@@ -37,11 +37,11 @@ STATE_CASES = [
     ("dns_latency",       "23.5"),
 ]
 
-# monitoring switched off -> sensors that must not exist
+# option -> sensors that must not exist, and ones that still must. Only the internet
+# reference can be turned off; gateway, hops and DNS always run (ADR-015, ADR-016).
 SWITCH_CASES = [
-    ("gateway off", {CONF_ENABLE_GATEWAY_MONITORING: False}, ["hop_1_latency", "hop_3_packet_loss"],
-     ["dns_latency"]),
-    ("dns off",     {CONF_ENABLE_DNS_MONITORING: False},     ["dns_latency"], ["hop_1_latency"]),
+    ("reference off", {CONF_INTERNET_REFERENCE: "off"}, ["internet_latency", "internet_packet_loss"],
+     ["hop_1_latency", "hop_3_packet_loss", "dns_latency"]),
 ]
 # fmt: on
 
@@ -87,6 +87,8 @@ async def test_hop_attributes(hass: HomeAssistant, setup_entry: SetupEntry) -> N
     hop3 = hass.states.get(entity_id(hass, "sensor", entry, "hop_3_latency") or "")
     assert hop2 is not None and hop3 is not None
     assert hop2.attributes["hop_ip"] == "10.0.0.1"
+    assert hop2.attributes["address_type"] == "private"
+    assert "typical_location" not in hop2.attributes
     assert hop2.attributes["hostname"] == "isp-router.example.com"
     assert "asn" not in hop2.attributes
     assert (hop3.attributes["asn"], hop3.attributes["as_name"]) == (64500, "EXAMPLE-NET")
@@ -99,6 +101,7 @@ async def test_dns_attributes(hass: HomeAssistant, setup_entry: SetupEntry) -> N
     state = hass.states.get(entity_id(hass, "sensor", entry, "dns_latency") or "")
     assert state is not None
     assert state.attributes["dns_server"] == "192.168.1.1"
+    assert state.attributes["dns_source"] == "system"
 
 
 async def test_undetected_hop_is_unknown(hass: HomeAssistant, setup_entry: SetupEntry, poll: AsyncMock) -> None:
@@ -182,8 +185,8 @@ async def test_install_type(hass: HomeAssistant, setup_entry: SetupEntry, report
 async def test_environment_sensors_are_diagnostic_and_always_created(
     hass: HomeAssistant, setup_entry: SetupEntry
 ) -> None:
-    """Both environment sensors are diagnostic enums and exist with all monitoring off."""
-    entry = await setup_entry(**{CONF_ENABLE_GATEWAY_MONITORING: False, CONF_ENABLE_DNS_MONITORING: False})
+    """Both environment sensors are diagnostic enums, created on every install."""
+    entry = await setup_entry(**{CONF_INTERNET_REFERENCE: "off"})
     registry = er.async_get(hass)
     for key in ("connection_type", "install_type"):
         entity = registry.async_get(entity_id(hass, "sensor", entry, key) or "")
@@ -202,3 +205,16 @@ async def test_long_term_statistics_option(
         registered = er.async_get(hass).async_get(entity_id(hass, "sensor", entry, key) or "")
         assert registered is not None, key
         assert (registered.capabilities or {}).get("state_class") == expected, key
+
+
+async def test_internet_reference_sensors(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
+    """The internet reference reads like a hop: latency, jitter and loss, naming its address (ADR-015)."""
+    entry = await setup_entry()
+    readings = {}
+    for key in ("internet_latency", "internet_jitter", "internet_packet_loss"):
+        state = hass.states.get(entity_id(hass, "sensor", entry, key) or "")
+        assert state is not None, key
+        readings[key] = float(state.state)
+        assert (state.attributes["reference_ip"], state.attributes["reachable"]) == ("1.1.1.1", True)
+        assert (state.attributes["packets_sent"], state.attributes["packets_received"]) == (3, 3)
+    assert readings == {"internet_latency": 15.2, "internet_jitter": 0.4, "internet_packet_loss": 0.0}

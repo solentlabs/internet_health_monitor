@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import override
 
@@ -17,7 +16,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .coordinator import (
     InternetHealthConfigEntry,
     InternetHealthCoordinator,
-    InternetHealthRuntimeData,
     ReachabilityTarget,
 )
 from .entity import InternetHealthEntity
@@ -31,7 +29,6 @@ class ReachabilityEntityDescription(BinarySensorEntityDescription):
     """A reachability state read from the poll result."""
 
     target: ReachabilityTarget
-    enabled_fn: Callable[[InternetHealthRuntimeData], bool]
 
 
 BINARY_SENSORS: tuple[ReachabilityEntityDescription, ...] = (
@@ -40,14 +37,12 @@ BINARY_SENSORS: tuple[ReachabilityEntityDescription, ...] = (
         translation_key="gateway_reachable",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         target="gateway",
-        enabled_fn=lambda d: d.enable_gateway,
     ),
     ReachabilityEntityDescription(
         key="internet_reachable",
         translation_key="internet_reachable",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         target="internet",
-        enabled_fn=lambda d: d.enable_dns,
     ),
 )
 
@@ -57,9 +52,9 @@ async def async_setup_entry(
     entry: InternetHealthConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add the binary sensors for the monitoring types that are switched on."""
-    data = entry.runtime_data
-    async_add_entities(ReachabilitySensor(data.coordinator, d) for d in BINARY_SENSORS if d.enabled_fn(data))
+    """Add the gateway and internet reachability sensors."""
+    coordinator = entry.runtime_data.coordinator
+    async_add_entities(ReachabilitySensor(coordinator, d) for d in BINARY_SENSORS)
 
 
 class ReachabilitySensor(InternetHealthEntity[InternetHealthCoordinator], BinarySensorEntity):

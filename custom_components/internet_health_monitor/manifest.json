@@ -3,6 +3,7 @@
   "name": "Internet Health Monitor",
   "after_dependencies": [
     "frontend",
+    "hassio",
     "http",
     "websocket_api"
   ],

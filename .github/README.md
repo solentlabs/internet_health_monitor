@@ -26,6 +26,7 @@ A **Solent Labs** Home Assistant integration for comprehensive internet health m
 ## Features
 
 - **Network path, hop by hop** - Latency, jitter and packet loss for hop 1 (your gateway), hop 2 (usually your ISP's first router) and hop 3, so you can see where a problem starts
+- **Internet reference** - The same three readings for a well-known address past your ISP (Cloudflare's 1.1.1.1 by default, or one you pick), so you can tell a problem at home, on your line, or beyond it
 - **DNS latency** - One uncached lookup per poll at the DNS server you choose
 - **Reachability** - Gateway reachable and internet reachable binary sensors
 - **Speed tests you control** (optional) - Cloudflare, M-Lab or LibreSpeed; whole tests spaced to fit your data budget, with the working shown
@@ -89,10 +90,9 @@ During setup, and later under Configure, you can set:
 
 | Option | Default | Description |
 | -------- | --------- | ------------- |
-| Monitor gateway and hops | on | Latency, jitter and packet loss for the gateway and hops 1 to 3 |
-| Monitor DNS | on | Time one uncached lookup per poll |
-| DNS server | Auto-detect | Server to time: auto-detect uses the one this host is configured with; pick a public one from the list, or type any IPv4 or IPv6 address, such as a Pi-hole's |
+| DNS server | Auto-detect | Server to time: auto-detect uses the one this host is configured with (on HA OS and Supervised, the host's own server, which the Supervisor reports); pick a public one from the list, or type any IPv4 or IPv6 address, such as a Pi-hole's. The DNS latency sensor's `dns_source` attribute says where it came from |
 | Pings per target | 3 | Pings sent to each target per poll (1 to 10) |
+| Internet reference | Cloudflare (1.1.1.1) | An address past your ISP, pinged each poll like a hop. Pick Google, Quad9 or OpenDNS, type any public IPv4 address, or choose Off. See [Internet Reference](#internet-reference) |
 | Look up who runs each hop | off | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
 | Usage totals | off | Adds six sensors counting what IHM has sent. See [Usage Totals](#usage-totals) |
 | Long-term statistics | off | Keeps hourly statistics of latency, jitter, loss and speed tests for trends over months; Home Assistant never deletes them. Off, history covers the last 10 days |
@@ -111,11 +111,28 @@ The screen shows its working: the last test's speeds, what each test may
 use, the days between automatic tests, and the most they can use in any
 30 days. See [How Much Data Speed Tests Use](#how-much-data-speed-tests-use).
 
-Turning a kind of monitoring off removes its entities and stops its
-probes: gateway monitoring off sends no pings, traceroutes or hop
-lookups, and DNS monitoring off sends no DNS latency query. Turning it
-back on recreates the entities with the same ids, and their history
-returns.
+The gateway, the three hops and DNS are always measured: they are what
+IHM is for, and they never reach beyond your ISP and DNS server. The
+internet reference is the one probe you can turn off. Off removes its
+three sensors and sends it no pings; choosing a provider again recreates
+them with the same ids, and their history returns.
+
+### Internet Reference
+
+The three hops show where a slowdown starts at home (hop 1) or on your
+line (hop 2). The internet reference adds a point past your ISP: an
+address built to answer pings, whose address does not move. Read the
+four together: if only the reference rises, the problem is beyond your
+line.
+
+It is on by default, pinging Cloudflare's 1.1.1.1 with the same number
+of pings as each hop (3 a minute by default). Cloudflare sees your public
+IP address, as with any ping. IHM chose Cloudflare because its terms
+cover the 1.1.1.1 resolver and limit only use that would overburden it;
+Quad9's and OpenDNS's current terms could not be found
+([ADR-015](https://github.com/solentlabs/internet_health_monitor/blob/main/docs/ARCHITECTURE_DECISIONS.md#adr-015-internet-reference-ping-on-by-default-to-cloudflare)).
+A typed address must be a public IPv4 address. The traceroute also aims
+at the reference, so hops 1 to 3 lie on the path to it.
 
 ### Polling
 
@@ -168,13 +185,14 @@ attributes naming the network that runs that hop, for example
 
 ### Sensors
 
-Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS and two about the host:
+Three per hop, for hops 1 (gateway), 2 (usually your ISP's first router) and 3 (the router after it), three for the internet reference, plus DNS and two about the host:
 
 | Sensor | Unit | Description |
 | -------- | ------ | ------------- |
 | Hop N latency | ms | Average round-trip time ping reported for this hop |
 | Hop N jitter | ms | Average change between consecutive ping round-trip times in this poll, as speed test sites measure it |
 | Hop N packet loss | % | Share of this poll's pings to the hop with no reply |
+| Internet latency, jitter, packet loss | ms, ms, % | The same three readings for the internet reference (attribute `reference_ip`). Not created when it is Off |
 | DNS latency | ms | Time for one uncached lookup at the DNS server |
 | Connection type | | Ethernet, Wi-Fi, Bridge or Virtual Ethernet, from the name of the interface the default route uses (attribute `interface`). Diagnostic |
 | Install type | | How Home Assistant is installed, as HA reports it: Home Assistant OS, Supervised, Container, Core or Third-party container. Diagnostic |
@@ -185,13 +203,20 @@ Three per hop, for hops 1 (gateway), 2 (ISP) and 3 (backbone), plus DNS and two 
 | Speed test download latency increase, upload latency increase | ms | Loaded minus idle latency in that direction: bufferbloat. See [Bufferbloat](#bufferbloat) |
 | Speed test bufferbloat grade | | A+ to F on Waveform's scale, from the larger of the two increases |
 
-Hop sensors carry attributes: `hop_ip`, `reachable`, `packets_sent`,
-`packets_received`, `hostname` (when the hop has one) and, with hop
+Hop sensors carry attributes: `hop_ip`, `reachable`, `address_type`
+(`private` for a home or internal block, `shared` for ISP-internal
+carrier-grade NAT space `100.64.x`, `public` for an internet address,
+from the address itself), `packets_sent`, `packets_received`,
+`hostname` (when the hop has one) and, with hop
 ownership on, `asn` and `as_name`. Speed test sensors carry `backend`,
 `server` and `tested_at`; download and upload also carry `ended_by`
 (`time`, or `data_limit` when the limit stopped that direction early) and
 `duration_s`, the seconds it was loaded; the bufferbloat grade carries
-`latency_increase_ms`, the larger increase it was read from. The measurement sensors keep
+`latency_increase_ms`, the larger increase it was read from. DNS
+latency carries `dns_server`, `success` and `dns_source`: `chosen`
+(picked in the options), `host` (the host's own server, from the
+Supervisor), `system` (this system's `/etc/resolv.conf`) or `fallback`
+(none found, so 1.1.1.1). The measurement sensors keep
 long-term statistics only with the *Long-term statistics* option on.
 
 ### Usage Totals
@@ -383,9 +408,9 @@ entities:
 ## Network Path Visualization
 
 ```text
-[HA Host] ─Hop 1─> [Gateway] ─Hop 2─> [ISP Router] ─Hop 3─> [Backbone] ─DNS─> [DNS Server]
-           1.2ms      │         15ms       │          25ms      │        35ms
-                      └── Packet Loss ─────┴── Jitter ──────────┘
+[HA Host] ─Hop 1─> [Gateway] ─Hop 2─> [ISP Router] ─Hop 3─> [Next Router] ─DNS─> [DNS Server]
+           1.2ms      │         15ms       │          25ms         │        35ms
+                      └── Packet Loss ─────┴── Jitter ─────────────┘
 ```
 
 ## Dashboard Card
@@ -397,10 +422,10 @@ the browser: it learns of the card when the page loads.
 | Option | Default | Shows |
 | -------- | --------- | ------- |
 | Network status | on | Gateway and internet reachable, DNS latency, Refresh diagnostics |
-| Each hop | on | A card per hop (Gateway, ISP, Backbone) with its current latency, jitter and packet loss, and its address |
-| Latency graphs | on | Hop latency history, and DNS latency on its own graph |
-| Jitter graph | on | Hop jitter history |
-| Packet loss graph | on | Hop packet loss history |
+| Each hop | on | A card per hop (Gateway, ISP, Hop 3), then one for the internet reference, each with its current latency, jitter and packet loss, and its address |
+| Latency graphs | on | Latency history for the hops and the internet reference, and DNS latency on its own graph |
+| Jitter graph | on | Jitter history for the hops and the internet reference |
+| Packet loss graph | on | Packet loss history for the hops and the internet reference |
 | Speed test | on | Each speed test reading; Run speed test, which asks before it starts; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it), each shown once a speed test has measured it; and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
@@ -463,8 +488,8 @@ entities:
     name: Gateway
   - entity: sensor.internet_health_hop_2_latency_isp
     name: ISP
-  - entity: sensor.internet_health_hop_3_latency_backbone
-    name: Backbone
+  - entity: sensor.internet_health_hop_3_latency
+    name: Hop 3
   - entity: sensor.internet_health_dns_latency
     name: DNS
 ```
@@ -480,8 +505,8 @@ entities:
     name: Gateway
   - entity: sensor.internet_health_hop_2_latency_isp
     name: ISP
-  - entity: sensor.internet_health_hop_3_latency_backbone
-    name: Backbone
+  - entity: sensor.internet_health_hop_3_latency
+    name: Hop 3
   - entity: sensor.internet_health_dns_latency
     name: DNS
 ```
@@ -518,11 +543,22 @@ entities:
   macOS, including WSL2) hides the routers past its own bridge, so hops 2
   and 3 stay unknown. HA OS, a bridged VM, or Docker with host networking on
   Linux see the real path.
+- **Hop 2 is usually, not always, your ISP.** With a second router in
+  the home (double NAT, some mesh systems), hop 2 is that router and your
+  ISP starts at hop 3. The `address_type` attributes and hop addresses
+  show which.
 - **Some routers never answer.** A router that ignores traceroute or ping
   leaves its hop unknown or shows 100% loss, even when traffic passes through
   it normally.
 - **Jitter needs two replies.** It compares consecutive pings within a poll,
   so with Pings per target set to 1 it is unknown.
+- **Auto-detect may time a local relay.** Outside HA OS and Supervised,
+  auto-detect reads `/etc/resolv.conf`, which can name a relay on the
+  same machine rather than your router or ISP's server: Docker's
+  `127.0.0.11` on a custom network, or `127.0.0.53` where
+  systemd-resolved runs. DNS latency then includes the relay's hop.
+  Check the sensor's `dns_server` and `dns_source` attributes; to time
+  the real server, choose it in the options.
 - **Fixed 60-second polling** (see [Polling](#polling)).
 - **IPv4 only.** IHM measures the IPv4 path. On a dual-stack connection,
   IPv6 traffic may take a different route that IHM does not see.

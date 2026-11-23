@@ -51,14 +51,13 @@ REDETECT_CASES: list[tuple[str, dict, dict, float, int, str | None]] = [
 # fmt: on
 
 
-# Monitoring switched off sends nothing for it (.github/README.md § Configuration).
+# Internet reference setting -> what one poll sends (ping_count 2 here). Gateway, hops and
+# DNS always run (ADR-016); the reference alone can be turned off (ADR-015).
 # fmt: off
-MONITOR_OFF_CASES: list[tuple[str, dict[str, bool], tuple[int, int, int]]] = [
-    # (description,   config,                      (pings, traceroutes, DNS queries) in one poll)
-    ("both on",       {},                          (8, 1, 4)),  # 3 hop hostname lookups + 1 latency query
-    ("gateway off",   {"monitor_gateway": False},  (0, 0, 1)),
-    ("dns off",       {"monitor_dns": False},      (8, 1, 3)),  # hostnames belong to hop monitoring
-    ("both off",      {"monitor_gateway": False, "monitor_dns": False}, (0, 0, 0)),
+SENT_CASES: list[tuple[str, str | None, tuple[int, int, int]]] = [
+    # (description,   internet reference, (pings, traceroutes, DNS queries) in one poll)
+    ("reference on",  "1.1.1.1",          (10, 1, 4)),  # 3 hop hostname lookups + 1 latency query
+    ("reference off", None,               (8, 1, 4)),
 ]
 # fmt: on
 
@@ -365,49 +364,43 @@ class TestNetworkDiagnosticsAsync:
         assert result["reachable"] is False
         assert result["packets_sent"] == 0
 
-    @pytest.mark.asyncio
-    async def test_resolve_dns_server_configured(self):
-        """Test DNS resolution with configured server."""
-        diag = NetworkDiagnostics(dns_server="8.8.8.8")
-
-        dns = await diag._resolve_dns_server()
-        assert dns == "8.8.8.8"
-
-    @pytest.mark.asyncio
-    async def test_resolve_dns_server_auto(self):
-        """Test DNS resolution with auto detection."""
-        diag = NetworkDiagnostics(dns_server="auto")
-
-        with patch.object(diag._platform, "system_dns", AsyncMock(return_value="1.1.1.1")):
-            dns = await diag._resolve_dns_server()
-            assert dns == "1.1.1.1"
-
 
 @pytest.mark.parametrize(("description", "dns", "expected"), TRACE_TARGET_CASES, ids=[c[0] for c in TRACE_TARGET_CASES])
 def test_trace_target(description: str, dns: str, expected: str) -> None:
-    """Hops are traced toward an external IPv4 host, so the whole IPv4 path is seen."""
+    """With no internet reference, hops are traced toward an external IPv4 host, so the whole IPv4 path is seen."""
     diag = NetworkDiagnostics(dns_server=dns)
+    diag.config.internet_reference = None
     diag._dns_server = dns
     assert diag._resolve_trace_target() == expected
 
 
+# Hop address -> address_type: what the address itself says about where the hop
+# is (REFERENCES.md § R24), not a guess from the hop's position.
+# fmt: off
+ADDRESS_TYPE_CASES: list[tuple[str, str | None, str | None]] = [
+    ("home router",           "192.168.1.1",   "private"),
+    ("10/8",                  "10.0.0.1",      "private"),
+    ("172.16/12",             "172.16.0.1",    "private"),
+    ("ISP shared (CGNAT)",    "100.64.0.1",    "shared"),
+    ("top of shared range",   "100.127.255.1", "shared"),
+    ("public",                "198.51.100.1",  None),  # documentation range: not global
+    ("public, global",        "8.8.8.8",       "public"),
+    ("no address",            None,            None),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "ip", "expected"), ADDRESS_TYPE_CASES, ids=[c[0] for c in ADDRESS_TYPE_CASES])
+def test_address_type(description: str, ip: str | None, expected: str | None) -> None:
+    """Each hop reports the kind of address it has, in every position."""
+    for position in (1, 2, 3):
+        hop = HopInfo(hop_number=position, ip=ip, latency_ms=None, reachable=False)
+        assert hop.address_type == expected
+        assert hop.to_dict()["address_type"] == expected
+
+
 class TestHopInfo:
     """Tests for HopInfo dataclass."""
-
-    def test_typical_location_gateway(self):
-        """Test typical location for hop 1."""
-        hop = HopInfo(hop_number=1, ip="192.168.1.1", latency_ms=1.0, reachable=True)
-        assert hop.typical_location == "gateway"
-
-    def test_typical_location_isp(self):
-        """Test typical location for hop 2."""
-        hop = HopInfo(hop_number=2, ip="10.0.0.1", latency_ms=15.0, reachable=True)
-        assert hop.typical_location == "isp"
-
-    def test_typical_location_backbone(self):
-        """Test typical location for hop 3."""
-        hop = HopInfo(hop_number=3, ip="8.8.8.1", latency_ms=20.0, reachable=True)
-        assert hop.typical_location == "backbone"
 
     def test_to_dict(self):
         """Test HopInfo to_dict method."""
@@ -418,7 +411,7 @@ class TestHopInfo:
         assert data["latency_ms"] == 15.0
         assert data["jitter_ms"] == 2.0
         assert data["reachable"] is True
-        assert data["typical_location"] == "isp"
+        assert "typical_location" not in data
 
 
 class TestHostEnvironment:
@@ -564,6 +557,133 @@ async def test_jitter_from_one_poll() -> None:
     assert result["jitter_ms"] == 1.5  # (|3-1| + |2-3|) / 2
 
 
+# Round-trip times -> (mean, jitter, loss %) as reported: latency and jitter to
+# 0.001 ms, loss to 0.1 %, so float noise never reaches entities or diagnostics.
+# fmt: off
+PRECISION_CASES: list[tuple[str, list[float | None], tuple[float | None, float | None, float]]] = [
+    # (description,          RTTs (None: no reply),     (mean,    jitter, loss))
+    ("float noise trimmed",   [0.733, 0.8291, 0.733],    (0.765,   0.096,  0.0)),
+    ("thirds",                [1.0, 2.0, 2.0],           (1.667,   0.5,    0.0)),
+    ("one of three lost",     [7.4973, None, 8.1873],    (7.842,   0.69,   33.3)),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "rtts", "expected"), PRECISION_CASES, ids=[c[0] for c in PRECISION_CASES])
+async def test_reported_precision(
+    description: str, rtts: list[float | None], expected: tuple[float | None, float | None, float]
+) -> None:
+    """Hop latency, jitter and loss are rounded where Core produces them."""
+    diag = _diag()
+    diag.config.ping_count = len(rtts)
+    replies = iter(rtts)
+
+    def ping(host: str) -> tuple[bool, float | None]:
+        rtt = next(replies)
+        return rtt is not None, rtt
+
+    diag._single_ping = AsyncMock(side_effect=ping)  # type: ignore[method-assign]
+    hop = await diag._check_single_hop(2, "10.0.0.1")
+    assert (hop.latency_ms, hop.jitter_ms, hop.packet_loss_percent) == expected
+
+
+async def test_gateway_loss_precision() -> None:
+    """Gateway loss is rounded to 0.1 % like each hop's."""
+    diag = _diag(gateway="192.168.0.1")
+    diag.config.ping_count = 3
+    replies = iter([True, False, False])
+
+    def ping(host: str) -> tuple[bool, float | None]:
+        return (next(replies), 1.0) if host == "192.168.0.1" else (True, 1.0)
+
+    diag._single_ping = AsyncMock(side_effect=ping)  # type: ignore[method-assign]
+    result = await diag.run_diagnostics()
+    assert result.packet_loss_percent == 66.7
+
+
+# Internet reference setting -> what the poll reports for it (ADR-015). Hosts the
+# fake platform knows answer; 1.1.1.1 is scripted to answer here.
+# fmt: off
+REFERENCE_CASES: list[tuple[str, dict[str, object], dict[str, object] | None]] = [
+    # (description,          config,                              reported reference)
+    ("default, Cloudflare",  {},                                  {"ip": "1.1.1.1", "latency_ms": 15.0,
+                                                                   "packet_loss_percent": 0.0, "reachable": True}),
+    ("chosen provider",      {"internet_reference": "9.9.9.9"},   {"ip": "9.9.9.9", "latency_ms": None,
+                                                                   "packet_loss_percent": 100.0, "reachable": False}),
+    ("off",                  {"internet_reference": None},        None),
+    ("private address",      {"internet_reference": "192.168.1.1"}, None),
+    ("not an address",       {"internet_reference": "--help"},    None),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "config", "expected"), REFERENCE_CASES, ids=[c[0] for c in REFERENCE_CASES])
+async def test_internet_reference(description: str, config: dict[str, object], expected: dict | None) -> None:
+    """The reference is pinged like a hop; only a public IPv4 address is used."""
+    diag = _diag(rtt={"192.168.1.1": 1.0, "10.0.0.1": 8.0, "198.51.100.1": 12.0, "1.1.1.1": 15.0})
+    for key, value in config.items():
+        setattr(diag.config, key, value)
+    result = await diag.run_diagnostics()
+    if expected is None:
+        assert result.internet is None
+        assert result.to_dict()["internet"] is None
+        return
+    assert result.internet is not None
+    reported = result.internet.to_dict()
+    assert {k: reported[k] for k in expected} == expected
+    assert (reported["packets_sent"], reported["address_type"]) == (2, "public")
+
+
+# Internet reference and DNS server -> trace target: the reference when set (ADR-015).
+# fmt: off
+REFERENCE_TRACE_CASES: list[tuple[str, str | None, str, str]] = [
+    ("reference set",           "1.1.1.1", "9.9.9.9",     "1.1.1.1"),
+    ("off, public DNS",         None,      "9.9.9.9",     "9.9.9.9"),
+    ("off, private DNS",        None,      "192.168.1.1", "8.8.8.8"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    ("description", "reference", "dns", "expected"), REFERENCE_TRACE_CASES, ids=[c[0] for c in REFERENCE_TRACE_CASES]
+)
+def test_trace_target_prefers_reference(description: str, reference: str | None, dns: str, expected: str) -> None:
+    """Hops are traced toward the internet reference when there is one."""
+    diag = NetworkDiagnostics(dns_server=dns)
+    diag.config.internet_reference = reference
+    diag._dns_server = dns
+    assert diag._resolve_trace_target() == expected
+
+
+# DNS setting -> server timed and where it came from, reported beside it so a
+# local relay (127.0.0.53, Docker's 127.0.0.11) can be recognized and replaced.
+# fmt: off
+DNS_SOURCE_CASES: list[tuple[str, str, str | None, str | None, tuple[str, str]]] = [
+    # (description,           dns_server,  dns_source, system DNS,    (server,        source))
+    ("auto, system resolver", "auto",      None,       "127.0.0.53",  ("127.0.0.53",  "system")),
+    ("auto, none detected",   "auto",      None,       None,          ("1.1.1.1",     "fallback")),
+    ("chosen server",         "9.9.9.9",   None,       "127.0.0.53",  ("9.9.9.9",     "chosen")),
+    ("host's, from caller",   "192.168.1.1", "host",   "127.0.0.53",  ("192.168.1.1", "host")),
+    ("not an address",        "dns.example.com", None, "127.0.0.53",  ("1.1.1.1",     "fallback")),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(
+    ("description", "server", "source", "system", "expected"), DNS_SOURCE_CASES, ids=[c[0] for c in DNS_SOURCE_CASES]
+)
+async def test_dns_source_reported(
+    description: str, server: str, source: str | None, system: str | None, expected: tuple[str, str]
+) -> None:
+    """Each poll reports the server timed and where it came from."""
+    diag = _diag(dns=system)
+    diag.config.dns_server = server
+    diag.config.dns_source = source  # type: ignore[assignment]
+    result = await diag.run_diagnostics()
+    assert (result.dns_server, result.dns_source) == expected
+    assert result.to_dict()["dns_source"] == expected[1]
+
+
 async def test_auto_dns_falls_back_when_undetected() -> None:
     """With no system DNS found, the fallback server is used and traced toward."""
     diag = _diag(dns=None)
@@ -576,6 +696,7 @@ async def test_auto_dns_falls_back_when_undetected() -> None:
 # fmt: off
 DNS_CHECK_CASES = [
     ("answered",       {"return_value": 23.5},                 {"success": True,  "latency_ms": 23.5}),
+    ("rounded to 0.001 ms", {"return_value": 44.38658998697065}, {"success": True, "latency_ms": 44.387}),
     ("no answer",      {"return_value": None},                 {"success": False, "latency_ms": None}),
     ("socket error",   {"side_effect": OSError("unreachable")}, {"success": False, "latency_ms": None}),
     ("bad server",     {"side_effect": ValueError("not an IP")}, {"success": False, "latency_ms": None}),
@@ -649,7 +770,7 @@ async def test_detection_state_reports_cache() -> None:
     state = diag.detection_state()
     assert state["platform"] == "fake"
     assert (state["gateway_detected"], state["hops_detected"]) == (True, 3)
-    assert state["trace_target"] == "8.8.8.8"
+    assert state["trace_target"] == "1.1.1.1"  # the default internet reference (ADR-015)
 
 
 async def test_counts_what_was_sent() -> None:
@@ -736,17 +857,11 @@ async def test_redetects_without_reset(
     assert result.gateway_ip == gateway
 
 
-@pytest.mark.parametrize(("description", "config", "sent"), MONITOR_OFF_CASES, ids=[c[0] for c in MONITOR_OFF_CASES])
-async def test_monitoring_off_sends_nothing(
-    description: str, config: dict[str, bool], sent: tuple[int, int, int]
-) -> None:
-    """Gateway monitoring off sends no pings or traceroutes; DNS monitoring off sends no DNS query."""
+@pytest.mark.parametrize(("description", "reference", "sent"), SENT_CASES, ids=[c[0] for c in SENT_CASES])
+async def test_what_one_poll_sends(description: str, reference: str | None, sent: tuple[int, int, int]) -> None:
+    """One poll pings the gateway, the hops and the reference when set, traces once and queries DNS."""
     diag = _diag()
-    for key, value in config.items():
-        setattr(diag.config, key, value)
+    diag.config.internet_reference = reference
     platform = diag._platform
-    result = await diag.run_diagnostics()
+    await diag.run_diagnostics()
     assert (platform.ping_calls, platform.trace_calls, diag.counts.dns_queries) == sent  # type: ignore[attr-defined]
-    assert diag._check_dns.await_count == int(diag.config.monitor_dns)  # type: ignore[attr-defined]
-    if not diag.config.monitor_gateway:
-        assert (result.gateway_reachable, result.hops, result.packet_loss_percent) == (False, [], None)

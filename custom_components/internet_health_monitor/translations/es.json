@@ -5,20 +5,18 @@
         "title": "Internet Health Monitor",
         "description": "Configurar monitoreo de salud de red",
         "data": {
-          "enable_gateway_monitoring": "Supervisar puerta de enlace y saltos",
-          "enable_dns_monitoring": "Supervisar DNS",
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
+          "internet_reference": "Referencia de internet",
           "hop_ownership": "Averiguar quién opera cada salto",
           "usage_totals": "Totales de uso",
           "long_term_statistics": "Estadísticas a largo plazo",
           "speed_test_backend": "Servicio de prueba de velocidad"
         },
         "data_description": {
-          "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
-          "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo. O escribe una dirección IPv4 o IPv6, como la de un Pi-hole.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
+          "internet_reference": "Activada por defecto. En cada sondeo, hace ping a esta dirección como a un salto: latencia, jitter y pérdida de paquetes más allá de tu proveedor, junto a los tres saltos. Envía unos pocos pings por minuto al proveedor elegido, que ve tu dirección IP pública; IHM no está afiliado a ninguno de ellos. Elige otro proveedor, escribe una dirección IPv4 pública o elige Desactivada.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
           "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
           "long_term_statistics": "Desactivado por defecto. Guarda estadísticas por hora de latencia, jitter, pérdida de paquetes, latencia DNS y resultados de pruebas de velocidad, para tendencias de meses; Home Assistant nunca las borra. Desactivado, el historial sigue cubriendo los últimos 10 días. Si lo desactivas más tarde, Home Assistant avisa una vez por sensor hasta que borres sus estadísticas en Herramientas para desarrolladores > Estadísticas.",
@@ -28,20 +26,18 @@
       "reconfigure": {
         "title": "Reconfigurar Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Supervisar puerta de enlace y saltos",
-          "enable_dns_monitoring": "Supervisar DNS",
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
+          "internet_reference": "Referencia de internet",
           "hop_ownership": "Averiguar quién opera cada salto",
           "usage_totals": "Totales de uso",
           "long_term_statistics": "Estadísticas a largo plazo",
           "speed_test_backend": "Servicio de prueba de velocidad"
         },
         "data_description": {
-          "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
-          "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo. O escribe una dirección IPv4 o IPv6, como la de un Pi-hole.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
+          "internet_reference": "Activada por defecto. En cada sondeo, hace ping a esta dirección como a un salto: latencia, jitter y pérdida de paquetes más allá de tu proveedor, junto a los tres saltos. Envía unos pocos pings por minuto al proveedor elegido, que ve tu dirección IP pública; IHM no está afiliado a ninguno de ellos. Elige otro proveedor, escribe una dirección IPv4 pública o elige Desactivada.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
           "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
           "long_term_statistics": "Desactivado por defecto. Guarda estadísticas por hora de latencia, jitter, pérdida de paquetes, latencia DNS y resultados de pruebas de velocidad, para tendencias de meses; Home Assistant nunca las borra. Desactivado, el historial sigue cubriendo los últimos 10 días. Si lo desactivas más tarde, Home Assistant avisa una vez por sensor hasta que borres sus estadísticas en Herramientas para desarrolladores > Estadísticas.",
@@ -80,7 +76,8 @@
       "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
       "data_limit_too_small": "Usa 0 para automático, o 100 MB o más.",
       "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto.",
-      "invalid_dns_server": "Introduce una dirección IPv4 o IPv6, o elige un servidor de la lista."
+      "invalid_dns_server": "Introduce una dirección IPv4 o IPv6, o elige un servidor de la lista.",
+      "invalid_internet_reference": "Escribe una dirección IPv4 pública o elige un proveedor de la lista."
     }
   },
   "options": {
@@ -88,20 +85,18 @@
       "init": {
         "title": "Opciones de Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Supervisar puerta de enlace y saltos",
-          "enable_dns_monitoring": "Supervisar DNS",
           "dns_server": "Servidor DNS",
           "ping_count": "Pings por destino",
+          "internet_reference": "Referencia de internet",
           "hop_ownership": "Averiguar quién opera cada salto",
           "usage_totals": "Totales de uso",
           "long_term_statistics": "Estadísticas a largo plazo",
           "speed_test_backend": "Servicio de prueba de velocidad"
         },
         "data_description": {
-          "enable_gateway_monitoring": "En cada consulta, hacer ping a la puerta de enlace y a los dos saltos siguientes hacia internet: latencia, jitter y pérdida de paquetes.",
-          "enable_dns_monitoring": "En cada consulta, medir una resolución sin caché en el servidor DNS indicado abajo.",
           "dns_server": "Servidor cuyo tiempo de respuesta se mide. Detección automática usa el configurado en este equipo. O escribe una dirección IPv4 o IPv6, como la de un Pi-hole.",
           "ping_count": "Pings enviados a cada destino en cada consulta (1 a 10). Más pings dan lecturas más estables y una pérdida de paquetes más precisa.",
+          "internet_reference": "Activada por defecto. En cada sondeo, hace ping a esta dirección como a un salto: latencia, jitter y pérdida de paquetes más allá de tu proveedor, junto a los tres saltos. Envía unos pocos pings por minuto al proveedor elegido, que ve tu dirección IP pública; IHM no está afiliado a ninguno de ellos. Elige otro proveedor, escribe una dirección IPv4 pública o elige Desactivada.",
           "hop_ownership": "Desactivado por defecto. Muestra el operador de red (ASN) de cada salto público. Envía esas direcciones de salto (los routers de tu proveedor, no tu propia dirección) al servicio gratuito IP-a-ASN de Team Cymru, a través de tu servidor DNS. Las direcciones privadas y compartidas del proveedor no tienen propietario y nunca se envían.",
           "usage_totals": "Desactivado por defecto. Añade seis sensores de diagnóstico: pings enviados, traceroutes ejecutados, consultas DNS enviadas, pruebas de velocidad ejecutadas y datos de prueba descargados y subidos, contados desde la instalación. El conteo sigue aunque esté desactivado.",
           "long_term_statistics": "Desactivado por defecto. Guarda estadísticas por hora de latencia, jitter, pérdida de paquetes, latencia DNS y resultados de pruebas de velocidad, para tendencias de meses; Home Assistant nunca las borra. Desactivado, el historial sigue cubriendo los últimos 10 días. Si lo desactivas más tarde, Home Assistant avisa una vez por sensor hasta que borres sus estadísticas en Herramientas para desarrolladores > Estadísticas.",
@@ -136,13 +131,23 @@
       "mlab_consent_required": "Confirma para usar M-Lab, o cierra este diálogo y elige otro servicio.",
       "data_limit_too_small": "Usa 0 para automático, o 100 MB o más.",
       "data_limit_over_budget": "Una prueba podría usar más que todo el presupuesto de datos. Baja el límite de datos, usa 0 para automático o sube el presupuesto.",
-      "invalid_dns_server": "Introduce una dirección IPv4 o IPv6, o elige un servidor de la lista."
+      "invalid_dns_server": "Introduce una dirección IPv4 o IPv6, o elige un servidor de la lista.",
+      "invalid_internet_reference": "Escribe una dirección IPv4 pública o elige un proveedor de la lista."
     }
   },
   "selector": {
     "dns_server": {
       "options": {
         "auto": "Detección automática",
+        "cloudflare": "Cloudflare (1.1.1.1)",
+        "google": "Google (8.8.8.8)",
+        "quad9": "Quad9 (9.9.9.9)",
+        "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "internet_reference": {
+      "options": {
+        "off": "Desactivada",
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
@@ -179,16 +184,25 @@
         "name": "Pérdida de paquetes del salto 2 (proveedor)"
       },
       "hop_3_latency": {
-        "name": "Latencia del salto 3 (troncal)"
+        "name": "Latencia del salto 3"
       },
       "hop_3_jitter": {
-        "name": "Jitter del salto 3 (troncal)"
+        "name": "Jitter del salto 3"
       },
       "hop_3_packet_loss": {
-        "name": "Pérdida de paquetes del salto 3 (troncal)"
+        "name": "Pérdida de paquetes del salto 3"
       },
       "dns_latency": {
         "name": "Latencia DNS"
+      },
+      "internet_latency": {
+        "name": "Latencia de internet"
+      },
+      "internet_jitter": {
+        "name": "Jitter de internet"
+      },
+      "internet_packet_loss": {
+        "name": "Pérdida de paquetes de internet"
       },
       "connection_type": {
         "name": "Tipo de conexión",

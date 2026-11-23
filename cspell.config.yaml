@@ -24,6 +24,7 @@ ignoreWords:
 
 words:
   # Home Assistant
+  - aiohasupervisor
   - automations
   - autouse
   - conftest # pytest fixtures file

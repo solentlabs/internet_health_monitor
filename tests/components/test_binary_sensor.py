@@ -14,7 +14,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.internet_health_monitor.const import CONF_ENABLE_DNS_MONITORING
 from solentlabs.internet_health_monitor_core.network_diagnostics import NetworkDiagnostics
 
 from .conftest import SetupEntry, entity_id, make_result
@@ -136,13 +135,6 @@ async def test_unload_cancels_pending_checks(
         freezer.tick(30)
         await _advance(hass, 0)
     check.assert_not_called()
-
-
-async def test_dns_off_removes_internet_sensor(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
-    """With DNS monitoring off there is no internet reachability sensor."""
-    entry = await setup_entry(**{CONF_ENABLE_DNS_MONITORING: False})
-    assert entity_id(hass, "binary_sensor", entry, "internet_reachable") is None
-    assert entity_id(hass, "binary_sensor", entry, "gateway_reachable") is not None
 
 
 async def test_failed_poll_makes_entities_unavailable(

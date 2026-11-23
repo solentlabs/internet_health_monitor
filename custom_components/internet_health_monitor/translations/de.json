@@ -5,20 +5,18 @@
         "title": "Internet Health Monitor",
         "description": "Netzwerk-Gesundheitsüberwachung konfigurieren",
         "data": {
-          "enable_gateway_monitoring": "Gateway und Hops überwachen",
-          "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
+          "internet_reference": "Internet-Referenz",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
           "usage_totals": "Nutzungssummen",
           "long_term_statistics": "Langzeitstatistiken",
           "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
-          "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
-          "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten. Oder eine IPv4- oder IPv6-Adresse eingeben, etwa die eines Pi-hole.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
+          "internet_reference": "Standardmäßig an. Bei jeder Abfrage wird diese Adresse wie ein Hop angepingt: Latenz, Jitter und Paketverlust jenseits deines Providers, neben den drei Hops. Sendet einige Pings pro Minute an den gewählten Anbieter, der deine öffentliche IP-Adresse sieht; IHM ist mit keinem von ihnen verbunden. Wähle einen anderen Anbieter, gib eine öffentliche IPv4-Adresse ein oder wähle Aus.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
           "long_term_statistics": "Standardmäßig aus. Speichert stündliche Statistiken zu Latenz, Jitter, Paketverlust, DNS-Latenz und Speedtest-Werten für Trends über Monate; Home Assistant löscht sie nie. Aus: Der Verlauf deckt weiterhin die letzten 10 Tage ab. Schaltest du es später aus, warnt Home Assistant einmal pro Sensor, bis du dessen Statistiken unter Entwicklerwerkzeuge > Statistiken löschst.",
@@ -28,20 +26,18 @@
       "reconfigure": {
         "title": "Internet Health Monitor neu konfigurieren",
         "data": {
-          "enable_gateway_monitoring": "Gateway und Hops überwachen",
-          "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
+          "internet_reference": "Internet-Referenz",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
           "usage_totals": "Nutzungssummen",
           "long_term_statistics": "Langzeitstatistiken",
           "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
-          "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
-          "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten. Oder eine IPv4- oder IPv6-Adresse eingeben, etwa die eines Pi-hole.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
+          "internet_reference": "Standardmäßig an. Bei jeder Abfrage wird diese Adresse wie ein Hop angepingt: Latenz, Jitter und Paketverlust jenseits deines Providers, neben den drei Hops. Sendet einige Pings pro Minute an den gewählten Anbieter, der deine öffentliche IP-Adresse sieht; IHM ist mit keinem von ihnen verbunden. Wähle einen anderen Anbieter, gib eine öffentliche IPv4-Adresse ein oder wähle Aus.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
           "long_term_statistics": "Standardmäßig aus. Speichert stündliche Statistiken zu Latenz, Jitter, Paketverlust, DNS-Latenz und Speedtest-Werten für Trends über Monate; Home Assistant löscht sie nie. Aus: Der Verlauf deckt weiterhin die letzten 10 Tage ab. Schaltest du es später aus, warnt Home Assistant einmal pro Sensor, bis du dessen Statistiken unter Entwicklerwerkzeuge > Statistiken löschst.",
@@ -80,7 +76,8 @@
       "mlab_consent_required": "Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst.",
       "data_limit_too_small": "0 für automatisch, oder 100 MB oder mehr.",
       "data_limit_over_budget": "Ein Test könnte mehr als das ganze Datenbudget verbrauchen. Senke das Datenlimit, nutze 0 für automatisch oder erhöhe das Budget.",
-      "invalid_dns_server": "Gib eine IPv4- oder IPv6-Adresse ein oder wähle einen Server aus der Liste."
+      "invalid_dns_server": "Gib eine IPv4- oder IPv6-Adresse ein oder wähle einen Server aus der Liste.",
+      "invalid_internet_reference": "Gib eine öffentliche IPv4-Adresse ein oder wähle einen Anbieter aus der Liste."
     }
   },
   "options": {
@@ -88,20 +85,18 @@
       "init": {
         "title": "Internet Health Monitor Optionen",
         "data": {
-          "enable_gateway_monitoring": "Gateway und Hops überwachen",
-          "enable_dns_monitoring": "DNS überwachen",
           "dns_server": "DNS-Server",
           "ping_count": "Pings pro Ziel",
+          "internet_reference": "Internet-Referenz",
           "hop_ownership": "Betreiber jedes Hops ermitteln",
           "usage_totals": "Nutzungssummen",
           "long_term_statistics": "Langzeitstatistiken",
           "speed_test_backend": "Speedtest-Dienst"
         },
         "data_description": {
-          "enable_gateway_monitoring": "Bei jeder Abfrage Gateway und die nächsten zwei Hops Richtung Internet anpingen: Latenz, Jitter und Paketverlust.",
-          "enable_dns_monitoring": "Bei jeder Abfrage eine nicht zwischengespeicherte Namensauflösung beim unten gewählten DNS-Server messen.",
           "dns_server": "Server, dessen Antwortzeit gemessen wird. Automatisch nutzt den auf diesem Host eingestellten. Oder eine IPv4- oder IPv6-Adresse eingeben, etwa die eines Pi-hole.",
           "ping_count": "Pings an jedes Ziel pro Abfrage (1 bis 10). Mehr Pings ergeben ruhigere Werte und einen feineren Paketverlust.",
+          "internet_reference": "Standardmäßig an. Bei jeder Abfrage wird diese Adresse wie ein Hop angepingt: Latenz, Jitter und Paketverlust jenseits deines Providers, neben den drei Hops. Sendet einige Pings pro Minute an den gewählten Anbieter, der deine öffentliche IP-Adresse sieht; IHM ist mit keinem von ihnen verbunden. Wähle einen anderen Anbieter, gib eine öffentliche IPv4-Adresse ein oder wähle Aus.",
           "hop_ownership": "Standardmäßig aus. Zeigt den Netzbetreiber (ASN) jedes öffentlichen Hops. Sendet diese Hop-Adressen (die Router Ihres Anbieters, nicht Ihre eigene Adresse) über Ihren DNS-Server an den kostenlosen IP-zu-ASN-Dienst von Team Cymru. Private und gemeinsam genutzte Anbieteradressen haben keinen Eigentümer und werden nie gesendet.",
           "usage_totals": "Standardmäßig aus. Fügt sechs Diagnosesensoren hinzu: gesendete Pings, ausgeführte Traceroutes, gesendete DNS-Anfragen, ausgeführte Speedtests sowie herunter- und hochgeladene Speedtest-Daten, gezählt seit der Installation. Gezählt wird auch, wenn dies aus ist.",
           "long_term_statistics": "Standardmäßig aus. Speichert stündliche Statistiken zu Latenz, Jitter, Paketverlust, DNS-Latenz und Speedtest-Werten für Trends über Monate; Home Assistant löscht sie nie. Aus: Der Verlauf deckt weiterhin die letzten 10 Tage ab. Schaltest du es später aus, warnt Home Assistant einmal pro Sensor, bis du dessen Statistiken unter Entwicklerwerkzeuge > Statistiken löschst.",
@@ -136,13 +131,23 @@
       "mlab_consent_required": "Bestätige, um M-Lab zu nutzen, oder schließe diesen Dialog und wähle einen anderen Dienst.",
       "data_limit_too_small": "0 für automatisch, oder 100 MB oder mehr.",
       "data_limit_over_budget": "Ein Test könnte mehr als das ganze Datenbudget verbrauchen. Senke das Datenlimit, nutze 0 für automatisch oder erhöhe das Budget.",
-      "invalid_dns_server": "Gib eine IPv4- oder IPv6-Adresse ein oder wähle einen Server aus der Liste."
+      "invalid_dns_server": "Gib eine IPv4- oder IPv6-Adresse ein oder wähle einen Server aus der Liste.",
+      "invalid_internet_reference": "Gib eine öffentliche IPv4-Adresse ein oder wähle einen Anbieter aus der Liste."
     }
   },
   "selector": {
     "dns_server": {
       "options": {
         "auto": "Automatisch erkennen",
+        "cloudflare": "Cloudflare (1.1.1.1)",
+        "google": "Google (8.8.8.8)",
+        "quad9": "Quad9 (9.9.9.9)",
+        "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "internet_reference": {
+      "options": {
+        "off": "Aus",
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
@@ -179,16 +184,25 @@
         "name": "Hop 2 Paketverlust (Anbieter)"
       },
       "hop_3_latency": {
-        "name": "Hop 3 Latenz (Backbone)"
+        "name": "Hop 3 Latenz"
       },
       "hop_3_jitter": {
-        "name": "Hop 3 Jitter (Backbone)"
+        "name": "Hop 3 Jitter"
       },
       "hop_3_packet_loss": {
-        "name": "Hop 3 Paketverlust (Backbone)"
+        "name": "Hop 3 Paketverlust"
       },
       "dns_latency": {
         "name": "DNS-Latenz"
+      },
+      "internet_latency": {
+        "name": "Internet-Latenz"
+      },
+      "internet_jitter": {
+        "name": "Internet-Jitter"
+      },
+      "internet_packet_loss": {
+        "name": "Internet-Paketverlust"
       },
       "connection_type": {
         "name": "Verbindungsart",

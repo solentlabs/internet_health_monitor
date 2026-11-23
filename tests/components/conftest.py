@@ -21,6 +21,7 @@ from solentlabs.internet_health_monitor_core.network_diagnostics import (
     HopInfo,
     NetworkDiagnostics,
     NetworkDiagnosticsResult,
+    ReferenceInfo,
 )
 from solentlabs.internet_health_monitor_core.platforms.linux import LinuxPlatform
 
@@ -44,9 +45,11 @@ def make_result(**overrides: Any) -> NetworkDiagnosticsResult:
             HopInfo(3, "198.51.100.1", 12.4, True, 2.0, 33.3, 3, 2, asn=64500, as_name="EXAMPLE-NET"),
         ],
         "dns_server": "192.168.1.1",
+        "dns_source": "system",
         "dns_success": True,
         "dns_latency_ms": 23.5,
-        "trace_target": "8.8.8.8",
+        "trace_target": "1.1.1.1",
+        "internet": ReferenceInfo("1.1.1.1", 15.2, 0.4, 0.0, 3, 3),
     }
     values.update(overrides)
     return NetworkDiagnosticsResult(**values)

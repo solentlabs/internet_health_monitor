@@ -5,20 +5,18 @@
         "title": "Internet Health Monitor",
         "description": "Configurer la surveillance de la santé du réseau",
         "data": {
-          "enable_gateway_monitoring": "Surveiller la passerelle et les sauts",
-          "enable_dns_monitoring": "Surveiller le DNS",
           "dns_server": "Serveur DNS",
           "ping_count": "Pings par cible",
+          "internet_reference": "Référence internet",
           "hop_ownership": "Identifier l'opérateur de chaque saut",
           "usage_totals": "Totaux d'utilisation",
           "long_term_statistics": "Statistiques à long terme",
           "speed_test_backend": "Service de test de débit"
         },
         "data_description": {
-          "enable_gateway_monitoring": "À chaque relevé, pinguer la passerelle et les deux sauts suivants vers internet : latence, gigue et perte de paquets.",
-          "enable_dns_monitoring": "À chaque relevé, mesurer une résolution non mise en cache auprès du serveur DNS ci-dessous.",
           "dns_server": "Serveur dont le temps de réponse est mesuré. Détection automatique utilise celui configuré sur cet hôte. Ou saisissez une adresse IPv4 ou IPv6, comme celle d'un Pi-hole.",
           "ping_count": "Pings envoyés à chaque cible à chaque relevé (1 à 10). Plus de pings donnent des valeurs plus stables et une perte de paquets plus fine.",
+          "internet_reference": "Activée par défaut. À chaque interrogation, envoie un ping à cette adresse comme à un saut : latence, gigue et perte de paquets au-delà de votre fournisseur, à côté des trois sauts. Envoie quelques pings par minute au fournisseur choisi, qui voit votre adresse IP publique ; IHM n'est affilié à aucun d'eux. Choisissez un autre fournisseur, saisissez une adresse IPv4 publique ou choisissez Désactivée.",
           "hop_ownership": "Désactivé par défaut. Affiche l'opérateur réseau (ASN) de chaque saut public. Envoie ces adresses de saut (les routeurs de votre fournisseur, pas votre propre adresse) au service gratuit IP-vers-ASN de Team Cymru, via votre serveur DNS. Les adresses privées et partagées du fournisseur n'ont pas de propriétaire et ne sont jamais envoyées.",
           "usage_totals": "Désactivé par défaut. Ajoute six capteurs de diagnostic : pings envoyés, traceroutes lancés, requêtes DNS envoyées, tests de débit lancés, et données de test téléchargées et envoyées, comptés depuis l'installation. Le comptage continue même désactivé.",
           "long_term_statistics": "Désactivé par défaut. Conserve des statistiques horaires de latence, gigue, perte de paquets, latence DNS et résultats de tests de débit, pour des tendances sur plusieurs mois ; Home Assistant ne les supprime jamais. Désactivé, l'historique couvre toujours les 10 derniers jours. Le désactiver plus tard fait afficher par Home Assistant un avertissement par capteur jusqu'à ce que vous supprimiez ses statistiques dans Outils de développement > Statistiques.",
@@ -28,20 +26,18 @@
       "reconfigure": {
         "title": "Reconfigurer Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Surveiller la passerelle et les sauts",
-          "enable_dns_monitoring": "Surveiller le DNS",
           "dns_server": "Serveur DNS",
           "ping_count": "Pings par cible",
+          "internet_reference": "Référence internet",
           "hop_ownership": "Identifier l'opérateur de chaque saut",
           "usage_totals": "Totaux d'utilisation",
           "long_term_statistics": "Statistiques à long terme",
           "speed_test_backend": "Service de test de débit"
         },
         "data_description": {
-          "enable_gateway_monitoring": "À chaque relevé, pinguer la passerelle et les deux sauts suivants vers internet : latence, gigue et perte de paquets.",
-          "enable_dns_monitoring": "À chaque relevé, mesurer une résolution non mise en cache auprès du serveur DNS ci-dessous.",
           "dns_server": "Serveur dont le temps de réponse est mesuré. Détection automatique utilise celui configuré sur cet hôte. Ou saisissez une adresse IPv4 ou IPv6, comme celle d'un Pi-hole.",
           "ping_count": "Pings envoyés à chaque cible à chaque relevé (1 à 10). Plus de pings donnent des valeurs plus stables et une perte de paquets plus fine.",
+          "internet_reference": "Activée par défaut. À chaque interrogation, envoie un ping à cette adresse comme à un saut : latence, gigue et perte de paquets au-delà de votre fournisseur, à côté des trois sauts. Envoie quelques pings par minute au fournisseur choisi, qui voit votre adresse IP publique ; IHM n'est affilié à aucun d'eux. Choisissez un autre fournisseur, saisissez une adresse IPv4 publique ou choisissez Désactivée.",
           "hop_ownership": "Désactivé par défaut. Affiche l'opérateur réseau (ASN) de chaque saut public. Envoie ces adresses de saut (les routeurs de votre fournisseur, pas votre propre adresse) au service gratuit IP-vers-ASN de Team Cymru, via votre serveur DNS. Les adresses privées et partagées du fournisseur n'ont pas de propriétaire et ne sont jamais envoyées.",
           "usage_totals": "Désactivé par défaut. Ajoute six capteurs de diagnostic : pings envoyés, traceroutes lancés, requêtes DNS envoyées, tests de débit lancés, et données de test téléchargées et envoyées, comptés depuis l'installation. Le comptage continue même désactivé.",
           "long_term_statistics": "Désactivé par défaut. Conserve des statistiques horaires de latence, gigue, perte de paquets, latence DNS et résultats de tests de débit, pour des tendances sur plusieurs mois ; Home Assistant ne les supprime jamais. Désactivé, l'historique couvre toujours les 10 derniers jours. Le désactiver plus tard fait afficher par Home Assistant un avertissement par capteur jusqu'à ce que vous supprimiez ses statistiques dans Outils de développement > Statistiques.",
@@ -80,7 +76,8 @@
       "mlab_consent_required": "Confirmez pour utiliser M-Lab, ou fermez cette fenêtre et choisissez un autre service.",
       "data_limit_too_small": "Utilisez 0 pour automatique, ou 100 Mo ou plus.",
       "data_limit_over_budget": "Un test pourrait utiliser plus que tout le budget de données. Baissez la limite de données, utilisez 0 pour automatique ou augmentez le budget.",
-      "invalid_dns_server": "Saisissez une adresse IPv4 ou IPv6, ou choisissez un serveur dans la liste."
+      "invalid_dns_server": "Saisissez une adresse IPv4 ou IPv6, ou choisissez un serveur dans la liste.",
+      "invalid_internet_reference": "Saisissez une adresse IPv4 publique ou choisissez un fournisseur dans la liste."
     }
   },
   "options": {
@@ -88,20 +85,18 @@
       "init": {
         "title": "Options Internet Health Monitor",
         "data": {
-          "enable_gateway_monitoring": "Surveiller la passerelle et les sauts",
-          "enable_dns_monitoring": "Surveiller le DNS",
           "dns_server": "Serveur DNS",
           "ping_count": "Pings par cible",
+          "internet_reference": "Référence internet",
           "hop_ownership": "Identifier l'opérateur de chaque saut",
           "usage_totals": "Totaux d'utilisation",
           "long_term_statistics": "Statistiques à long terme",
           "speed_test_backend": "Service de test de débit"
         },
         "data_description": {
-          "enable_gateway_monitoring": "À chaque relevé, pinguer la passerelle et les deux sauts suivants vers internet : latence, gigue et perte de paquets.",
-          "enable_dns_monitoring": "À chaque relevé, mesurer une résolution non mise en cache auprès du serveur DNS ci-dessous.",
           "dns_server": "Serveur dont le temps de réponse est mesuré. Détection automatique utilise celui configuré sur cet hôte. Ou saisissez une adresse IPv4 ou IPv6, comme celle d'un Pi-hole.",
           "ping_count": "Pings envoyés à chaque cible à chaque relevé (1 à 10). Plus de pings donnent des valeurs plus stables et une perte de paquets plus fine.",
+          "internet_reference": "Activée par défaut. À chaque interrogation, envoie un ping à cette adresse comme à un saut : latence, gigue et perte de paquets au-delà de votre fournisseur, à côté des trois sauts. Envoie quelques pings par minute au fournisseur choisi, qui voit votre adresse IP publique ; IHM n'est affilié à aucun d'eux. Choisissez un autre fournisseur, saisissez une adresse IPv4 publique ou choisissez Désactivée.",
           "hop_ownership": "Désactivé par défaut. Affiche l'opérateur réseau (ASN) de chaque saut public. Envoie ces adresses de saut (les routeurs de votre fournisseur, pas votre propre adresse) au service gratuit IP-vers-ASN de Team Cymru, via votre serveur DNS. Les adresses privées et partagées du fournisseur n'ont pas de propriétaire et ne sont jamais envoyées.",
           "usage_totals": "Désactivé par défaut. Ajoute six capteurs de diagnostic : pings envoyés, traceroutes lancés, requêtes DNS envoyées, tests de débit lancés, et données de test téléchargées et envoyées, comptés depuis l'installation. Le comptage continue même désactivé.",
           "long_term_statistics": "Désactivé par défaut. Conserve des statistiques horaires de latence, gigue, perte de paquets, latence DNS et résultats de tests de débit, pour des tendances sur plusieurs mois ; Home Assistant ne les supprime jamais. Désactivé, l'historique couvre toujours les 10 derniers jours. Le désactiver plus tard fait afficher par Home Assistant un avertissement par capteur jusqu'à ce que vous supprimiez ses statistiques dans Outils de développement > Statistiques.",
@@ -136,13 +131,23 @@
       "mlab_consent_required": "Confirmez pour utiliser M-Lab, ou fermez cette fenêtre et choisissez un autre service.",
       "data_limit_too_small": "Utilisez 0 pour automatique, ou 100 Mo ou plus.",
       "data_limit_over_budget": "Un test pourrait utiliser plus que tout le budget de données. Baissez la limite de données, utilisez 0 pour automatique ou augmentez le budget.",
-      "invalid_dns_server": "Saisissez une adresse IPv4 ou IPv6, ou choisissez un serveur dans la liste."
+      "invalid_dns_server": "Saisissez une adresse IPv4 ou IPv6, ou choisissez un serveur dans la liste.",
+      "invalid_internet_reference": "Saisissez une adresse IPv4 publique ou choisissez un fournisseur dans la liste."
     }
   },
   "selector": {
     "dns_server": {
       "options": {
         "auto": "Détection automatique",
+        "cloudflare": "Cloudflare (1.1.1.1)",
+        "google": "Google (8.8.8.8)",
+        "quad9": "Quad9 (9.9.9.9)",
+        "opendns": "OpenDNS (208.67.222.222)"
+      }
+    },
+    "internet_reference": {
+      "options": {
+        "off": "Désactivée",
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
@@ -179,16 +184,25 @@
         "name": "Perte de paquets du saut 2 (fournisseur)"
       },
       "hop_3_latency": {
-        "name": "Latence du saut 3 (dorsale)"
+        "name": "Latence du saut 3"
       },
       "hop_3_jitter": {
-        "name": "Gigue du saut 3 (dorsale)"
+        "name": "Gigue du saut 3"
       },
       "hop_3_packet_loss": {
-        "name": "Perte de paquets du saut 3 (dorsale)"
+        "name": "Perte de paquets du saut 3"
       },
       "dns_latency": {
         "name": "Latence DNS"
+      },
+      "internet_latency": {
+        "name": "Latence internet"
+      },
+      "internet_jitter": {
+        "name": "Gigue internet"
+      },
+      "internet_packet_loss": {
+        "name": "Perte de paquets internet"
       },
       "connection_type": {
         "name": "Type de connexion",
