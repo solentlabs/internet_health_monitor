@@ -115,10 +115,10 @@ once on GitHub:
       repository description, topics, issues on, and a full GitHub
       release; `validate.yaml` and `hassfest.yml` pass with no errors or
       ignores.
-- [ ] **The email check on a throwaway PR** with a `test@example.com`
+- [x] **The email check on a throwaway PR** with a `test@example.com`
       commit: the comment names the commit, and the address appears in
       neither the comment nor the run log.
-- [ ] **Your own pushes:** GitHub's "Block command line pushes that expose
+- [x] **Your own pushes:** GitHub's "Block command line pushes that expose
       my email" is on.
 
 ## Metrics

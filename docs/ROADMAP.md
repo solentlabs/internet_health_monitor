@@ -145,15 +145,16 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 - [ ] Local testing
   - [x] Run on dev laptop (Docker HA harness, `make test-all`)
   - [ ] Deploy to a real HA instance (Path to Release stage 3)
-    - [ ] Hops 2 and 3 detected, and their hostnames redacted in the
-          diagnostics download
+    - [x] Hops 2 and 3 detected, and their hostnames redacted in the
+          diagnostics download (2026-11-23: detected on HA OS; these hops
+          have no hostnames, so redaction rests on its tests)
     - [x] A speed test fills the bufferbloat grade and increases; the
           setup screen's working matches the result
     - [ ] Passive bufferbloat field check (ADR-001 item 3): hop 2 latency
           while the camera live view runs, against a flat gateway. If the
           60 s poll misses the spikes (ADR-001 item 2), decide a faster
           probe then, with the evidence
-- [ ] Before 0.1.0
+- [x] Before 0.1.0
   - [x] Screenshots in light and dark, in both READMEs (light `name.png`,
         dark `name-dark.png`, as Cable Modem Monitor)
     - [x] The full card, light (`images/dashboard-screenshot.png`)
