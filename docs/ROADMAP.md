@@ -147,19 +147,23 @@ Decided 2026-11-19: build both, as diagnostic sensors.
   - [ ] Deploy to a real HA instance (Path to Release stage 3)
     - [ ] Hops 2 and 3 detected, and their hostnames redacted in the
           diagnostics download
-    - [ ] A speed test fills the bufferbloat grade and increases; the
+    - [x] A speed test fills the bufferbloat grade and increases; the
           setup screen's working matches the result
     - [ ] Passive bufferbloat field check (ADR-001 item 3): hop 2 latency
           while the camera live view runs, against a flat gateway. If the
           60 s poll misses the spikes (ADR-001 item 2), decide a faster
           probe then, with the evidence
-- [ ] Beta 3
-  - [ ] DNS resolver comparison: opt-in, the same uncached lookup timed
-        against a few public resolvers beside the user's own, one sensor
-        each, and its own card part. A new outside service (ADR-006), so
-        its ADR is written and accepted first.
-  - [ ] Dashboard screenshots in light and dark, with beta 2's gauges and
-        a day of history, in both READMEs
+- [ ] Before 0.1.0
+  - [x] Screenshots in light and dark, in both READMEs (light `name.png`,
+        dark `name-dark.png`, as Cable Modem Monitor)
+    - [x] The full card, light (`images/dashboard-screenshot.png`)
+    - [x] The full card, dark (`images/dashboard-screenshot-dark.png`)
+    - [x] A card per hop, light and dark (`images/hop-cards.png`,
+          `images/hop-cards-dark.png`)
+    - [x] The combined Network path card, light and dark
+          (`images/network-path-card.png`, `images/network-path-card-dark.png`)
+    - [x] The settings screens, light and dark (`images/settings.png`,
+          `images/settings-speed-tests.png` and their `-dark` versions)
 - [x] DevOps
   - [x] GitHub repo under solentlabs org (stage 2)
   - [x] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
@@ -180,6 +184,14 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 - **Router/modem configuration** - Read-only monitoring
 
 ---
+
+## After 0.1.0
+
+- **DNS resolver comparison** (0.2.0 or later, decided 2026-11-23): opt-in,
+  the same uncached lookup timed against a few public resolvers beside the
+  user's own, one sensor each, and its own card part. No use case asks for
+  it yet; it is a new outside service (ADR-006), so its use case, ADR and
+  each provider's terms for DNS queries come first.
 
 ## Not Built
 

@@ -110,7 +110,7 @@ JavaScript, on pushes and PRs to `main` and weekly; a workflow rather
 than GitHub's default setup, so `main`'s ruleset can require it). Set up
 once on GitHub:
 
-- [ ] **CodeQL's checks required** in `main`'s `require-status-checks`
+- [x] **CodeQL's checks required** in `main`'s `require-status-checks`
       ruleset, once the workflow has run: `Analyze Code Security
       (python)` and `Analyze Code Security (javascript-typescript)`.
 - [ ] **What HACS checks** (hacs.xyz, "Include default repositories"): a

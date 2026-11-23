@@ -14,9 +14,12 @@
 <!-- Meta -->
 [![AI Assisted](https://img.shields.io/badge/AI-Claude%20Assisted-5A67D8.svg)](https://claude.ai)
 
-A **Solent Labs** Home Assistant integration for comprehensive internet health monitoring with multi-hop network path visibility.
+A **Solent Labs** Home Assistant integration that measures the path from Home Assistant to the internet: latency, jitter and packet loss at your gateway, your ISP's first routers and an address past your ISP, so you can see where a slowdown starts.
 
-![Internet Health dashboard card](https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/dashboard-screenshot-dark.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/dashboard-screenshot-dark.png">
+  <img src="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/dashboard-screenshot.png" alt="Internet Health dashboard card" width="700">
+</picture>
 
 > **⭐ If you find this integration useful, please star this repo!**
 > It helps others find the project.
@@ -25,23 +28,14 @@ A **Solent Labs** Home Assistant integration for comprehensive internet health m
 
 ## Features
 
-- **Network path, hop by hop** - Latency, jitter and packet loss for hop 1 (your gateway), hop 2 (usually your ISP's first router) and hop 3, so you can see where a problem starts
-- **Internet reference** - The same three readings for a well-known address past your ISP (Cloudflare's 1.1.1.1 by default, or one you pick), so you can tell a problem at home, on your line, or beyond it
-- **DNS latency** - One uncached lookup per poll at the DNS server you choose
-- **Reachability** - Gateway reachable and internet reachable binary sensors
-- **Speed tests you control** (optional) - Cloudflare, M-Lab or LibreSpeed; whole tests spaced to fit your data budget, with the working shown
-- **Bufferbloat** - Graded A+ to F on Waveform's scale from each speed test, and visible between tests as hop 2 rising over a flat gateway
-- **Zero configuration** - Gateway, hops and DNS server are detected automatically
-- **Dashboard card** - Pick Internet Health in Add card; set it up in a form, no YAML
-
-### What Makes This Different
-
-| Feature | Other Solutions | Internet Health Monitor |
-| --------- | ----------------- | ------------------------ |
-| Gateway detection | Manual config | Auto-detected |
-| Path visibility | Single target only | Hops 1 to 3, each with its own sensors |
-| DNS latency | Cache-affected | Uncached query to your chosen DNS server |
-| Configuration | YAML editing | UI setup |
+- Latency, jitter and packet loss every 60 seconds for hop 1 (your gateway), hop 2 (usually your ISP's first router) and hop 3
+- The same three readings for an [internet reference](#internet-reference) past your ISP, Cloudflare's 1.1.1.1 by default, so you can tell a problem at home, on your line or beyond it
+- DNS lookup time at your own DNS server or one you pick, timed with a name no cache holds
+- Gateway reachable and internet reachable binary sensors
+- Optional speed tests with Cloudflare, M-Lab or LibreSpeed: whole tests spaced to fit your data budget, with the working shown on the setup screen
+- Bufferbloat graded A+ to F on Waveform's scale from each speed test, and visible between tests as hop 2 rising over a flat gateway
+- The gateway, hops and DNS server found without setup
+- A dashboard card you add from Add card and set up in a form
 
 ## Installation
 
@@ -98,6 +92,11 @@ During setup, and later under Configure, you can set:
 | Long-term statistics | off | Keeps hourly statistics of latency, jitter, loss and speed tests for trends over months; Home Assistant never deletes them, so they add about 10 to 15 MB a year. Off, history covers the last 10 days. See [Database Space](#database-space) |
 | Speed test service | Off | Cloudflare, M-Lab NDT7 or LibreSpeed. See [Speed Testing](#speed-testing) |
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/settings-dark.png">
+  <img src="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/settings.png" alt="Internet Health Monitor options" width="400">
+</picture>
+
 Choosing a speed test service adds a second screen:
 
 | Option | Default | Description |
@@ -106,6 +105,11 @@ Choosing a speed test service adds a second screen:
 | Data limit per test | 0 (automatic) | Sized from the last test's speeds; or 100 to 10000 MB, both directions together |
 | Daily test limit | 4 | A cap, not a schedule: most tests in any 24 hours, every kind counted (1 to 40) |
 | Data budget per 30 days | 0 (none) | Sets how often automatic tests run; a test starts only if its data limit fits what is left (0 to 10000 GB) |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/settings-speed-tests-dark.png">
+  <img src="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/settings-speed-tests.png" alt="Speed test settings, showing the working" width="400">
+</picture>
 
 The screen shows its working: the last test's speeds, what each test may
 use, the days between automatic tests, and the most they can use in any
@@ -175,7 +179,7 @@ attributes naming the network that runs that hop, for example
 
 | | |
 | --- | --- |
-| **What you get** | Whose network a hop belongs to: useful evidence when you report a problem to your ISP, and it works when a router has no hostname. |
+| **Use** | Whose network a hop belongs to: useful evidence when you report a problem to your ISP, and it works when a router has no hostname. |
 | **What is sent** | Each public hop address to Team Cymru's free IP-to-ASN service, as a DNS query through your DNS server. These are your ISP's routers, never your own address. Looked up once when hops are detected, not every poll. |
 | **What it often can't do** | Many ISPs use private (`10.x`) or shared (`100.64.x`) addresses on their first routers. Those have no owner, are never sent, and show no `asn`. On such a connection the option finds nothing in hops 1 to 3. |
 | **Accuracy** | A router where two networks meet may carry the other network's address, so it can be labelled with the neighboring operator. |
@@ -223,7 +227,8 @@ long-term statistics only with the *Long-term statistics* option on.
 
 Home Assistant keeps 10 days of every sensor's history, then deletes it.
 IHM's share holds at about 15 to 25 MB, depending on the options below,
-and does not grow.
+and does not grow. It scales with the recorder's `purge_keep_days`: keeping
+90 days holds about nine times as much.
 
 Only *Long-term statistics* grows the database, because Home Assistant
 never deletes statistics:
@@ -426,12 +431,14 @@ entities:
     name: Upload increase
 ```
 
-## Network Path Visualization
+## Network Path
+
+What IHM measures, each with its own sensors:
 
 ```text
-[HA Host] ─Hop 1─> [Gateway] ─Hop 2─> [ISP Router] ─Hop 3─> [Next Router] ─DNS─> [DNS Server]
-           1.2ms      │         15ms       │          25ms         │        35ms
-                      └── Packet Loss ─────┴── Jitter ─────────────┘
+HA host ──> hop 1 (gateway) ──> hop 2 (ISP) ──> hop 3 (next router)
+   ├──────────────────────────────────────────> internet reference (1.1.1.1)
+   └──────────────────────────────────────────> DNS server
 ```
 
 ## Dashboard Card
@@ -451,14 +458,21 @@ the browser: it learns of the card when the page loads.
 | Speed test | on | Each speed test reading but data used (see Usage totals for the running total); Run speed test, which asks before it starts; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it), each shown once a speed test has measured it; and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
-**Want a different order or layout?** The card's form shows and hides
-parts but keeps their order. To reorder sections or change anything
-else, generate the card as YAML and edit it: see
-[Your Own Order or Layout](#your-own-order-or-layout).
+With **Hop layout** set to one combined card, the hops and the internet
+reference share one table:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/network-path-card-dark.png">
+  <img src="https://raw.githubusercontent.com/solentlabs/internet_health_monitor/main/images/network-path-card.png" alt="Network path card: latency, jitter, loss and address for each point" width="450">
+</picture>
+
+The card's form shows and hides parts but keeps their order. To reorder
+sections or change anything else, generate the card as YAML and edit it:
+see [Your Own Order or Layout](#your-own-order-or-layout).
 
 Each measurement has its own row or line; there is no combined score
 ([ADR-004](https://github.com/solentlabs/internet_health_monitor/blob/main/docs/ARCHITECTURE_DECISIONS.md#adr-004-no-composite-health-sensors)).
-Disabled entities, and those of monitoring you turned off, are left out.
+Disabled entities are left out, and so are the internet reference's when it is Off.
 Titles and row names are in English; a name you give an entity replaces its row name. If the card fails to load, monitoring is
 unaffected. Design: [docs/DASHBOARD_CARD.md](https://github.com/solentlabs/internet_health_monitor/blob/main/docs/DASHBOARD_CARD.md).
 
@@ -490,9 +504,9 @@ again after an update to see what changed. The Internet Health card from
 **Add card** always shows the current layout.
 
 The action is `internet_health_monitor.generate_dashboard_card`. It takes
-the options above (`include_status`, `include_hops`, `include_latency`,
-`include_jitter`, `include_packet_loss`, `include_speed_test`,
-`graph_hours`) and responds with `yaml`. It fails with a message when
+the options above (`include_status`, `include_hops`, `hop_layout`,
+`include_latency`, `include_jitter`, `include_packet_loss`,
+`include_speed_test`, `graph_hours`) and responds with `yaml`. It fails with a message when
 IHM is not set up or every part is off.
 
 ## Dashboard Examples
@@ -558,7 +572,8 @@ entities:
 ## Known Limitations
 
 - **Three hops.** IHM watches hops 1 to 3: your gateway and the first routers
-  past it. Problems further along the path show only in DNS latency.
+  past it. A problem further along shows in the internet reference and DNS
+  latency, but not which router causes it.
 - **It measures this host's own path.** One entry per Home Assistant; it
   cannot monitor another device's connection.
 - **Containers on Docker Desktop see one hop.** Docker Desktop (Windows or
