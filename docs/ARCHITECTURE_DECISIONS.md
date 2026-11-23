@@ -593,7 +593,7 @@ IPv4-only parsing.
 
 ## ADR-015: Internet reference ping, on by default, to Cloudflare
 
-**Status:** Proposed 2026-11-23
+**Status:** Accepted 2026-11-23
 
 **Context:** Hops 1 and 2 place a slowdown at home or on the line
 (UC-3, UC-8). Nothing places one past the ISP (UC-9). Hop 3 is the
@@ -631,7 +631,7 @@ ADR updated first.
 
 ## ADR-016: Gateway, hops and DNS always run
 
-**Status:** Proposed 2026-11-23
+**Status:** Accepted 2026-11-23
 
 **Context:** "Monitor gateway and hops" and "Monitor DNS" switches came
 with the code IHM started from. No use case, ADR or doc gave a reason to
