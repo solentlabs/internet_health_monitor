@@ -8,9 +8,9 @@ the Windows run (`make test-windows`), not by Linux unit tests.
 from __future__ import annotations
 
 import ctypes
+import ctypes.wintypes
 import socket
 import struct
-from ctypes import wintypes
 
 # IP_STATUS codes (R13)
 IP_SUCCESS = 0
@@ -18,7 +18,6 @@ IP_REQ_TIMED_OUT = 11010
 IP_TTL_EXPIRED_TRANSIT = 11013
 
 _NO_ERROR = 0
-_ERROR_BUFFER_OVERFLOW = 111
 _INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 _MAX_HOSTNAME_LEN = 128
 _MAX_DOMAIN_NAME_LEN = 128
@@ -50,7 +49,7 @@ class _IcmpEchoReply(ctypes.Structure):
 
 class _MibIpForwardRow(ctypes.Structure):
     _fields_ = [
-        (name, wintypes.DWORD)
+        (name, ctypes.wintypes.DWORD)
         for name in (
             "dwForwardDest",
             "dwForwardMask",
@@ -78,7 +77,7 @@ _IpAddrString._fields_ = [
     ("Next", ctypes.POINTER(_IpAddrString)),
     ("IpAddress", ctypes.c_char * 16),
     ("IpMask", ctypes.c_char * 16),
-    ("Context", wintypes.DWORD),
+    ("Context", ctypes.wintypes.DWORD),
 ]
 
 
@@ -113,19 +112,19 @@ class IpHelper:
     def __init__(self) -> None:
         """Load iphlpapi.dll."""
         self._dll = ctypes.WinDLL("iphlpapi.dll", use_last_error=True)  # type: ignore[attr-defined]
-        self._dll.IcmpCreateFile.restype = wintypes.HANDLE
-        self._dll.IcmpCloseHandle.argtypes = [wintypes.HANDLE]
+        self._dll.IcmpCreateFile.restype = ctypes.wintypes.HANDLE
+        self._dll.IcmpCloseHandle.argtypes = [ctypes.wintypes.HANDLE]
         self._dll.IcmpSendEcho.argtypes = [
-            wintypes.HANDLE,
+            ctypes.wintypes.HANDLE,
             ctypes.c_uint32,
             ctypes.c_void_p,
-            wintypes.WORD,
+            ctypes.wintypes.WORD,
             ctypes.POINTER(_IpOptionInformation),
             ctypes.c_void_p,
-            wintypes.DWORD,
-            wintypes.DWORD,
+            ctypes.wintypes.DWORD,
+            ctypes.wintypes.DWORD,
         ]
-        self._dll.IcmpSendEcho.restype = wintypes.DWORD
+        self._dll.IcmpSendEcho.restype = ctypes.wintypes.DWORD
 
     def echo(self, ip: str, ttl: int, timeout_ms: int) -> tuple[int, str | None, int | None]:
         """Send one echo request; return (IP_STATUS, replying address, round-trip ms)."""
@@ -157,7 +156,7 @@ class IpHelper:
 
     def dns_servers(self) -> list[str]:
         """Return the configured DNS servers, in order."""
-        size = wintypes.ULONG(0)
+        size = ctypes.wintypes.ULONG(0)
         self._dll.GetNetworkParams(None, ctypes.byref(size))
         buffer = ctypes.create_string_buffer(size.value)
         if self._dll.GetNetworkParams(buffer, ctypes.byref(size)) != _NO_ERROR:

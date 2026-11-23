@@ -41,6 +41,7 @@ YAML. One schema in `dashboard.py` validates all three.
 | -------- | --------- | ------- |
 | `include_status` | true | Network Status card: gateway and internet reachable, DNS latency, Refresh diagnostics |
 | `include_hops` | true | One card per hop (Gateway, ISP, Hop 3), then an Internet reference card: current latency, jitter and packet loss, and the address (the latency sensor's `hop_ip`, or `reference_ip`) |
+| `hop_layout` | `cards` | How `include_hops` shows the path: `cards`, one card per point as above; `table`, one markdown card titled Network path with a row per point (Gateway, ISP, Hop 3, Internet), each with its latency sensor's icon, its latency, jitter and packet loss with their units at each sensor's display precision, and its address (a dash until known). A point appears when its latency sensor exists |
 | `include_latency` | true | History graphs: latency for the hops and the internet reference (line "Internet"), and DNS latency on its own (its scale would flatten the hops) |
 | `include_jitter` | true | History graph: jitter for the hops and the internet reference |
 | `include_packet_loss` | true | History graph: packet loss for the hops and the internet reference |

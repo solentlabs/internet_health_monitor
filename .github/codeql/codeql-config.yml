@@ -1,0 +1,17 @@
+name: "IHM CodeQL configuration"
+
+# Rules excluded here are ones Ruff already enforces (pyproject.toml [tool.ruff]),
+# where CodeQL's version reports only false positives in this code. Any other
+# false positive is dismissed on GitHub with its reason, one alert at a time,
+# so a rule that catches real bugs stays on.
+query-filters:
+  - exclude:
+      id: py/ineffectual-statement
+      # Rationale: flags `...`, the body type checkers require for Protocol methods
+      # (pyright rejects a docstring-only body with a declared return type).
+      # Ruff B018 (useless expression) covers real cases and understands `...`.
+  - exclude:
+      id: py/unused-import
+      # Rationale: flags imports used only as subscripted generic base classes,
+      # e.g. DataUpdateCoordinator[...] and CoordinatorEntity[C].
+      # Ruff F401 (unused import) covers real cases and sees those uses.

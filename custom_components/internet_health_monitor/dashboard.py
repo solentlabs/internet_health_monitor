@@ -18,6 +18,7 @@ from solentlabs.internet_health_monitor_core.network_diagnostics import NUM_HOPS
 from .const import DOMAIN
 
 GRAPH_HOURS_DEFAULT = 24
+HOP_LAYOUTS = ("cards", "table")
 GRAPH_HOURS_MAX = 168
 
 # Saved in users' dashboards: renaming a key breaks them (docs/DASHBOARD_CARD.md § Options).
@@ -25,6 +26,8 @@ CARD_OPTIONS_SCHEMA = probatio.Schema(
     {
         probatio.Optional("include_status", default=True): cv.boolean,
         probatio.Optional("include_hops", default=True): cv.boolean,
+        # cards: one card per point; table: one combined card, readings inline (docs/DASHBOARD_CARD.md)
+        probatio.Optional("hop_layout", default="cards"): probatio.In(HOP_LAYOUTS),
         probatio.Optional("include_latency", default=True): cv.boolean,
         probatio.Optional("include_jitter", default=True): cv.boolean,
         probatio.Optional("include_packet_loss", default=True): cv.boolean,
@@ -192,6 +195,50 @@ def _reference_card(rows: list[dict[str, str]]) -> dict[str, Any]:
     return _entities("Internet reference", [*rows, address])
 
 
+# The combined card: each point (key prefix, row name, address attribute), its latency
+# sensor's icon (icons.json; a test keeps them equal), and the readings across.
+_POINTS: list[tuple[str, str, str]] = [
+    *((f"hop_{hop}", HOP_PLACES.get(hop, f"Hop {hop}"), "hop_ip") for hop in _HOPS),
+    ("internet", "Internet", "reference_ip"),
+]
+PATH_ICONS = {
+    "hop_1_latency": "mdi:router-wireless",
+    "hop_2_latency": "mdi:wan",
+    "hop_3_latency": "mdi:server-network",
+    "internet_latency": "mdi:earth",
+}
+_READINGS = ("latency", "jitter", "packet_loss")
+
+
+def _value(entity_id: str) -> str:
+    """A reading with its unit at the sensor's display precision; a dash while unknown or unavailable."""
+    return f"{{{{ states('{entity_id}', rounded=True, with_unit=True) if has_value('{entity_id}') else '–' }}}}"
+
+
+def _path_table(registry: er.EntityRegistry, entry_id: str) -> dict[str, Any] | None:
+    """One markdown card: a row per point with its icon, its readings with units, and its address.
+
+    A point is shown when its latency sensor is; HA's template engine fills the values at each
+    sensor's display precision, so the card needs no code of its own.
+    """
+    lines = ["| | Latency | Jitter | Loss | Address |", "|:--|--:|--:|--:|:--|"]
+    for prefix, name, attribute in _POINTS:
+        ids: dict[str, str | None] = {}
+        for reading in _READINGS:
+            found = _rows(registry, entry_id, [("sensor", f"{prefix}_{reading}", name)])
+            ids[reading] = found[0]["entity"] if found else None
+        latency = ids["latency"]
+        if not latency:
+            continue
+        values = [_value(entity) if (entity := ids[r]) else "–" for r in _READINGS]
+        icon = f'<ha-icon icon="{PATH_ICONS[f"{prefix}_latency"]}"></ha-icon>'
+        address = f"{{{{ state_attr('{latency}', '{attribute}') or '–' }}}}"
+        lines.append(f"| {icon} {name} | " + " | ".join(values) + f" | {address} |")
+    if len(lines) == 2:
+        return None
+    return {"type": "markdown", "title": "Network path", "content": "\n".join(lines)}
+
+
 def _run_button(row: dict[str, str]) -> dict[str, Any]:
     """Run speed test as its own button card, asking first (Cable Modem Monitor's Restart pattern).
 
@@ -224,7 +271,10 @@ def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) 
     parts: list[dict[str, Any]] = []
     if options["include_status"] and (status := rows(_STATUS)):
         parts.append(_entities("Network Status", status))
-    if options["include_hops"]:
+    if options["include_hops"] and options["hop_layout"] == "table":
+        if table := _path_table(registry, entry_id):
+            parts.append(table)
+    elif options["include_hops"]:
         parts += [_hop_card(h, r) for h in _HOPS if (r := rows(_hop_rows(h)))]
         if reference := rows(_reference_rows()):
             parts.append(_reference_card(reference))

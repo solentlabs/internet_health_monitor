@@ -154,6 +154,12 @@
         "opendns": "OpenDNS (208.67.222.222)"
       }
     },
+    "hop_layout": {
+      "options": {
+        "cards": "Una tarjeta por salto",
+        "table": "Una tarjeta combinada"
+      }
+    },
     "speed_test_backend": {
       "options": {
         "none": "Desactivado",
@@ -478,6 +484,10 @@
         "include_hops": {
           "name": "Cada salto",
           "description": "Una tarjeta por salto con su latencia, jitter y pérdida de paquetes actuales."
+        },
+        "hop_layout": {
+          "name": "Diseño de saltos",
+          "description": "Una tarjeta por salto, o una tarjeta combinada con una fila por salto y para la referencia de internet: latencia, jitter, pérdida de paquetes y dirección."
         },
         "include_latency": {
           "name": "Gráficos de latencia",

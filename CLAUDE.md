@@ -90,6 +90,10 @@ Hard constraints. When in doubt, the principle wins over convenience.
   enums.
 - **One-line docstrings** on functions and classes; module docstrings
   required.
+- **CodeQL:** fix every alert, or exclude its rule in
+  `.github/codeql/codeql-config.yml` with a rationale; never dismiss on
+  GitHub. No `__all__` in a module of constants (it hides the rest from
+  scanners); re-export with `import X as X`.
 
 ## Process
 

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 # Defaults and limits come from Core (timing.py), so the integration and the CLI agree.
-from solentlabs.internet_health_monitor_core.network_diagnostics import DEFAULT_DNS_SERVER
+# "X as X" marks a re-export; an __all__ would hide every constant defined here (CodeQL).
+from solentlabs.internet_health_monitor_core.network_diagnostics import DEFAULT_DNS_SERVER as DEFAULT_DNS_SERVER
 from solentlabs.internet_health_monitor_core.speed_test import BACKEND_NAMES
-from solentlabs.internet_health_monitor_core.timing import DEFAULT_PING_COUNT, PING_COUNT_MAX, PING_COUNT_MIN
-
-__all__ = ["DEFAULT_DNS_SERVER", "DEFAULT_PING_COUNT", "PING_COUNT_MAX", "PING_COUNT_MIN"]
+from solentlabs.internet_health_monitor_core.timing import (
+    DEFAULT_PING_COUNT as DEFAULT_PING_COUNT,
+    PING_COUNT_MAX as PING_COUNT_MAX,
+    PING_COUNT_MIN as PING_COUNT_MIN,
+)
 
 DOMAIN = "internet_health_monitor"
 NAME = "Internet Health Monitor"
@@ -16,7 +19,7 @@ NAME = "Internet Health Monitor"
 DEVICE_NAME = "Internet Health"
 MANUFACTURER = "Solent Labs"
 TROUBLESHOOTING_URL = "https://github.com/solentlabs/internet_health_monitor#troubleshooting"
-VERSION = "0.1.0b3"  # must equal manifest.json "version" (tests/components/test_const.py)
+VERSION = "0.1.0b4"  # must equal manifest.json "version" (tests/components/test_const.py)
 
 # Option keys
 CONF_LONG_TERM_STATISTICS = "long_term_statistics"  # state_class on measurement sensors (ADR-013)

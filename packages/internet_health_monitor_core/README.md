@@ -55,7 +55,8 @@ print(result.to_dict())
 # Speed test: pass your own aiohttp session; failures raise SpeedTestError.
 import aiohttp
 from solentlabs.internet_health_monitor_core.data_plan import automatic_limit
-from solentlabs.internet_health_monitor_core.speed_test import DataLimit, run_speed_test
+from solentlabs.internet_health_monitor_core.speed_test import DataLimit
+from solentlabs.internet_health_monitor_core.speed_test_runner import run_speed_test
 
 async with aiohttp.ClientSession() as session:
     speed = await run_speed_test("cloudflare", session, DataLimit.even(500))  # 250 MB each way

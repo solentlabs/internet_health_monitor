@@ -36,7 +36,7 @@ async def test_diagnostics_carry_redacted_logs(hass: HomeAssistant, setup_entry:
     data = await async_get_config_entry_diagnostics(hass, entry)
 
     assert any(r["message"] == f"No hops detected toward {REDACTED}" for r in data["logs"])
-    assert any("version" in r["message"] and r["level"] == "INFO" for r in data["logs"])  # from setup on
+    assert any(" starting [" in r["message"] and r["level"] == "INFO" for r in data["logs"])  # from setup on
     hops = data["result"]["hops"]
     assert hops[1]["hostname"] == REDACTED
     assert hops[2]["ip"] == REDACTED

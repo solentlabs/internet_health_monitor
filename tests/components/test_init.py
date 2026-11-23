@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from ipaddress import IPv4Address
 from types import SimpleNamespace
 from typing import Any
@@ -19,6 +20,7 @@ from custom_components.internet_health_monitor.const import (
     CONF_INTERNET_REFERENCE,
     CONF_PING_COUNT,
     DOMAIN,
+    VERSION,
 )
 from solentlabs.internet_health_monitor_core.platforms import UnsupportedPlatformError
 from solentlabs.internet_health_monitor_core.platforms.linux import LinuxPlatform
@@ -238,3 +240,37 @@ async def test_entities_no_longer_created_are_removed(
 
     await set_options(hass, entry, {})
     assert {key: entity_id(hass, platform, entry, key) for platform, key in removed} == before
+
+
+# Installed Core version -> the startup line, as Cable Modem Monitor's: the integration's version,
+# HA's install type, then Core's version as installed, so a mismatch shows in the first line.
+# fmt: off
+STARTUP_CASES: list[tuple[str, str | None, str]] = [
+    ("core installed",   "0.1.0b3", "Internet Health Monitor v{v} starting [Home Assistant OS] — core: v0.1.0b3"),
+    ("core not found",   None,      "Internet Health Monitor v{v} starting [Home Assistant OS] — core: not installed"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("description", "core", "expected"), STARTUP_CASES, ids=[c[0] for c in STARTUP_CASES])
+async def test_startup_line(
+    setup_entry: SetupEntry, caplog: pytest.LogCaptureFixture, description: str, core: str | None, expected: str
+) -> None:
+    """Setup logs one line naming the integration, the install type and the installed Core."""
+    from importlib.metadata import PackageNotFoundError
+
+    def installed(package: str) -> str:
+        if core is None:
+            raise PackageNotFoundError(package)
+        return core
+
+    with (
+        patch("custom_components.internet_health_monitor.package_version", side_effect=installed),
+        patch(
+            "custom_components.internet_health_monitor.async_get_system_info",
+            AsyncMock(return_value={"installation_type": "Home Assistant OS"}),
+        ),
+        caplog.at_level(logging.INFO, logger="custom_components.internet_health_monitor"),
+    ):
+        await setup_entry()
+    assert expected.format(v=VERSION) in caplog.messages

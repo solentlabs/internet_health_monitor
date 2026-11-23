@@ -1,42 +1,129 @@
 {
   "entity": {
     "sensor": {
-      "hop_1_latency": { "default": "mdi:router-wireless" },
-      "hop_2_latency": { "default": "mdi:wan" },
-      "hop_3_latency": { "default": "mdi:server-network" },
-      "hop_1_jitter": { "default": "mdi:chart-timeline-variant" },
-      "hop_2_jitter": { "default": "mdi:chart-timeline-variant" },
-      "hop_3_jitter": { "default": "mdi:chart-timeline-variant" },
-      "hop_1_packet_loss": { "default": "mdi:network-off" },
-      "hop_2_packet_loss": { "default": "mdi:network-off" },
-      "hop_3_packet_loss": { "default": "mdi:network-off" },
-      "dns_latency": { "default": "mdi:dns" },
-      "connection_type": { "default": "mdi:ethernet", "state": { "wifi": "mdi:wifi" } },
-      "install_type": { "default": "mdi:home-assistant" },
-      "speed_test_download": { "default": "mdi:download-network" },
-      "speed_test_upload": { "default": "mdi:upload-network" },
-      "speed_test_idle_latency": { "default": "mdi:timer-outline" },
-      "speed_test_download_latency": { "default": "mdi:progress-download" },
-      "speed_test_upload_latency": { "default": "mdi:progress-upload" },
-      "speed_test_data_used": { "default": "mdi:database-arrow-down-outline" },
-      "usage_pings": { "default": "mdi:counter" },
-      "usage_traceroutes": { "default": "mdi:counter" },
-      "usage_dns_queries": { "default": "mdi:counter" },
-      "usage_speed_tests": { "default": "mdi:counter" },
-      "usage_downloaded": { "default": "mdi:download-circle-outline" },
-      "usage_uploaded": { "default": "mdi:upload-circle-outline" }
+      "hop_1_latency": {
+        "default": "mdi:router-wireless"
+      },
+      "hop_2_latency": {
+        "default": "mdi:wan"
+      },
+      "hop_3_latency": {
+        "default": "mdi:server-network"
+      },
+      "hop_1_jitter": {
+        "default": "mdi:chart-timeline-variant"
+      },
+      "hop_2_jitter": {
+        "default": "mdi:chart-timeline-variant"
+      },
+      "hop_3_jitter": {
+        "default": "mdi:chart-timeline-variant"
+      },
+      "hop_1_packet_loss": {
+        "default": "mdi:network-off"
+      },
+      "hop_2_packet_loss": {
+        "default": "mdi:network-off"
+      },
+      "hop_3_packet_loss": {
+        "default": "mdi:network-off"
+      },
+      "dns_latency": {
+        "default": "mdi:dns"
+      },
+      "internet_latency": {
+        "default": "mdi:earth"
+      },
+      "internet_jitter": {
+        "default": "mdi:chart-timeline-variant"
+      },
+      "internet_packet_loss": {
+        "default": "mdi:network-off"
+      },
+      "connection_type": {
+        "default": "mdi:ethernet",
+        "state": {
+          "wifi": "mdi:wifi"
+        }
+      },
+      "install_type": {
+        "default": "mdi:home-assistant"
+      },
+      "speed_test_download": {
+        "default": "mdi:download-network"
+      },
+      "speed_test_upload": {
+        "default": "mdi:upload-network"
+      },
+      "speed_test_idle_latency": {
+        "default": "mdi:timer-outline"
+      },
+      "speed_test_download_latency": {
+        "default": "mdi:progress-download"
+      },
+      "speed_test_upload_latency": {
+        "default": "mdi:progress-upload"
+      },
+      "speed_test_data_used": {
+        "default": "mdi:database-arrow-down-outline"
+      },
+      "speed_test_download_latency_increase": {
+        "default": "mdi:arrow-down-bold-circle-outline"
+      },
+      "speed_test_upload_latency_increase": {
+        "default": "mdi:arrow-up-bold-circle-outline"
+      },
+      "speed_test_bufferbloat_grade": {
+        "default": "mdi:gauge"
+      },
+      "usage_pings": {
+        "default": "mdi:counter"
+      },
+      "usage_traceroutes": {
+        "default": "mdi:counter"
+      },
+      "usage_dns_queries": {
+        "default": "mdi:counter"
+      },
+      "usage_speed_tests": {
+        "default": "mdi:counter"
+      },
+      "usage_downloaded": {
+        "default": "mdi:download-circle-outline"
+      },
+      "usage_uploaded": {
+        "default": "mdi:upload-circle-outline"
+      }
     },
     "binary_sensor": {
-      "gateway_reachable": { "default": "mdi:lan-check", "state": { "off": "mdi:lan-disconnect" } },
-      "internet_reachable": { "default": "mdi:web-check", "state": { "off": "mdi:web-off" } }
+      "gateway_reachable": {
+        "default": "mdi:lan-check",
+        "state": {
+          "off": "mdi:lan-disconnect"
+        }
+      },
+      "internet_reachable": {
+        "default": "mdi:web-check",
+        "state": {
+          "off": "mdi:web-off"
+        }
+      }
     },
     "button": {
-      "refresh_diagnostics": { "default": "mdi:refresh" },
-      "reset_cache": { "default": "mdi:cached" },
-      "run_speed_test": { "default": "mdi:speedometer" }
+      "refresh_diagnostics": {
+        "default": "mdi:refresh"
+      },
+      "reset_cache": {
+        "default": "mdi:cached"
+      },
+      "run_speed_test": {
+        "default": "mdi:speedometer"
+      }
     }
   },
   "services": {
-    "generate_dashboard_card": { "service": "mdi:view-dashboard" }
+    "generate_dashboard_card": {
+      "service": "mdi:view-dashboard"
+    }
   }
 }

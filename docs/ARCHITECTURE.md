@@ -38,7 +38,8 @@ Core      (packages/internet_health_monitor_core/, module
            solentlabs.internet_health_monitor_core, on PyPI as
            solentlabs-internet-health-monitor-core)
     network_diagnostics.py: polling, caching, jitter, loss, DNS, hostnames
-    speed_test.py: one speed test interface and result (ADR-003)
+    speed_test.py: one speed test interface and result (ADR-003); imports no backend
+    speed_test_runner.py: the backend registry and run_speed_test, the one entry point
     data_plan.py: a test's data limit and automatic tests' spacing
     bufferbloat.py: Waveform's grade (R3; ADR-004 amendment)
     mlab_runs.py: M-Lab's per-client limits for the command line

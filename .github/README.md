@@ -444,6 +444,7 @@ the browser: it learns of the card when the page loads.
 | -------- | --------- | ------- |
 | Network status | on | Gateway and internet reachable, DNS latency, Refresh diagnostics |
 | Each hop | on | A card per hop (Gateway, ISP, Hop 3), then one for the internet reference, each with its current latency, jitter and packet loss, and its address |
+| Hop layout | A card per hop | Or one combined card: a row each for the gateway, ISP, hop 3 and the internet reference, with latency, jitter, packet loss and address across |
 | Latency graphs | on | Latency history for the hops and the internet reference, and DNS latency on its own graph |
 | Jitter graph | on | Jitter history for the hops and the internet reference |
 | Packet loss graph | on | Packet loss history for the hops and the internet reference |
