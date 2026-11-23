@@ -75,8 +75,10 @@ Integration), turn on **Show beta** for it, and install. A fix ships as
 the next beta (`0.1.0b2`), which HACS offers as an update.
 
 Each beta gets its own CHANGELOG heading. When the final version ships,
-the headings of its betas become that version's one heading, since the
-betas' notes are what the version holds.
+its section replaces the betas' sections and describes what that version
+is, written for someone upgrading from the last final version (or, for
+0.1.0, installing it fresh); fixes between betas are left out. Each beta's
+notes stay on its GitHub pre-release.
 
 ## Before the First Release
 

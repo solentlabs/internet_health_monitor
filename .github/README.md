@@ -43,14 +43,14 @@ A **Solent Labs** Home Assistant integration that measures the path from Home As
 
 The Marketplace is built into Home Assistant 2026.11 and later; on
 2026.10, use [HACS](https://www.hacs.xyz/docs/use/download/download/) the
-same way. Internet Health Monitor is in beta and not yet in the
-Marketplace's list, so add it as a custom repository first:
+same way. Internet Health Monitor is not yet in the Marketplace's list,
+so add it as a custom repository first:
 
 1. Open **Settings → Marketplace**, then the **⋮** menu → **Custom
    repositories**.
 2. Add `https://github.com/solentlabs/internet_health_monitor`, type
    **Integration**.
-3. Open **Internet Health Monitor** and install it, as a beta below.
+3. Open **Internet Health Monitor** and install it.
 4. Restart Home Assistant, then go to **Settings → Devices & services →
    Add integration** and search for **Internet Health Monitor**.
 

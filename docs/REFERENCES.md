@@ -602,8 +602,8 @@ tables (schema 53, HA 2026.10), SQLite, vacuumed before each size.
    (ADR-001). Needs a citation.
 2. Probe cadence needed to catch bloat spikes; about 1 ping/s is an
    estimate, not a source (ADR-001).
-3. Field check of the passive method on the motivating household
-   (ADR-001).
+3. Field check of the passive method on the motivating household: done
+   2026-11-23, no upload bloat on that line (ADR-001 § Field check).
 4. Waveform and DSLReports figures read via Wayback only (R3, R4);
    Waveform's live site refuses scripted requests.
 5. Backend survey follow-ups (R9): whether M-Lab's "contribute to the
