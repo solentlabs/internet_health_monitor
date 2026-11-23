@@ -579,6 +579,22 @@ limit [V].
   Agreement (not read); the archived 2016 terms cover enterprise
   services only.
 
+## R28. Database space, measured
+
+Measured 2026-11-23 [V, local measurement] with
+`scripts/dev/measure_recorder_size.py`: Home Assistant's own recorder
+tables (schema 53, HA 2026.10), SQLite, vacuumed before each size.
+
+- **State history** (10 days, purged after; always recorded): one row
+  per change, assuming each reading that changes most polls changes
+  every poll. Default options (9 such readings): 18.6 MB; internet
+  reference Off (7): 14.4 MB; Usage totals on adds 2: +4.2 MB.
+- **Long-term statistics** (option on): hourly mean, min and max per
+  measurement sensor, never purged: 19 sensors with a speed test
+  service, 14.4 MB a year; 13 without, 9.8 MB; internet reference Off,
+  12.1 and 7.5 MB. Their 5-minute rows, kept 10 days: 2.4 to 4.7 MB,
+  held level.
+
 ## Open Verification Items
 
 1. Whether ISP routers deprioritize ICMP aimed at themselves, making a

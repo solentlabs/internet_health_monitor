@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Database space, stated.** The Long-term statistics option says what
+  it adds (about 10 to 15 MB a year), and the README's Database Space
+  section gives the figures per option, measured with Home Assistant's
+  own recorder tables.
 - **Internet reference.** A fourth ping target past your ISP, on by
   default: Cloudflare's 1.1.1.1. It reports latency, jitter and packet
   loss like a hop, in its own sensors, card and graph lines, so a
@@ -35,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The card's speed test list leaves out Data used.** One test's data
+  use says little on its own; the Usage totals keep the running total.
+  The sensor stays.
 - **Hop 3 is no longer called "backbone".** It is the router after your
   ISP's first one, often still inside your ISP. Its sensors are now
   "Hop 3 latency", "Hop 3 jitter" and "Hop 3 packet loss"; existing

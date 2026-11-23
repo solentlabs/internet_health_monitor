@@ -403,8 +403,10 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
         "Speed test",
         {"entity": f"{SENSOR}download", "name": "Download"},
-        {"entity": f"{SENSOR}data_used", "name": "Data used"},
+        {"entity": f"{SENSOR}upload_latency", "name": "Upload latency"},
     )
+    # One test's data use says little on its own; usage totals carry the running total.
+    assert f"{SENSOR}data_used" not in {row["entity"] for row in speed["entities"]}
     # Its own button card, as Cable Modem Monitor's Restart: an entities row's button skips the
     # confirmation when its own Press is clicked.
     assert run == RUN_BUTTON

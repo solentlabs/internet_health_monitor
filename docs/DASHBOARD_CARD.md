@@ -44,7 +44,7 @@ YAML. One schema in `dashboard.py` validates all three.
 | `include_latency` | true | History graphs: latency for the hops and the internet reference (line "Internet"), and DNS latency on its own (its scale would flatten the hops) |
 | `include_jitter` | true | History graph: jitter for the hops and the internet reference |
 | `include_packet_loss` | true | History graph: packet loss for the hops and the internet reference |
-| `include_speed_test` | true | Entities card: each speed test reading; Run speed test as its own button card, which asks before it starts; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
+| `include_speed_test` | true | Entities card: each speed test reading except data used (one test's use says little; usage totals keep the running total); Run speed test as its own button card, which asks before it starts; the bufferbloat grade gauge, full width, above download and upload gauges side by side; history graph: download and upload. Shown only when a speed test service is chosen |
 | `graph_hours` | 24 | Hours each graph shows, 1 to 168 |
 
 Renaming or removing an option breaks saved dashboards: the card must

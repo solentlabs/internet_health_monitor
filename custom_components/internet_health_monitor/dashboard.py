@@ -89,7 +89,6 @@ _SPEED_TEST: list[Row] = [
     ("sensor", "speed_test_idle_latency", "Idle latency"),
     ("sensor", "speed_test_download_latency", "Download latency"),
     ("sensor", "speed_test_upload_latency", "Upload latency"),
-    ("sensor", "speed_test_data_used", "Data used"),
 ]
 _RUN: list[Row] = [("button", "run_speed_test", "Run speed test")]
 # Lovelace config is plain text (no translation hook for a custom card): English, as the titles.

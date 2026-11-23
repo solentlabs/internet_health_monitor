@@ -95,7 +95,7 @@ During setup, and later under Configure, you can set:
 | Internet reference | Cloudflare (1.1.1.1) | An address past your ISP, pinged each poll like a hop. Pick Google, Quad9 or OpenDNS, type any public IPv4 address, or choose Off. See [Internet Reference](#internet-reference) |
 | Look up who runs each hop | off | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
 | Usage totals | off | Adds six sensors counting what IHM has sent. See [Usage Totals](#usage-totals) |
-| Long-term statistics | off | Keeps hourly statistics of latency, jitter, loss and speed tests for trends over months; Home Assistant never deletes them. Off, history covers the last 10 days |
+| Long-term statistics | off | Keeps hourly statistics of latency, jitter, loss and speed tests for trends over months; Home Assistant never deletes them, so they add about 10 to 15 MB a year. Off, history covers the last 10 days. See [Database Space](#database-space) |
 | Speed test service | Off | Cloudflare, M-Lab NDT7 or LibreSpeed. See [Speed Testing](#speed-testing) |
 
 Choosing a speed test service adds a second screen:
@@ -219,6 +219,27 @@ Supervisor), `system` (this system's `/etc/resolv.conf`) or `fallback`
 (none found, so 1.1.1.1). The measurement sensors keep
 long-term statistics only with the *Long-term statistics* option on.
 
+### Database Space
+
+Home Assistant keeps 10 days of every sensor's history, then deletes it.
+IHM's share holds at about 15 to 25 MB, depending on the options below,
+and does not grow.
+
+Only *Long-term statistics* grows the database, because Home Assistant
+never deletes statistics:
+
+| Long-term statistics | Added per year |
+| -------------------- | -------------- |
+| Off (default) | Nothing |
+| On | About 10 MB |
+| On, with a speed test service | About 14 MB |
+| On, with the internet reference Off | About 7.5 MB, or 12 MB with a speed test service |
+
+Figures are for Home Assistant's default SQLite database; MariaDB and
+PostgreSQL differ somewhat. Pings per target, the DNS server and hop
+ownership do not change them. `scripts/dev/measure_recorder_size.py`
+reproduces them ([REFERENCES.md § R28](https://github.com/solentlabs/internet_health_monitor/blob/main/docs/REFERENCES.md#r28-database-space-measured)).
+
 ### Usage Totals
 
 What IHM has sent since it was installed, so you can see what monitoring
@@ -246,7 +267,7 @@ recorder:
 
 | Sensor | Unit | Counts |
 | -------- | ------ | -------- |
-| Pings sent | pings | Every ping to the gateway and hops |
+| Pings sent | pings | Every ping to the gateway, the hops and the internet reference |
 | Traceroutes run | traceroutes | Each hop detection: at start, when the gateway changes, every 10 minutes while hops are missing, and after a cache reset |
 | DNS queries sent | queries | Latency probes, reverse lookups of hops, and hop ownership queries |
 | Speed tests run | tests | Every speed test started, failed ones included |
@@ -426,7 +447,7 @@ the browser: it learns of the card when the page loads.
 | Latency graphs | on | Latency history for the hops and the internet reference, and DNS latency on its own graph |
 | Jitter graph | on | Jitter history for the hops and the internet reference |
 | Packet loss graph | on | Packet loss history for the hops and the internet reference |
-| Speed test | on | Each speed test reading; Run speed test, which asks before it starts; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it), each shown once a speed test has measured it; and a throughput graph. Shown only with a speed test service |
+| Speed test | on | Each speed test reading but data used (see Usage totals for the running total); Run speed test, which asks before it starts; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it), each shown once a speed test has measured it; and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
 **Want a different order or layout?** The card's form shows and hides
