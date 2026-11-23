@@ -23,7 +23,7 @@
     "solentlabs.internet_health_monitor_core"
   ],
   "requirements": [
-    "solentlabs-internet-health-monitor-core==0.1.0b4"
+    "solentlabs-internet-health-monitor-core==0.1.0b5"
   ],
-  "version": "0.1.0b4"
+  "version": "0.1.0b5"
 }

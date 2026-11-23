@@ -4,6 +4,9 @@
   "MD013": false,
   // CHANGELOG repeats Added/Changed under each release (Keep a Changelog).
   "MD024": { "siblings_only": true },
+  // Screenshots in light and dark: GitHub picks one by the reader's theme
+  // with <picture>, which Markdown has no syntax for (Cable Modem Monitor's).
+  "MD033": { "allowed_elements": ["picture", "source", "img"] },
   // Bold taglines and labels (README footer, REFERENCES) are not headings.
   "MD036": false,
   // Tables: one space inside each pipe; columns are not padded to align.
