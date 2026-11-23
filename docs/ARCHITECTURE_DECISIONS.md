@@ -77,6 +77,19 @@ REFERENCES.md):
    someone opens the camera live view; watch whether it climbs while the
    gateway stays flat.
 
+**Field check, 2026-11-23** (item 3, on the motivating household's HA OS
+host, 0.1.0b3; minute readings from HA's history) [V, field observation]:
+ten minutes of camera live view against the ten before it. Hop 2 median
+8.40 ms before, 8.34 ms during; gateway 0.70 and 0.81 ms. No sustained
+rise. Single readings peaked further out (hop 3 34.5 ms, the internet
+reference 40.9 ms) and one poll lost a ping to hop 2. A speed test's
+upload, which fills the uplink as no camera stream can, raised latency
+11 ms (grade A, the same day), which bounds what the camera could queue.
+So on this line the camera causes no upload bloat for the passive signal
+to see, and item 2 stays open: no faster probe for 0.1.0, decided again
+with evidence from a line that does bloat and a new decision (ADR-007, ADR-012). Item 1
+is eased by the internet reference (ADR-015), a stable host past the ISP.
+
 ---
 
 ## ADR-002: IHM stays a standalone integration
@@ -359,9 +372,10 @@ the interval and users do not get a field for it, in setup or options
   `POLL_INTERVAL_S` at the maximum ping count; a test enforces it. The CLI
   refuses an `--interval` shorter than that bound for the chosen ping count.
 - Passive bufferbloat (ADR-001) reads the 60 s poll. Whether that catches
-  short bloat spikes is ADR-001's verification item 2, settled by the
-  field check (ROADMAP § Phase 5, Local testing); a faster probe would
-  need that evidence and a new decision (ADR-012's constraint).
+  short bloat spikes is ADR-001's verification item 2. The field check
+  (ADR-001 § Field check) found no bloat to catch on its line, so the
+  question stays open; a faster probe would need evidence from a line
+  that bloats and a new decision (ADR-012's constraint).
 
 ---
 

@@ -58,8 +58,9 @@ The workflow then runs, each step only if the one before passed:
    notes and the integration zip. It comes last because the zip's
    `manifest.json` pins the Core just published.
 
-Run by hand (Actions, Release, Run workflow), it builds and publishes to
-Test PyPI (environment `test-pypi-core`) and creates no release.
+There is no Test PyPI run: betas on the real PyPI are the rehearsal, each
+one the whole path a final release takes (decided 2026-11-23, after five
+betas).
 
 ## Beta Releases
 
@@ -74,8 +75,10 @@ Integration), turn on **Show beta** for it, and install. A fix ships as
 the next beta (`0.1.0b2`), which HACS offers as an update.
 
 Each beta gets its own CHANGELOG heading. When the final version ships,
-the headings of its betas become that version's one heading, since the
-betas' notes are what the version holds.
+its section replaces the betas' sections and describes what that version
+is, written for someone upgrading from the last final version (or, for
+0.1.0, installing it fresh); fixes between betas are left out. Each beta's
+notes stay on its GitHub pre-release.
 
 ## Before the First Release
 
@@ -83,15 +86,12 @@ Set up once, outside the repository, before the first tag. PyPI trusts
 one workflow file by name, so each entry names `release.yml`
 (REFERENCES.md § R25).
 
-- [x] **GitHub environments** `pypi-core` and `test-pypi-core` in the
-      repository's settings.
+- [x] **GitHub environment** `pypi-core` in the repository's settings.
 - [x] **PyPI pending publisher** (account sidebar, Publishing): project
       `solentlabs-internet-health-monitor-core`, owner `solentlabs`,
       repository `internet_health_monitor`, workflow `release.yml`,
       environment `pypi-core`.
-- [ ] **Test PyPI pending publisher**: the same, environment
-      `test-pypi-core`.
-- [ ] **The first tag soon after**, a beta: a pending publisher does not
+- [x] **The first tag soon after**, a beta: a pending publisher does not
       reserve the project name on PyPI until its first upload.
 
 A project that moves publishing into another workflow file must change
@@ -117,10 +117,10 @@ once on GitHub:
       repository description, topics, issues on, and a full GitHub
       release; `validate.yaml` and `hassfest.yml` pass with no errors or
       ignores.
-- [ ] **The email check on a throwaway PR** with a `test@example.com`
+- [x] **The email check on a throwaway PR** with a `test@example.com`
       commit: the comment names the commit, and the address appears in
       neither the comment nor the run log.
-- [ ] **Your own pushes:** GitHub's "Block command line pushes that expose
+- [x] **Your own pushes:** GitHub's "Block command line pushes that expose
       my email" is on.
 
 ## Metrics
