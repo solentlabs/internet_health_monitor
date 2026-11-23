@@ -84,9 +84,11 @@ During setup, and later under Configure, you can set:
 
 | Option | Default | Description |
 | -------- | --------- | ------------- |
-| DNS server | Auto-detect | Server to time: auto-detect uses the one this host is configured with (on HA OS and Supervised, the host's own server, which the Supervisor reports); pick a public one from the list, or type any IPv4 or IPv6 address, such as a Pi-hole's. The DNS latency sensor's `dns_source` attribute says where it came from |
+| DNS server | Auto-detect | Server to time: auto-detect uses the one this host is configured with (on HA OS and Supervised, the host's own server, which the Supervisor reports); pick a public one from the list, or Custom address. The DNS latency sensor's `dns_source` attribute says where it came from |
+| Custom DNS server | empty | With DNS server set to Custom address: any IPv4 or IPv6 address, such as a Pi-hole's. Ignored for any other choice |
 | Pings per target | 3 | Pings sent to each target per poll (1 to 10) |
-| Internet reference | Cloudflare (1.1.1.1) | An address past your ISP, pinged each poll like a hop. Pick Google, Quad9 or OpenDNS, type any public IPv4 address, or choose Off. See [Internet Reference](#internet-reference) |
+| Internet reference | Cloudflare (1.1.1.1) | An address past your ISP, pinged each poll like a hop. Pick Google, Quad9, OpenDNS or Custom address, or choose Off. See [Internet Reference](#internet-reference) |
+| Custom address | empty | With Internet reference set to Custom address: any public IPv4 address. Ignored for any other choice, so Off is always off |
 | Look up who runs each hop | off | Adds each public hop's network operator; sends hop addresses to Team Cymru. See [Hop Ownership](#hop-ownership) |
 | Usage totals | off | Adds six sensors counting what IHM has sent. See [Usage Totals](#usage-totals) |
 | Long-term statistics | off | Keeps hourly statistics of latency, jitter, loss and speed tests for trends over months; Home Assistant never deletes them, so they add about 10 to 15 MB a year. Off, history covers the last 10 days. See [Database Space](#database-space) |

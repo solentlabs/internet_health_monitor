@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
+    TextSelector,
 )
 
 from solentlabs.internet_health_monitor_core import timing
@@ -32,8 +33,10 @@ from solentlabs.internet_health_monitor_core.speed_test import DataLimit, SpeedT
 
 from .const import (
     CONF_DNS_SERVER,
+    CONF_DNS_SERVER_CUSTOM,
     CONF_HOP_OWNERSHIP,
     CONF_INTERNET_REFERENCE,
+    CONF_INTERNET_REFERENCE_CUSTOM,
     CONF_LONG_TERM_STATISTICS,
     CONF_MLAB_CONSENT,
     CONF_PING_COUNT,
@@ -87,40 +90,60 @@ def _box(minimum: int, maximum: int, step: int, unit: str | None = None) -> prob
     return probatio.All(NumberSelector(config), probatio.Coerce(int))
 
 
+# Each list says what is measured. Its "Custom address" choice takes the address in the box
+# below it, which is stored in the list's place; any other choice ignores the box, so the list
+# never says one thing while IHM does another, and Off is always off (ADR-015). A plain list
+# shows its options' names; one that also took typing showed the stored word ("auto").
+CUSTOM_CHOICE = "custom"
+CUSTOM_FIELDS = {CONF_DNS_SERVER: CONF_DNS_SERVER_CUSTOM, CONF_INTERNET_REFERENCE: CONF_INTERNET_REFERENCE_CUSTOM}
+_CHOICES: dict[str, Mapping[str, str | None]] = {
+    CONF_DNS_SERVER: DNS_SERVERS,
+    CONF_INTERNET_REFERENCE: INTERNET_REFERENCES,
+}
+
+
+def _split(field: str, current: Mapping[str, Any]) -> tuple[str, str | None]:
+    """(list choice, box address) for a stored or typed value: a listed address shows as its name."""
+    choices = _CHOICES[field]
+    typed = current.get(CUSTOM_FIELDS[field])
+    value = current.get(field, DEFAULTS[field])
+    if value == CUSTOM_CHOICE or value in choices:
+        return value, typed or None
+    named = next((name for name, address in choices.items() if address == value), None)
+    if named is not None:
+        return named, typed or None
+    return CUSTOM_CHOICE, typed or value
+
+
 def build_schema(current: Mapping[str, Any]) -> probatio.Schema:
     """Return the form, pre-filled from current values or DEFAULTS."""
 
     def default(key: str) -> Any:
-        value = current.get(key, DEFAULTS[key])
-        if key == CONF_DNS_SERVER:
-            # Older entries stored the address; show it as its named choice.
-            value = next((name for name, address in DNS_SERVERS.items() if address == value), value)
-        return value
+        return current.get(key, DEFAULTS[key])
+
+    def choice_and_box(field: str) -> dict[Any, Any]:
+        choice, address = _split(field, current)
+        box = CUSTOM_FIELDS[field]
+        marker = probatio.Optional(box, description={"suggested_value": address}) if address else probatio.Optional(box)
+        return {
+            probatio.Required(field, default=choice): SelectSelector(
+                SelectSelectorConfig(
+                    options=[*_CHOICES[field], CUSTOM_CHOICE], mode=SelectSelectorMode.DROPDOWN, translation_key=field
+                )
+            ),
+            marker: TextSelector(),
+        }
 
     return probatio.Schema(
         {
-            probatio.Required(CONF_DNS_SERVER, default=default(CONF_DNS_SERVER)): SelectSelector(
-                SelectSelectorConfig(
-                    options=list(DNS_SERVERS),
-                    mode=SelectSelectorMode.DROPDOWN,
-                    translation_key=CONF_DNS_SERVER,
-                    custom_value=True,
-                )
-            ),
+            **choice_and_box(CONF_DNS_SERVER),
             probatio.Required(CONF_PING_COUNT, default=default(CONF_PING_COUNT)): probatio.All(
                 NumberSelector(
                     NumberSelectorConfig(min=PING_COUNT_MIN, max=PING_COUNT_MAX, step=1, mode=NumberSelectorMode.BOX)
                 ),
                 probatio.Coerce(int),
             ),
-            probatio.Required(CONF_INTERNET_REFERENCE, default=default(CONF_INTERNET_REFERENCE)): SelectSelector(
-                SelectSelectorConfig(
-                    options=list(INTERNET_REFERENCES),
-                    mode=SelectSelectorMode.DROPDOWN,
-                    translation_key=CONF_INTERNET_REFERENCE,
-                    custom_value=True,
-                )
-            ),
+            **choice_and_box(CONF_INTERNET_REFERENCE),
             probatio.Required(CONF_HOP_OWNERSHIP, default=default(CONF_HOP_OWNERSHIP)): BooleanSelector(),
             probatio.Required(CONF_USAGE_TOTALS, default=default(CONF_USAGE_TOTALS)): BooleanSelector(),
             probatio.Required(CONF_LONG_TERM_STATISTICS, default=default(CONF_LONG_TERM_STATISTICS)): BooleanSelector(),
@@ -199,23 +222,38 @@ def last_result(entry: ConfigEntry | None) -> SpeedTestResult | None:
 
 
 def monitoring_errors(user_input: dict[str, Any]) -> dict[str, str]:
-    """Check the monitoring screen; typed addresses are saved trimmed.
+    """Check the monitoring screen; Custom address stores the box's address, any other choice ignores the box.
 
-    A typed DNS server must be an IP address; a typed internet reference a public
-    IPv4 address, so it is past the ISP and on the measured path (ADR-014, ADR-015).
+    A custom DNS server must be an IP address; a custom internet reference a public IPv4
+    address, so it is past the ISP and on the measured path (ADR-014, ADR-015). On an
+    error the box keeps what was typed, so the form shows it again.
     """
+    checks = {
+        CONF_DNS_SERVER: (_is_ip, "invalid_dns_server"),
+        CONF_INTERNET_REFERENCE: (is_traceable, "invalid_internet_reference"),
+    }
     errors: dict[str, str] = {}
-    server = user_input[CONF_DNS_SERVER] = str(user_input[CONF_DNS_SERVER]).strip()
-    if server not in DNS_SERVERS:
-        try:
-            ipaddress.ip_address(server)
-        except ValueError:
-            errors[CONF_DNS_SERVER] = "invalid_dns_server"
-    reference = str(user_input.get(CONF_INTERNET_REFERENCE, DEFAULT_INTERNET_REFERENCE)).strip()
-    user_input[CONF_INTERNET_REFERENCE] = reference
-    if reference not in INTERNET_REFERENCES and not is_traceable(reference):
-        errors[CONF_INTERNET_REFERENCE] = "invalid_internet_reference"
+    for field, (valid, error) in checks.items():
+        box = CUSTOM_FIELDS[field]
+        if user_input.get(field) != CUSTOM_CHOICE:
+            user_input.pop(box, None)
+            continue
+        typed = str(user_input.get(box) or "").strip()
+        if not valid(typed):
+            errors[box] = error
+            continue
+        user_input.pop(box, None)
+        user_input[field] = typed
     return errors
+
+
+def _is_ip(value: str) -> bool:
+    """Whether *value* is an IPv4 or IPv6 address."""
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
 
 
 def needs_consent(options: Mapping[str, Any]) -> bool:

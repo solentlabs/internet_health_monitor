@@ -6,17 +6,21 @@
         "description": "Configurar monitoramento de saúde da rede",
         "data": {
           "dns_server": "Servidor DNS",
+          "dns_server_custom": "Servidor DNS personalizado",
           "ping_count": "Pings por destino",
           "internet_reference": "Referência de internet",
+          "internet_reference_custom": "Endereço personalizado",
           "hop_ownership": "Identificar quem opera cada salto",
           "usage_totals": "Totais de uso",
           "long_term_statistics": "Estatísticas de longo prazo",
           "speed_test_backend": "Serviço de teste de velocidade"
         },
         "data_description": {
-          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host. Ou digite um endereço IPv4 ou IPv6, como o de um Pi-hole.",
+          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host.",
+          "dns_server_custom": "Usado quando Endereço personalizado está escolhido acima: qualquer endereço IPv4 ou IPv6, como o de um Pi-hole.",
           "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
-          "internet_reference": "Ligado por padrão. A cada consulta, envia ping a este endereço como a um salto: latência, jitter e perda de pacotes além do seu provedor, ao lado dos três saltos. Envia alguns pings por minuto ao provedor escolhido, que vê seu endereço IP público; o IHM não é afiliado a nenhum deles. Escolha outro provedor, digite um endereço IPv4 público ou escolha Desligado.",
+          "internet_reference": "Ligado por padrão. A cada consulta, envia ping a este endereço como a um salto: latência, jitter e perda de pacotes além do seu provedor, ao lado dos três saltos. Envia alguns pings por minuto ao provedor escolhido, que vê seu endereço IP público; o IHM não é afiliado a nenhum deles. Escolha outro provedor ou Desligado.",
+          "internet_reference_custom": "Usado quando Endereço personalizado está escolhido acima: qualquer endereço IPv4 público.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados.",
           "usage_totals": "Desligado por padrão. Adiciona seis sensores de diagnóstico: pings enviados, traceroutes executados, consultas DNS enviadas, testes de velocidade executados e dados de teste baixados e enviados, contados desde a instalação. A contagem continua mesmo desligado.",
           "long_term_statistics": "Desligado por padrão. Guarda estatísticas por hora de latência, jitter, perda de pacotes, latência DNS e resultados de testes de velocidade, para tendências de meses; o Home Assistant nunca as apaga, então elas ocupam cerca de 10 a 15 MB a mais no banco de dados a cada ano. Desligado, o histórico continua cobrindo os últimos 10 dias. Desligar depois faz o Home Assistant avisar uma vez por sensor até você apagar as estatísticas dele em Ferramentas de desenvolvedor > Estatísticas.",
@@ -27,17 +31,21 @@
         "title": "Reconfigurar o Internet Health Monitor",
         "data": {
           "dns_server": "Servidor DNS",
+          "dns_server_custom": "Servidor DNS personalizado",
           "ping_count": "Pings por destino",
           "internet_reference": "Referência de internet",
+          "internet_reference_custom": "Endereço personalizado",
           "hop_ownership": "Identificar quem opera cada salto",
           "usage_totals": "Totais de uso",
           "long_term_statistics": "Estatísticas de longo prazo",
           "speed_test_backend": "Serviço de teste de velocidade"
         },
         "data_description": {
-          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host. Ou digite um endereço IPv4 ou IPv6, como o de um Pi-hole.",
+          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host.",
+          "dns_server_custom": "Usado quando Endereço personalizado está escolhido acima: qualquer endereço IPv4 ou IPv6, como o de um Pi-hole.",
           "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
-          "internet_reference": "Ligado por padrão. A cada consulta, envia ping a este endereço como a um salto: latência, jitter e perda de pacotes além do seu provedor, ao lado dos três saltos. Envia alguns pings por minuto ao provedor escolhido, que vê seu endereço IP público; o IHM não é afiliado a nenhum deles. Escolha outro provedor, digite um endereço IPv4 público ou escolha Desligado.",
+          "internet_reference": "Ligado por padrão. A cada consulta, envia ping a este endereço como a um salto: latência, jitter e perda de pacotes além do seu provedor, ao lado dos três saltos. Envia alguns pings por minuto ao provedor escolhido, que vê seu endereço IP público; o IHM não é afiliado a nenhum deles. Escolha outro provedor ou Desligado.",
+          "internet_reference_custom": "Usado quando Endereço personalizado está escolhido acima: qualquer endereço IPv4 público.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados.",
           "usage_totals": "Desligado por padrão. Adiciona seis sensores de diagnóstico: pings enviados, traceroutes executados, consultas DNS enviadas, testes de velocidade executados e dados de teste baixados e enviados, contados desde a instalação. A contagem continua mesmo desligado.",
           "long_term_statistics": "Desligado por padrão. Guarda estatísticas por hora de latência, jitter, perda de pacotes, latência DNS e resultados de testes de velocidade, para tendências de meses; o Home Assistant nunca as apaga, então elas ocupam cerca de 10 a 15 MB a mais no banco de dados a cada ano. Desligado, o histórico continua cobrindo os últimos 10 dias. Desligar depois faz o Home Assistant avisar uma vez por sensor até você apagar as estatísticas dele em Ferramentas de desenvolvedor > Estatísticas.",
@@ -86,17 +94,21 @@
         "title": "Opções do Internet Health Monitor",
         "data": {
           "dns_server": "Servidor DNS",
+          "dns_server_custom": "Servidor DNS personalizado",
           "ping_count": "Pings por destino",
           "internet_reference": "Referência de internet",
+          "internet_reference_custom": "Endereço personalizado",
           "hop_ownership": "Identificar quem opera cada salto",
           "usage_totals": "Totais de uso",
           "long_term_statistics": "Estatísticas de longo prazo",
           "speed_test_backend": "Serviço de teste de velocidade"
         },
         "data_description": {
-          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host. Ou digite um endereço IPv4 ou IPv6, como o de um Pi-hole.",
+          "dns_server": "Servidor cujo tempo de resposta é medido. Detecção automática usa o configurado neste host.",
+          "dns_server_custom": "Usado quando Endereço personalizado está escolhido acima: qualquer endereço IPv4 ou IPv6, como o de um Pi-hole.",
           "ping_count": "Pings enviados a cada destino em cada consulta (1 a 10). Mais pings dão leituras mais estáveis e uma perda de pacotes mais precisa.",
-          "internet_reference": "Ligado por padrão. A cada consulta, envia ping a este endereço como a um salto: latência, jitter e perda de pacotes além do seu provedor, ao lado dos três saltos. Envia alguns pings por minuto ao provedor escolhido, que vê seu endereço IP público; o IHM não é afiliado a nenhum deles. Escolha outro provedor, digite um endereço IPv4 público ou escolha Desligado.",
+          "internet_reference": "Ligado por padrão. A cada consulta, envia ping a este endereço como a um salto: latência, jitter e perda de pacotes além do seu provedor, ao lado dos três saltos. Envia alguns pings por minuto ao provedor escolhido, que vê seu endereço IP público; o IHM não é afiliado a nenhum deles. Escolha outro provedor ou Desligado.",
+          "internet_reference_custom": "Usado quando Endereço personalizado está escolhido acima: qualquer endereço IPv4 público.",
           "hop_ownership": "Desativado por padrão. Mostra a operadora de rede (ASN) de cada salto público. Envia esses endereços de salto (os roteadores do seu provedor, não o seu próprio endereço) ao serviço gratuito IP-para-ASN da Team Cymru, pelo seu servidor DNS. Endereços privados e compartilhados do provedor não têm dono e nunca são enviados.",
           "usage_totals": "Desligado por padrão. Adiciona seis sensores de diagnóstico: pings enviados, traceroutes executados, consultas DNS enviadas, testes de velocidade executados e dados de teste baixados e enviados, contados desde a instalação. A contagem continua mesmo desligado.",
           "long_term_statistics": "Desligado por padrão. Guarda estatísticas por hora de latência, jitter, perda de pacotes, latência DNS e resultados de testes de velocidade, para tendências de meses; o Home Assistant nunca as apaga, então elas ocupam cerca de 10 a 15 MB a mais no banco de dados a cada ano. Desligado, o histórico continua cobrindo os últimos 10 dias. Desligar depois faz o Home Assistant avisar uma vez por sensor até você apagar as estatísticas dele em Ferramentas de desenvolvedor > Estatísticas.",
@@ -142,7 +154,8 @@
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
-        "opendns": "OpenDNS (208.67.222.222)"
+        "opendns": "OpenDNS (208.67.222.222)",
+        "custom": "Endereço personalizado"
       }
     },
     "internet_reference": {
@@ -151,7 +164,8 @@
         "cloudflare": "Cloudflare (1.1.1.1)",
         "google": "Google (8.8.8.8)",
         "quad9": "Quad9 (9.9.9.9)",
-        "opendns": "OpenDNS (208.67.222.222)"
+        "opendns": "OpenDNS (208.67.222.222)",
+        "custom": "Endereço personalizado"
       }
     },
     "hop_layout": {

@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
+import probatio
 import pytest
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.internet_health_monitor.config_flow import (
+    CUSTOM_FIELDS,
     DEFAULTS,
     SPEED_TEST_DEFAULTS,
     build_schema,
@@ -18,8 +20,10 @@ from custom_components.internet_health_monitor.config_flow import (
 )
 from custom_components.internet_health_monitor.const import (
     CONF_DNS_SERVER,
+    CONF_DNS_SERVER_CUSTOM,
     CONF_HOP_OWNERSHIP,
     CONF_INTERNET_REFERENCE,
+    CONF_INTERNET_REFERENCE_CUSTOM,
     CONF_LONG_TERM_STATISTICS,
     CONF_PING_COUNT,
     CONF_SPEED_TEST_AUTOMATIC,
@@ -72,9 +76,18 @@ DEFAULT_CASES = [
 # fmt: on
 
 
+FORM_MONITORING = build_schema({})
+
+
 def _defaults(schema: Any) -> dict[str, Any]:
-    """Form field -> default."""
-    return {marker.schema: marker.default() for marker in schema.schema}
+    """Form field -> default; the optional address boxes have none."""
+    return {marker.schema: _default_of(marker) for marker in schema.schema if isinstance(marker, probatio.Required)}
+
+
+def _default_of(marker: Any) -> Any:
+    """A form field's default value."""
+    default = marker.default
+    return default() if callable(default) else None
 
 
 async def test_user_flow_creates_entry(hass: HomeAssistant) -> None:
@@ -116,67 +129,111 @@ async def test_options_flow_saves(hass: HomeAssistant, setup_entry: SetupEntry) 
     assert dict(entry.options) == SAVED
 
 
-# DNS server typed into the list -> accepted. A server from the list, or any IPv4 or IPv6
-# address (a Pi-hole, AdGuard Home, the router); never a name, which would need DNS to find DNS.
+# DNS server: the list says what is timed. "Custom address" uses the box below it: any IPv4
+# or IPv6 address (a Pi-hole, AdGuard Home, the router), never a name, which would need DNS
+# to find DNS. Any other choice ignores the box, so the list never says one thing while IHM
+# does another.
 # fmt: off
-DNS_CASES: list[tuple[str, bool]] = [
-    ("quad9",            True),   # from the list
-    ("192.168.1.5",      True),   # a Pi-hole on the LAN
-    ("2606:4700::1111",  True),   # IPv6
-    (" 192.168.1.5 ",    True),   # pasted with spaces
-    ("pihole.local",     False),  # a name
-    ("999.1.1.1",        False),  # not an address
-    ("",                 False),
+DNS_CASES: list[tuple[str, str | None, str | None]] = [
+    # (choice,       typed address,      stored, or None for an error on the box)
+    ("quad9",        None,               "quad9"),
+    ("quad9",        "192.168.1.5",      "quad9"),          # an old address left in the box is ignored
+    ("custom",       "192.168.1.5",      "192.168.1.5"),    # a Pi-hole on the LAN
+    ("custom",       "2606:4700::1111",  "2606:4700::1111"),
+    ("custom",       " 192.168.1.5 ",    "192.168.1.5"),    # pasted with spaces
+    ("custom",       "pihole.local",     None),             # a name
+    ("custom",       "999.1.1.1",        None),             # not an address
+    ("custom",       "",                 None),             # Custom with nothing typed
+    ("custom",       None,               None),
 ]
 # fmt: on
 
 
-@pytest.mark.parametrize(("value", "valid"), DNS_CASES)
-async def test_dns_server_typed_address(hass: HomeAssistant, value: str, valid: bool) -> None:
-    """Any IP address can be typed as the DNS server; anything else is an error on that field."""
+@pytest.mark.parametrize(("choice", "typed", "stored"), DNS_CASES)
+async def test_dns_server_choice_or_address(
+    hass: HomeAssistant, choice: str, typed: str | None, stored: str | None
+) -> None:
+    """Custom address takes the box's address; any other choice ignores the box."""
+    user_input = {**USER_INPUT, CONF_DNS_SERVER: choice, CONF_SPEED_TEST_BACKEND: "none"}
+    if typed is not None:
+        user_input[CONF_DNS_SERVER_CUSTOM] = typed
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**USER_INPUT, CONF_DNS_SERVER: value, CONF_SPEED_TEST_BACKEND: "none"}
-    )
-    if valid:
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], user_input)
+    if stored is not None:
         assert result.get("type") is FlowResultType.CREATE_ENTRY
-        assert result.get("options", {})[CONF_DNS_SERVER] == value.strip()
-    else:
-        assert (result.get("step_id"), result.get("errors")) == ("user", {CONF_DNS_SERVER: "invalid_dns_server"})
-
-
-# Internet reference typed into the list -> accepted: a provider from the list, Off, or a
-# public IPv4 address, so it is past the ISP and on the measured path (ADR-014, ADR-015).
-# fmt: off
-REFERENCE_CASES: list[tuple[str, bool]] = [
-    ("cloudflare",       True),   # from the list
-    ("off",              True),
-    ("8.8.4.4",          True),   # a public IPv4 address
-    (" 8.8.4.4 ",        True),   # pasted with spaces
-    ("192.168.1.5",      False),  # at home, not past the ISP
-    ("100.64.0.1",       False),  # ISP shared space
-    ("2606:4700::1111",  False),  # IPv6 (ADR-014)
-    ("one.one.one.one",  False),  # a name
-    ("",                 False),
-]
-# fmt: on
-
-
-@pytest.mark.parametrize(("value", "valid"), REFERENCE_CASES)
-async def test_internet_reference_typed_address(hass: HomeAssistant, value: str, valid: bool) -> None:
-    """The internet reference is a listed provider, Off, or a typed public IPv4 address."""
-    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**USER_INPUT, CONF_INTERNET_REFERENCE: value, CONF_SPEED_TEST_BACKEND: "none"}
-    )
-    if valid:
-        assert result.get("type") is FlowResultType.CREATE_ENTRY
-        assert result.get("options", {})[CONF_INTERNET_REFERENCE] == value.strip()
+        options = result.get("options", {})
+        assert options[CONF_DNS_SERVER] == stored
+        assert CONF_DNS_SERVER_CUSTOM not in options  # the box is part of the form, not the settings
     else:
         assert (result.get("step_id"), result.get("errors")) == (
             "user",
-            {CONF_INTERNET_REFERENCE: "invalid_internet_reference"},
+            {CONF_DNS_SERVER_CUSTOM: "invalid_dns_server"},
         )
+
+
+# Internet reference: the list says what is pinged. "Custom address" uses the box: a public
+# IPv4 address, so it is past the ISP and on the measured path (ADR-014, ADR-015). Any other
+# choice ignores the box, so Off is always off (ADR-015's privacy switch).
+# fmt: off
+REFERENCE_CASES: list[tuple[str, str | None, str | None]] = [
+    # (choice,       typed address,      stored, or None for an error on the box)
+    ("cloudflare",   None,               "cloudflare"),
+    ("off",          "8.8.4.4",          "off"),            # Off wins over an old address in the box
+    ("google",       "8.8.4.4",          "google"),
+    ("custom",       "8.8.4.4",          "8.8.4.4"),        # a public IPv4 address
+    ("custom",       " 8.8.4.4 ",        "8.8.4.4"),        # pasted with spaces
+    ("custom",       "192.168.1.5",      None),             # at home, not past the ISP
+    ("custom",       "100.64.0.1",       None),             # ISP shared space
+    ("custom",       "2606:4700::1111",  None),             # IPv6 (ADR-014)
+    ("custom",       "one.one.one.one",  None),             # a name
+    ("custom",       "",                 None),             # Custom with nothing typed
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("choice", "typed", "stored"), REFERENCE_CASES)
+async def test_internet_reference_choice_or_address(
+    hass: HomeAssistant, choice: str, typed: str | None, stored: str | None
+) -> None:
+    """Custom address takes the box's public IPv4 address; any other choice, Off included, ignores the box."""
+    user_input = {**USER_INPUT, CONF_INTERNET_REFERENCE: choice, CONF_SPEED_TEST_BACKEND: "none"}
+    if typed is not None:
+        user_input[CONF_INTERNET_REFERENCE_CUSTOM] = typed
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], user_input)
+    if stored is not None:
+        assert result.get("type") is FlowResultType.CREATE_ENTRY
+        options = result.get("options", {})
+        assert options[CONF_INTERNET_REFERENCE] == stored
+        assert CONF_INTERNET_REFERENCE_CUSTOM not in options
+    else:
+        assert (result.get("step_id"), result.get("errors")) == (
+            "user",
+            {CONF_INTERNET_REFERENCE_CUSTOM: "invalid_internet_reference"},
+        )
+
+
+# Stored address -> what the form shows: a listed provider's address as its name in the
+# list; any other address as Custom address, with the address in the box.
+# fmt: off
+PREFILL_CASES: list[tuple[str, str, str, str | None]] = [
+    # (field,                   stored,          list shows,    box shows)
+    (CONF_DNS_SERVER,           "quad9",         "quad9",       None),
+    (CONF_DNS_SERVER,           "9.9.9.9",       "quad9",       None),
+    (CONF_DNS_SERVER,           "192.168.1.5",   "custom",      "192.168.1.5"),
+    (CONF_INTERNET_REFERENCE,   "8.8.8.8",       "google",      None),
+    (CONF_INTERNET_REFERENCE,   "8.8.4.4",       "custom",      "8.8.4.4"),
+]
+# fmt: on
+
+
+@pytest.mark.parametrize(("field", "stored", "listed", "boxed"), PREFILL_CASES)
+def test_form_shows_a_stored_address(field: str, stored: str, listed: str, boxed: str | None) -> None:
+    """The list shows names; an address the list does not name shows as Custom address, in its box."""
+    markers = {m.schema: m for m in build_schema({field: stored}).schema}
+    assert markers[field].default() == listed
+    box = markers[CUSTOM_FIELDS[field]]
+    assert (box.description or {}).get("suggested_value") == boxed
 
 
 def test_internet_reference_defaults_to_cloudflare() -> None:
@@ -187,13 +244,18 @@ def test_internet_reference_defaults_to_cloudflare() -> None:
 async def test_dns_server_checked_on_every_screen(hass: HomeAssistant, setup_entry: SetupEntry) -> None:
     """Configure and Reconfigure check a typed DNS server as setup does."""
     entry = await setup_entry()
-    bad = {**USER_INPUT, CONF_DNS_SERVER: "pihole.local", CONF_SPEED_TEST_BACKEND: "none"}
+    bad = {
+        **USER_INPUT,
+        CONF_DNS_SERVER: "custom",
+        CONF_DNS_SERVER_CUSTOM: "pihole.local",
+        CONF_SPEED_TEST_BACKEND: "none",
+    }
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(result["flow_id"], bad)
-    assert result.get("errors") == {CONF_DNS_SERVER: "invalid_dns_server"}
+    assert result.get("errors") == {CONF_DNS_SERVER_CUSTOM: "invalid_dns_server"}
     result = await entry.start_reconfigure_flow(hass)
     result = await hass.config_entries.flow.async_configure(result["flow_id"], bad)
-    assert result.get("errors") == {CONF_DNS_SERVER: "invalid_dns_server"}
+    assert result.get("errors") == {CONF_DNS_SERVER_CUSTOM: "invalid_dns_server"}
 
 
 @pytest.mark.parametrize(("description", "stored", "expected"), DEFAULT_CASES, ids=[c[0] for c in DEFAULT_CASES])
@@ -205,12 +267,16 @@ def test_form_defaults(description: str, stored: dict[str, Any], expected: tuple
 
 @pytest.mark.parametrize(
     ("schema", "defaults"),
-    [(build_schema({}), DEFAULTS), (build_speed_test_schema({}), SPEED_TEST_DEFAULTS)],
+    [(FORM_MONITORING, DEFAULTS), (build_speed_test_schema({}), SPEED_TEST_DEFAULTS)],
     ids=["monitoring", "speed test"],
 )
 def test_form_fields_match_defaults(schema: Any, defaults: dict[str, Any]) -> None:
-    """Every field on each screen has a default, and no field carries a stray argument (msg)."""
-    assert {m.schema for m in schema.schema} == set(defaults)
+    """Every setting on each screen has a default, the only other fields are the address boxes, and none carries
+    a stray argument (msg)."""
+    required = {m.schema for m in schema.schema if isinstance(m, probatio.Required)}
+    assert required == set(defaults)
+    boxes = set(CUSTOM_FIELDS.values()) if schema is FORM_MONITORING else set()
+    assert {m.schema for m in schema.schema} - required == boxes
     assert [m.schema for m in schema.schema if m.msg] == []
 
 

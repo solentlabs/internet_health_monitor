@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b5] - 2026-11-23
+
+### Changed
+
+- **DNS server and internet reference lists show their names again.**
+  Each is a plain list (Auto-detect, Cloudflare (1.1.1.1), …, Custom
+  address); choosing Custom address uses the address in the box below
+  it. Any other choice ignores the box, so the list always says what is
+  measured, and Off is always off. A list that also took typing showed
+  the stored word (`auto`, `cloudflare`) instead.
+
 ## [0.1.0b4] - 2026-11-23
 
 ### Fixed
