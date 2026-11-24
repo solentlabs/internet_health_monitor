@@ -188,18 +188,20 @@ Decided 2026-11-19: build both, as diagnostic sensors.
 
 ## After 0.1.0
 
-- **DNS resolver comparison** (0.2.0 or later, decided 2026-11-23): opt-in,
-  the same uncached lookup timed against a few public resolvers beside the
-  user's own, one sensor each, and its own card part. No use case asks for
-  it yet; it is a new outside service (ADR-006), so its use case, ADR and
-  each provider's terms for DNS queries come first.
+IHM stays on 0.x for now: it is in the Marketplace but not yet
+promoted. Below, in priority order; each starts only when its gate is
+met.
+
+| # | Item | Gate |
+| - | ---- | ---- |
+| 1 | **DNS resolver comparison** (decided 2026-11-23): opt-in, the same uncached lookup timed against a few public resolvers beside the user's own, one sensor each, and its own card part | A use case asks for it; then its ADR and each provider's terms for DNS queries, since it is a new outside service (ADR-006) |
+| 2 | **IPv6** | A user who needs it; ADR-014 names where it would be added |
 
 ## Not Built
 
 Custom hop targets, interface selection, SNMP router counters and an
 Aggregator hook were considered and cut, each for a recorded reason:
-ARCHITECTURE_DECISIONS.md § ADR-011. IPv6 waits for a user who needs
-it; ADR-014 names where it would be added.
+ARCHITECTURE_DECISIONS.md § ADR-011.
 
 ---
 
@@ -220,5 +222,5 @@ it; ADR-014 names where it would be added.
 ---
 
 *Created: 2025-11-28*
-*Updated: 2026-11-20*
-*Status: Betas, tested live (Path to Release stage 3)*
+*Updated: 2026-11-24*
+*Status: 0.1.1 released and in HACS's default list, not yet promoted; soaking (Path to Release complete)*
