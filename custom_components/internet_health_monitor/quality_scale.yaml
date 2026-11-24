@@ -24,8 +24,8 @@ rules:
     status: done
     comment: "config_flow.py 100%; tests/components/test_config_flow.py runs the flows through HA's flow manager: created entry's unique_id, already_configured abort, options save, defaults, ping range."
   dependency-transparency:
-    status: todo
-    comment: "Core is MIT with .github/workflows/release.yml (trusted publishing after CI and a version check against manifest.json; docs/RELEASING.md), but not yet on PyPI: first publish is the first beta, ROADMAP Path to Release stage 3."
+    status: done
+    comment: "The one requirement, solentlabs-internet-health-monitor-core, is pinned == in manifest.json, MIT (OSI), public in this repository, and on PyPI built and published by .github/workflows/release.yml with trusted publishing (PyPI's provenance names that workflow and environment pypi-core). Every PyPI version (0.1.0b1 to 0.1.0) has the matching v-tag and GitHub release."
   docs-actions:
     status: done
     comment: .github/README.md Generate Dashboard Card Action; fields and descriptions in services.yaml, strings.json and all translations.

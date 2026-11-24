@@ -650,7 +650,7 @@ Home Assistant grades only its built-in integrations against its [Integration Qu
 <!-- BEGIN GENERATED: quality-scale (from custom_components/internet_health_monitor/quality_scale.yaml; run scripts/generate_quality_scale_table.py) -->
 | Tier | Rules met | Open rules |
 | ---- | --------- | ---------- |
-| 🥉 Bronze | 19 / 20 | [`dependency-transparency`](https://contributors.home-assistant.io/core/quality-scale/dependency-transparency/) |
+| 🥉 Bronze | 20 / 20 | None |
 | 🥈 Silver | 10 / 10 | None |
 | 🥇 Gold | 21 / 21 | None |
 | 🏆 Platinum | 3 / 3 | None |
