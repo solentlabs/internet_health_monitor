@@ -34,7 +34,7 @@ on Linux (HA OS, Container, Supervised or Core) with `ip` and `ping`;
 `traceroute` adds hops 2 and 3. Core, the measurement engine, is its own
 package on PyPI (`solentlabs-internet-health-monitor-core`) and runs on
 Linux and Windows with Python 3.12 or later. Betas 0.1.0b1 to 0.1.0b5
-led here; each keeps its own notes on its GitHub pre-release.
+led here.
 
 ### Added
 

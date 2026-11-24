@@ -111,8 +111,13 @@ the next beta (`0.1.0b2`), which HACS offers as an update.
 Each beta gets its own CHANGELOG heading. When the final version ships,
 its section replaces the betas' sections and describes what that version
 is, written for someone upgrading from the last final version (or, for
-0.1.0, installing it fresh); fixes between betas are left out. Each beta's
-notes stay on its GitHub pre-release.
+0.1.0, installing it fresh); fixes between betas are left out.
+
+Once the final version ships, delete its betas: each GitHub pre-release
+with its tag (`gh release delete vX.Y.ZbN --cleanup-tag`), and each Core
+beta on PyPI (the developer, from the project's release settings). First
+confirm with a leadline session that its nightly rows hold their download
+counts; its rows are append-only, so they keep that history.
 
 ## Before the First Release
 
@@ -177,5 +182,6 @@ run; a leadline session adds them.
       morning briefing.
 - [x] **Release day:** tell a leadline session the version is released.
 - [x] **After the first PyPI publish:** Core in leadline's `pypi` list.
-- [ ] **After the HACS listing, or a forum thread:** leadline's
-      `ha_integration` and `discourse_topics` entries.
+- [x] **After the HACS listing:** leadline's `ha_integration` entry. It
+      reads 0 until HA's analytics list IHM.
+- [ ] **After a forum thread:** leadline's `discourse_topics` entry.
