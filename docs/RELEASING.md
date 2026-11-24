@@ -54,7 +54,11 @@ release and stops at the first failure.
 1. Pull `main`, create a `release/X.Y.Z` branch, commit exactly what is
    staged, push the branch and open a pull request.
 2. When every check passes, merge it with a merge commit (the admin
-   bypass stands in for the approving review).
+   bypass stands in for the approving review) and delete the branch on
+   GitHub and locally (`gh pr merge --merge --admin --delete-branch`).
+   Then `git fetch --prune` and delete any other branch already merged
+   into `main`, here or on GitHub; leave an unmerged one and name it to
+   the developer.
 3. Tag the merge commit and push the tag, which starts `release.yml`:
 
    ```bash

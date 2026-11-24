@@ -15,7 +15,7 @@
   // Python Configuration
   // ========================================
 
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
   "python.terminal.activateEnvironment": false,
 
   // Disable legacy linters (use Ruff)
