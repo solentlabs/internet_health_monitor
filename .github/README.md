@@ -43,16 +43,18 @@ A **Solent Labs** Home Assistant integration that measures the path from Home As
 
 The Marketplace is built into Home Assistant 2026.11 and later; on
 2026.10, use [HACS](https://www.hacs.xyz/docs/use/download/download/) the
-same way. Internet Health Monitor is not yet in the Marketplace's list,
-so add it as a custom repository first:
+same way.
 
-1. Open **Settings → Marketplace**, then the **⋮** menu → **Custom
-   repositories**.
-2. Add `https://github.com/solentlabs/internet_health_monitor`, type
-   **Integration**.
-3. Open **Internet Health Monitor** and install it.
-4. Restart Home Assistant, then go to **Settings → Devices & services →
+1. Open **Settings → Marketplace** and search for **Internet Health
+   Monitor**.
+2. Open it and install it.
+3. Restart Home Assistant, then go to **Settings → Devices & services →
    Add integration** and search for **Internet Health Monitor**.
+
+If the search finds nothing, add it as a custom repository: open the
+**⋮** menu → **Custom repositories**, add
+`https://github.com/solentlabs/internet_health_monitor`, type
+**Integration**, then continue at step 2.
 
 ### Testing a Beta Release
 
@@ -457,7 +459,7 @@ the browser: it learns of the card when the page loads.
 | Latency graphs | on | Latency history for the hops and the internet reference, and DNS latency on its own graph |
 | Jitter graph | on | Jitter history for the hops and the internet reference |
 | Packet loss graph | on | Packet loss history for the hops and the internet reference |
-| Speed test | on | Each speed test reading but data used (see Usage totals for the running total); Run speed test, which asks before it starts; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it), each shown once a speed test has measured it; and a throughput graph. Shown only with a speed test service |
+| Speed test | on | Each speed test reading but data used (see Usage totals for the running total), and the date and time of the last test; Run speed test, which asks before it starts; bufferbloat gauges colored at Waveform's B line (the grade full width, download and upload in ms below it), each shown once a speed test has measured it; and a throughput graph. Shown only with a speed test service |
 | Graph hours | 24 | Hours each graph shows (1 to 168) |
 
 With **Hop layout** set to one combined card, the hops and the internet

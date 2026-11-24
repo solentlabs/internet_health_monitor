@@ -26,7 +26,7 @@ See where your internet slows down, from Home Assistant. Internet Health Monitor
 
 Requires Home Assistant 2026.10 or later on Linux (HA OS, Container, Supervised or Core).
 
-1. Open **Settings → Marketplace**, add `https://github.com/solentlabs/internet_health_monitor` as a custom repository (type Integration), and install Internet Health Monitor. On Home Assistant before 2026.11, use HACS the same way.
+1. Open **Settings → Marketplace**, search for Internet Health Monitor and install it. If the search finds nothing, add `https://github.com/solentlabs/internet_health_monitor` as a custom repository (type Integration) first. On Home Assistant before 2026.11, use HACS the same way.
 2. Restart Home Assistant.
 3. Settings → Devices & Services → Add Integration → "Internet Health Monitor". Every setting has a default; gateway, hops and DNS server are found on their own.
 

@@ -170,7 +170,7 @@ Decided 2026-11-19: build both, as diagnostic sensors.
   - [x] CI/CD pipeline: workflows written (`.github/workflows/`), first run at stage 2
   - [x] Branch protection (stage 2)
   - [x] Release automation: one `release.yml` (CI, checks, PyPI, then the GitHub release; docs/RELEASING.md), first run at stage 3
-- [ ] HACS submission (stage 5)
+- [x] HACS submission (stage 5): in the default list (hacs/default#14834)
 
 ---
 

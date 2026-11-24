@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-24
+
+### Added
+
+- Dashboard card: the speed test list ends with Last test, the date and time
+  the shown test ran.
+
+### Changed
+
+- Internet Health Monitor is in the Marketplace's list (HACS's default
+  repositories): search for it in Settings → Marketplace, no custom
+  repository needed. The README's setup steps say so.
+
 ## [0.1.0] - 2026-11-23
 
 ### Overview

@@ -380,6 +380,14 @@ DOWNLOAD_GAUGE = _gauge("download_latency_increase", "Download bufferbloat")
 UPLOAD_GAUGE = _gauge("upload_latency_increase", "Upload bufferbloat")
 
 
+# When the shown test ran, from the first reading's tested_at; HA shows "—" before the first test.
+LAST_TEST = {
+    "type": "attribute",
+    "entity": f"{SENSOR}download",
+    "attribute": "tested_at",
+    "name": "Last test",
+    "time_format": "datetime",
+}
 RUN = "button.internet_health_run_speed_test"
 RUN_CONFIRMATION = (
     "Run a speed test now? It uses your whole connection for about 20 seconds, "
@@ -405,10 +413,10 @@ async def test_speed_test_part_appears_with_a_backend(hass: HomeAssistant, setup
     await setup_entry(speed_test_backend="cloudflare")
     card = build_card_config(hass, CARD_OPTIONS_SCHEMA({}))
     speed, run, grade, directions, throughput = card["cards"][-5:]
-    assert (speed["title"], speed["entities"][0], speed["entities"][-1]) == (
+    assert (speed["title"], speed["entities"][0], speed["entities"][-2:]) == (
         "Speed test",
         {"entity": f"{SENSOR}download", "name": "Download"},
-        {"entity": f"{SENSOR}upload_latency", "name": "Upload latency"},
+        [{"entity": f"{SENSOR}upload_latency", "name": "Upload latency"}, LAST_TEST],
     )
     # One test's data use says little on its own; usage totals carry the running total.
     assert f"{SENSOR}data_used" not in {row["entity"] for row in speed["entities"]}
