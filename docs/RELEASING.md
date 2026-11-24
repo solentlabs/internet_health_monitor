@@ -32,19 +32,49 @@ with a letter (`0.2.0b1`, PEP 440) becomes a GitHub pre-release.
 
 ## To Release
 
+`main` takes changes only through a pull request (its rulesets), so a
+release is a pull request, a merge, then a tag. The developer stages
+and approves; Claude carries it from commit to published
+release and stops at the first failure.
+
+**Prepare** (Claude, then the developer):
+
 1. Run `make test-windows` from WSL: Core's command line on your Windows
    Python, with real pings and a trace. CI tests Core on Windows, but
    GitHub's runners block outbound ping, so only this checks the real
    probes.
-2. In one commit on `main`: set the version in the four places and
-   rename CHANGELOG.md's `## [Unreleased]` to the version's heading.
-3. Push a tag `v` and the version:
+2. Set the version in the four places and rename CHANGELOG.md's
+   `## [Unreleased]` to the version's heading. Run the tests,
+   `scripts/check_changelog.py` and `scripts/check_release.py vX.Y.Z`.
+3. The developer stages the changes and approves the release. That one
+   approval covers every Ship step while CI stays clean.
+
+**Ship** (Claude):
+
+1. Pull `main`, create a `release/X.Y.Z` branch, commit exactly what is
+   staged, push the branch and open a pull request.
+2. When every check passes, merge it with a merge commit (the admin
+   bypass stands in for the approving review).
+3. Tag the merge commit and push the tag, which starts `release.yml`:
 
    ```bash
-   git tag v0.1.0 && git push origin v0.1.0
+   git tag vX.Y.Z <merge-commit> && git push origin vX.Y.Z
    ```
 
-The workflow then runs, each step only if the one before passed:
+4. When the workflow finishes, check that the GitHub release carries
+   `internet_health_monitor.zip`, PyPI shows Core at the version, and
+   HACS offers the update. HACS reads releases on its own; nothing is
+   submitted.
+5. Tell a leadline session the version is released (§ Metrics) and add
+   a journal entry.
+
+A failed check, a review comment or a failed workflow step stops the
+release: Claude reports it to the developer and waits. Nothing is
+re-run, skipped or forced past a failure without the developer's word.
+If a pre-commit hook fails, Claude fixes the file and the developer
+stages it again; Claude never stages.
+
+`release.yml` (Ship step 3) runs these, each only if the one before passed:
 
 1. **CI**: `tests.yml` on the tagged commit, Core on Linux and Windows
    included.
@@ -113,7 +143,7 @@ once on GitHub:
 - [x] **CodeQL's checks required** in `main`'s `require-status-checks`
       ruleset, once the workflow has run: `Analyze Code Security
       (python)` and `Analyze Code Security (javascript-typescript)`.
-- [ ] **What HACS checks** (hacs.xyz, "Include default repositories"): a
+- [x] **What HACS checks** (hacs.xyz, "Include default repositories"): a
       repository description, topics, issues on, and a full GitHub
       release; `validate.yaml` and `hassfest.yml` pass with no errors or
       ignores.

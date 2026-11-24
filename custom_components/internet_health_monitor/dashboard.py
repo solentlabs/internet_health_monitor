@@ -182,6 +182,18 @@ def _direction_gauges(rows: list[dict[str, str]]) -> dict[str, Any]:
     return {"type": "horizontal-stack", "cards": [_gauge(row) for row in rows]}
 
 
+def _speed_test_card(rows: list[dict[str, str]]) -> dict[str, Any]:
+    """The latest test's readings, and when it ran from the first reading's tested_at attribute."""
+    last_test = {
+        "type": "attribute",
+        "entity": rows[0]["entity"],
+        "attribute": "tested_at",
+        "name": "Last test",
+        "time_format": "datetime",
+    }
+    return _entities("Speed test", [*rows, last_test])
+
+
 def _hop_card(hop: int, rows: list[dict[str, str]]) -> dict[str, Any]:
     """One hop's readings, and its address from the first reading's hop_ip attribute."""
     address = {"type": "attribute", "entity": rows[0]["entity"], "attribute": "hop_ip", "name": "Address"}
@@ -280,7 +292,7 @@ def _parts(registry: er.EntityRegistry, entry_id: str, options: dict[str, Any]) 
             parts.append(_reference_card(reference))
     parts += [_graph(title, lines, hours) for opt, title, t in _GRAPHS if options[opt] and (lines := rows(t))]
     if options["include_speed_test"] and (speed := rows(_SPEED_TEST)):
-        parts.append(_entities("Speed test", speed))
+        parts.append(_speed_test_card(speed))
         parts += [_run_button(row) for row in rows(_RUN)]
         parts += [_grade_gauge(row) for row in rows(_GRADE)]
         if directions := rows(_BUFFERBLOAT):
