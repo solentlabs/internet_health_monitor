@@ -1,0 +1,4 @@
+# Who GitHub asks to review each pull request
+# (https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+# One maintainer owns everything, so one line covers it; a line per area would only repeat it.
+* @kwschulz

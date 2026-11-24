@@ -130,18 +130,18 @@ Monitor's. Each entry goes into leadline's config only once its target
 exists, since a missing repo, package or integration fails the nightly
 run; a leadline session adds them.
 
-- [ ] **Push day:** the nightly job's GitHub token covers this repository,
+- [x] **Push day:** the nightly job's GitHub token covers this repository,
       with push access (traffic needs it).
-- [ ] **Within 14 days of the push:** a leadline session adds the GitHub
+- [x] **Within 14 days of the push:** a leadline session adds the GitHub
       entries (traffic, issues, response times, releases, contributor
       locations; discussions if Discussions is on) and the trends page
       `internet_health_monitor_trends.html`. GitHub keeps traffic for 14
       days.
-- [ ] **Push day:** tell a leadline session the repository is pushed, and
+- [x] **Push day:** tell a leadline session the repository is pushed, and
       whether Discussions is on. That starts leadline's 14-day window, and
       leadline passes it to the operations session, which adds IHM to the
       morning briefing.
-- [ ] **Release day:** tell a leadline session the version is released.
-- [ ] **After the first PyPI publish:** Core in leadline's `pypi` list.
+- [x] **Release day:** tell a leadline session the version is released.
+- [x] **After the first PyPI publish:** Core in leadline's `pypi` list.
 - [ ] **After the HACS listing, or a forum thread:** leadline's
       `ha_integration` and `discourse_topics` entries.
