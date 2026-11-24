@@ -1,0 +1,126 @@
+name: Bug Report
+description: Report a bug in Internet Health Monitor
+title: "[Bug]: "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. The diagnostics download below answers most
+        questions before they are asked, so please attach it.
+
+        Before filing, check the [Troubleshooting](https://github.com/solentlabs/internet_health_monitor#troubleshooting)
+        and [Known Limitations](https://github.com/solentlabs/internet_health_monitor#known-limitations)
+        sections; a question rather than a bug goes to [Discussions](https://github.com/solentlabs/internet_health_monitor/discussions).
+
+  - type: input
+    id: version
+    attributes:
+      label: Integration version
+      description: Settings → Devices & services → Internet Health Monitor shows it.
+      placeholder: "e.g., 0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      placeholder: "e.g., 2026.11.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: Home Assistant install type
+      description: Settings → About shows it. It decides how IHM finds your gateway and DNS server.
+      options:
+        - Home Assistant OS
+        - Supervised
+        - Container
+        - Core
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: What is wrong?
+      options:
+        - Hops (gateway, ISP, hop 3) missing or wrong
+        - Internet reference
+        - DNS latency
+        - Reachability (gateway or internet reachable)
+        - Speed tests or bufferbloat
+        - Dashboard card
+        - Settings
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you saw, including any error message.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Choose '...'
+        3. See '...'
+    validations:
+      required: false
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics download
+      description: |
+        The download holds your settings, the last poll, what IHM detected, usage
+        totals, the last speed test and IHM's recent log records. Hop hostnames
+        and public IP addresses are already replaced with `**REDACTED**`;
+        private addresses stay, since they identify no one.
+
+        1. Settings → Devices & services → Internet Health Monitor
+        2. The three-dot menu (⋮) → **Download diagnostics**
+        3. Drag the JSON file into this box
+
+        For more detail, turn on debug logging on the same page, wait for the
+        problem, then download.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else
+      description: Network setup (mesh Wi-Fi, a second router, a VPN), screenshots, anything unusual.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before filing
+      options:
+        - label: I searched existing issues and found none for this
+          required: true
+        - label: I attached the diagnostics download, or said above why I cannot
+          required: true

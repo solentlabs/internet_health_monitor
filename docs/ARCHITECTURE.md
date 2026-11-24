@@ -146,6 +146,9 @@ Linux host.
 
 ## Data Leaving the Host
 
+The probes reach the gateway, the hops, the DNS server and the internet
+reference (Cloudflare's 1.1.1.1 by default, another address, or off:
+ADR-015), which sees the host's public IP address as any ping does.
 Beyond the probes themselves (ping, traceroute and the DNS query), IHM
 sends only:
 

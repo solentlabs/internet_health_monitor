@@ -1,0 +1,74 @@
+name: Feature Request
+description: Suggest a feature or improvement for Internet Health Monitor
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before filing:** a new sensor, a new outside service or an architecture
+        change starts as a [Discussion](https://github.com/solentlabs/internet_health_monitor/discussions/new?category=ideas).
+        Issues are for features whose shape is already clear; Discussions are for
+        shaping the idea. Keep this form short: you do not need a design to file.
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature type
+      options:
+        - New sensor or reading
+        - Improvement to an existing feature
+        - Dashboard card
+        - Speed test service
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can you not do, or not see, today?
+      placeholder: "I can't tell whether..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Who needs this, and how would they use it? IHM builds features from use cases (docs/USE_CASES.md).
+    validations:
+      required: true
+
+  - type: textarea
+    id: approaches
+    attributes:
+      label: Approaches you've considered (optional)
+      description: Skip this if you have not got that far; the design can be shaped together.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: How can you help move this forward? Requests with no one to build or test them may wait.
+      options:
+        - "I can submit a PR"
+        - "I can help test"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before filing
+      options:
+        - label: I searched existing issues and Discussions and found none for this
+          required: true
+        - label: It fits IHM's purpose, measuring the path from Home Assistant to the internet, and its rule of one measured value per entity, no composite scores (ADR-004)
+          required: true

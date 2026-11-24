@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discuss an idea before filing
+    url: https://github.com/solentlabs/internet_health_monitor/discussions/new?category=ideas
+    about: For new sensors, outside services or architecture changes, start a Discussion first
+  - name: ❓ Ask a question
+    url: https://github.com/solentlabs/internet_health_monitor/discussions/new?category=q-a
+    about: How to set something up, or what a reading means
+  - name: 🔧 Troubleshooting
+    url: https://github.com/solentlabs/internet_health_monitor#troubleshooting
+    about: Common problems (missing hops, missing tools) and how to report one
+  - name: 🕒 What to expect after filing
+    url: https://github.com/solentlabs/internet_health_monitor/blob/main/SUPPORT.md
+    about: One maintainer, evenings only. Reply and review times, and where each kind of question goes
+  - name: 🔒 Security vulnerability
+    url: https://github.com/solentlabs/internet_health_monitor/security/advisories/new
+    about: Report it privately, never in a public issue (SECURITY.md)
