@@ -3,13 +3,11 @@
 <!-- Versions & Install -->
 [![GitHub Release](https://img.shields.io/github/v/release/solentlabs/internet_health_monitor?include_prereleases)](https://github.com/solentlabs/internet_health_monitor/releases)
 [![Core](https://img.shields.io/pypi/v/solentlabs-internet-health-monitor-core?label=core)](https://pypi.org/project/solentlabs-internet-health-monitor-core/)
-[![HA analytics installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=HA%20analytics&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.internet_health_monitor.total)](https://analytics.home-assistant.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <!-- Build Status -->
 [![Tests](https://github.com/solentlabs/internet_health_monitor/actions/workflows/tests.yml/badge.svg)](https://github.com/solentlabs/internet_health_monitor/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/solentlabs/internet_health_monitor/actions/workflows/codeql.yml/badge.svg)](https://github.com/solentlabs/internet_health_monitor/actions/workflows/codeql.yml)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 <!-- Meta -->
 [![AI Assisted](https://img.shields.io/badge/AI-Claude%20Assisted-5A67D8.svg)](https://claude.ai)

@@ -1,7 +1,6 @@
 # Internet Health Monitor
 
 [![GitHub Release](https://img.shields.io/github/v/release/solentlabs/internet_health_monitor?include_prereleases)](https://github.com/solentlabs/internet_health_monitor/releases)
-[![HA analytics installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=HA%20analytics&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.internet_health_monitor.total)](https://analytics.home-assistant.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 See where your internet slows down, from Home Assistant. Internet Health Monitor measures latency, jitter and packet loss to your router, the next two routers past it and an address past your ISP, so you can tell whether a problem starts at home, on your line or beyond. Works with any ISP.
